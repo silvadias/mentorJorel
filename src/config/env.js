@@ -1,4 +1,4 @@
-// 🚀 Template por: Luis Carlos da Silva Dias (https://github.com)
+//src/config/env.js
 require('dotenv').config();
 
 const env = {

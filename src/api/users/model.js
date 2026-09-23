@@ -1,4 +1,5 @@
-const db = require('../../database/db');
+//src/api/users/model.js
+const db = require('../../../database/db');
 
 class UserModel {
   static findAll() {

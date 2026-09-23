@@ -2,9 +2,11 @@
   "name": "standard-node-template",
   "version": "1.0.0",
   "description": "Standard Node.js template with Docker",
-  "main": "server.js",
+  "main": "./src/server.js",
   "scripts": {
-    "dev": "node --watch src/server.js"
+    "start": "node --watch ./src/server.js",
+    "dev": "node --watch ./src/server.js"
+    
   },
   "author": "Luis Carlos da Silva Dias (https://github.com/silvadias)",
   "license": "MIT",

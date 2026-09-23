@@ -1,5 +1,6 @@
-const UserModel = require('../models/user.model');
-const catchAsync = require('../utils/catchAsync.util'); 
+//src/api/users/controller.js
+const UserModel = require('./model');
+const catchAsync = require('../../utils/catchAsync'); 
 
 class UserController {
   // GET /users
