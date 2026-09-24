@@ -2,6 +2,7 @@ services:
   server:
     image: node:24-alpine
     container_name: nodeContainer
+    user: "node"
     working_dir: /usr/src/app
     command: sh -c "npm install && npm run dev"
     ports:

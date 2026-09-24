@@ -1,4 +1,3 @@
-//src/api/home/routes.ts
 import { Router } from 'express';
 import homeController from './controller';
 

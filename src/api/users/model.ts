@@ -1,4 +1,3 @@
-// === Arquivo: ./src/api/users/model.ts ===
 import { mysqlConnection } from '../../database/mysql/instance';
 import { type IMySQLUserRow } from '../../database/mysql/tables';
 
