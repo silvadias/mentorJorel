@@ -1,23 +1,19 @@
-import db, { type UserData } from '../../database/db'; 
+// === Arquivo: ./src/api/users/model.ts ===
+import { mysqlConnection } from '../../database/mysql/instance';
+import { type IMySQLUserRow } from '../../database/mysql/tables';
 
-// O seu modelo estende e exporta a tipagem vinda do banco central
-export interface User extends UserData {}
+export interface User extends IMySQLUserRow {}
 
 class UserModel {
-  static findAll(): User[] {
-    return db.users;
+  public static findAll(): User[] {
+    return mysqlConnection.query.selectUsers();
   }
 
-  static create({ name, email }: { name: string; email: string }): User {
-    const newUser: User = {
-      id: db.users.length + 1,
-      name,
-      email
-    };
-    db.users.push(newUser);
+  // Simula o comportamento de um ORM executando: "INSERT INTO users"
+  public static create(data: { name: string; email: string }): User {
+    const newUser = mysqlConnection.query.insertUser(data);
     return newUser;
   }
 }
 
-// ✨ APENAS UM EXPORT DEFAULT AQUI NO FINAL!
 export default UserModel;

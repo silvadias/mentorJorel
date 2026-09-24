@@ -1,4 +1,3 @@
-//src/api/users/controller.ts
 import type { Request, Response } from 'express';
 import UserModel from './model';
 import catchAsync from '../../utils/catchAsync';
@@ -8,7 +7,6 @@ interface CustomError extends Error {
 }
 
 class UserController {
-  // GET /users
   static getAllUsers = catchAsync(async (req: Request, res: Response) => {
     const users = UserModel.findAll();
     return res.status(200).json({
@@ -17,7 +15,6 @@ class UserController {
     });
   });
 
-  // POST /users
   static createUser = catchAsync(async (req: Request, res: Response) => {
     const { name, email } = req.body;
 

@@ -1,6 +1,4 @@
-//src/middlewares/errorHandler.ts
-import { type Request, type Response, type NextFunction } from 'express'; //  Correto
-
+import { type Request, type Response, type NextFunction } from 'express';
 import env from '../config/env';
 
 interface CustomError extends Error {

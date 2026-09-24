@@ -1,4 +1,3 @@
-#//.docker-compose.yml
 services:
   server:
     image: node:24-alpine
