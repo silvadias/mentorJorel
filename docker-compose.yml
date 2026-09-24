@@ -9,9 +9,9 @@ services:
       - "${PORT}:3000"
     environment:
       NODE_ENV: ${NODE_ENV}
+      CHOKIDAR_USEPOLLING: "true" #
     volumes:
       - .:/usr/src/app
-      - /usr/src/app/node_modules
     networks:
       - nodeNetwork
 

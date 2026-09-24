@@ -2,17 +2,23 @@
   "name": "standard-node-template",
   "version": "1.0.0",
   "description": "Standard Node.js template with Docker",
-  "main": "./src/server.js",
+  "main": "./dist/server.js",
+  "type": "module",
   "scripts": {
-    "start": "node --watch ./src/server.js",
-    "dev": "node --watch ./src/server.js"
-    
+    "dev": "tsx watch ./src/server.ts",
+    "build": "tsc",
+    "start": "node ./dist/server.js"
   },
-  "author": "Luis Carlos da Silva Dias (https://github.com/silvadias)",
+  "author": "Luis Carlos da Silva Dias (https://github.com)",
   "license": "MIT",
   "dependencies": {
-  	"dotenv": "^16.4.5",
-	"express": "^4.19.2"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }
-

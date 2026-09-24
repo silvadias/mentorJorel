@@ -1,9 +1,11 @@
-//src/api/database/db.ts
-// Localizado em: src/config/db.ts
-import type { User } from '../api/users/model'; // ✨ Caminho corrigido!
+export interface UserData {
+  id: number;
+  name: string;
+  email: string;
+}
 
 interface MockDatabase {
-  users: User[];
+  users: UserData[];
 }
 
 const mockDatabase: MockDatabase = {

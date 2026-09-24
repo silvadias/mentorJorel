@@ -1,8 +1,6 @@
-//src/api/users/model.ts
+import db, { type UserData } from '../../database/db'; 
 
-import db, { type UserData } from '../../database/db'; // ✨ Importa o banco e a tipagem dele!
-
-// O seu modelo exporta a interface que a API vai usar (reutilizando a do banco)
+// O seu modelo estende e exporta a tipagem vinda do banco central
 export interface User extends UserData {}
 
 class UserModel {
@@ -21,4 +19,5 @@ class UserModel {
   }
 }
 
+// ✨ APENAS UM EXPORT DEFAULT AQUI NO FINAL!
 export default UserModel;
