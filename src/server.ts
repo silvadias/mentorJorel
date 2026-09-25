@@ -1,6 +1,6 @@
-import env from './config/env';
-import app from './app';
+import { app } from './app';
+import { env } from './config/env';
 
 app.listen(env.port, () => {
-  console.log(`Express server running on port ${env.port} in ${env.nodeEnv} mode`);
+  console.log(`🚀 Servidor rodando em modo [${env.nodeEnv}] na porta ${env.port}`);
 });

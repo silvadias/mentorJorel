@@ -1,11 +1,8 @@
-//src/api/hub.ts
 import { Router } from 'express';
-import home from './home/routes';
-import users from './users/routes';
+import { HomeRoutes } from './home/routes';
+import { UserRoutes } from './users/routes';
 
-const router = Router();
+export const Hub = Router();
 
-router.use('/', home);
-router.use('/users', users);
-
-export default router;
+Hub.use('/', HomeRoutes);
+Hub.use('/users', UserRoutes);

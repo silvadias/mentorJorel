@@ -1,11 +1,9 @@
 import express from 'express';
-import errorHandler from './middlewares/errorHandler';
-import routes from './api/hub';
+import { errorHandler } from './middlewares/errorHandler.js';
+import { Hub } from './api/hub';
 
-const app = express();
+export const app = express();
 
 app.use(express.json());
-app.use(routes);
+app.use(Hub);
 app.use(errorHandler);
-
-export default app;

@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import homeController from './controller';
+import { HomeController } from './controller.js'; // Ajustado para Named Import e extensão .js
 
-const router = Router();
+export const HomeRoutes = Router();
 
-router.get('/', homeController.getResponse);
-
-export default router;
+HomeRoutes.get('/', HomeController.getResponse);

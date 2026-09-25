@@ -1,11 +1,16 @@
 import { type Request, type Response, type NextFunction } from 'express';
-import env from '../config/env';
+import { env } from '../config/env.js';
 
 interface CustomError extends Error {
   statusCode?: number;
 }
 
-function errorHandler(err: CustomError, req: Request, res: Response, next: NextFunction) {
+export const errorHandler = (
+  err: CustomError, 
+  req: Request, 
+  res: Response, 
+  _next: NextFunction
+) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'An unexpected internal server error occurred';
 
@@ -22,6 +27,4 @@ function errorHandler(err: CustomError, req: Request, res: Response, next: NextF
       message: message
     }
   });
-}
-
-export default errorHandler;
+};

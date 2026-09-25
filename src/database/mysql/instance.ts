@@ -1,4 +1,4 @@
-import { mysqlUsersTable } from './tables';
+import { mysqlUsersTable } from './tables.js';
 
 export const mysqlConnection = {
   query: {
