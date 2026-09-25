@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { env } from '../../config/env.js';
+import { env } from '../../config/env';
 
 export class HomeController {
 

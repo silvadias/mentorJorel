@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express';
 import { UserModel } from './model'; 
 import { catchAsync } from '../../utils/catchAsync';
+
 interface CustomError extends Error {
   statusCode?: number;
 }
 
 export class UserController {
-  // Sincronizado com o verbo explicativo usado na sua rota http.get
   static getUsers = catchAsync(async (_req: Request, res: Response) => {
     const users = await UserModel.findAll();
     return res.status(200).json({

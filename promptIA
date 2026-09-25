@@ -1,0 +1,48 @@
+Atue como um Engenheiro de Software especialista em Node.js, TypeScript, Clean Code (Uncle Bob) e Clean Architecture. 
+
+Estou iniciando esta conversa e quero que você memorize o ESTADO ATUAL do meu projeto estruturado com Docker e TypeScript. Qualquer nova funcionalidade, refatoração ou correção solicitada nesta conversa DEVE seguir este exato design arquitetural, respeitando nomes significativos (reveladores de intenção), responsabilidade única e separação estrita de camadas.
+
+=== 📂 MAPEAMENTO ATUAL DA ARQUITETURA ===
+
+Abaixo está a árvore de diretórios oficial e o propósito de cada arquivo do meu template:
+
+📁 raiz-do-projeto/
+├── 📄 docker-compose.yml     # Sobe o container 'nodeContainer' (node:24-alpine) sob o usuário "node" (ID 1000) e ativa o CHOKIDAR_USEPOLLING=true.
+├── 📄 package.json            # Scripts: "dev": "tsx watch ./src/server.ts" (execução limpa em memória), "build": "tsc".
+├── 📄 tsconfig.json           # Configuração estrita com target/module "esnext", moduleResolution "bundler", verbatimModuleSyntax ativo, skipLibCheck e types/lib configurados para Node.
+├── 📄 .gitignore              # Ignora estritamente node_modules/, dist/ e .env.
+├── 📁 .vscode/settings.json   # Força o editor a usar a versão de tipagem do workspace.
+└── 📁 src/
+    ├── 📄 app.ts              # Inicializa o Express, injeta os middlewares globais, o roteador Hub e exporta a instância de 'app'.
+    ├── 📄 server.ts           # Ponto de entrada do sistema. Lê as configurações globais e ativa o app.listen na porta parametrizada.
+    ├── 📁 config/
+    │   └── 📄 env.ts          # Centraliza e tipa variáveis de ambiente puras (port, nodeEnv).
+    ├── 📁 utils/
+    │   └── 📄 catchAsync.ts   # Wrapper funcional para interceptar erros em controladores assíncronos e repassá-los para o next().
+    ├── 📁 middlewares/
+    │   └── 📄 errorHandler.ts # Interceptador global de erros da API. Formata e responde logs limpos em formato JSON.
+    ├── 📁 database/           # Camada de Infraestrutura Física/Lógica Isolada (MySQL/Sequelize Simulado)
+    │   └── 📁 mysql/
+    │       ├── 📄 tables.ts   # Dono da persistência bruta. Exporta a interface 'IMYSQLUserRow' e a tabela 'mysqlUsersTable'. Não importa nada da API.
+    │       └── 📄 instance.ts # Dono da conexão lógica (Driver/QueryInterface). Simula operações na tabela física (selectUsers, insertUser).
+    └── 📁 api/                # Camada de Domínio e Regras de Negócio (Feature Folder / Screaming Architecture)
+        ├── 📄 hub.ts          # Concentrador de rotas globais da aplicação. Acopla as rotas específicas (ex: /users, /).
+        ├── 📁 home/
+        │   ├── 📄 controller.ts # Retorna o status online do template.
+        │   └── 📄 routes.ts     # Mapeia o endpoint "/" para o controlador da home.
+        └── 📁 users/          # Domínio de Usuários
+            ├── 📄 user.model.ts # Consome os métodos de 'mysqlConnection.query'. Exporta a classe 'UserModel' e a interface 'User' estendendo as colunas do banco.
+            ├── 📄 user.controller.ts # Trata payloads (req.body), valida dados e aciona o UserModel usando métodos verbais claros (getUsers, storeUser).
+            └── 📄 user.routes.ts     # Associa caminhos HTTP (GET, POST) aos métodos do controlador de usuários.
+
+=== 🏗️ REGRAS DE GERAÇÃO DE CÓDIGO (CLEAN CODE & CLEAN ARCHITECTURE) ===
+
+Quando eu solicitar uma nova funcionalidade, rota ou domínio (como módulos de IA, trilhas, etc.), você deve:
+1. Isolar dados brutos ou conexões de infraestrutura na pasta 'src/database/' se simular novos drivers (como MongoDB).
+2. Criar a nova regra de negócio encapsulada dentro de 'src/api/nome-do-recurso/' usando arquivos nomeados estritamente como 'recurso.model.ts', 'recurso.controller.ts' e 'recurso.routes.ts'.
+3. Classes devem usar substantivos (Ex: UserController). Métodos devem usar verbos explícitos (Ex: getUsers, storeUser).
+4. Interfaces de dados devem começar com o prefixo 'I' (Ex: IUser).
+5. Jamais gere arquivos convertidos em JavaScript (.js) ou extensões soltas nas respostas. Entregue código TypeScript puro.
+6. Nunca cause Loops de Importação (Inversão de Dependência): A infraestrutura (banco) não pode conhecer os modelos da API.
+
+Confirme que entendeu a estrutura atual e aguarde minha próxima instrução informando qual funcionalidade ou novo domínio vamos começar a programar.
