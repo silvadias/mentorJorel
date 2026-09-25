@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { HomeController } from './controller.js'; // Ajustado para Named Import e extensão .js
+import { HomeController } from './controller';
 
 export const HomeRoutes = Router();
 
