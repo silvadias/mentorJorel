@@ -1,34 +1,58 @@
 import type { Request, Response } from 'express';
-import { GeminiJsonBuilder } from '../../services/gemini/jsonBuilder';
-import { geminiGateway } from '../../services/gemini/gateway';
 import { catchAsync } from '../../utils/catchAsync';
+import { PayloadTransmitter } from '../../services/ai/transmitter';
+import { GeminiPayloadBuilder } from '../initialChat/providers/gemini/payloadBuilder';
 
 export class TestController {
   /**
-   * Executa um disparo direto para a API do Gemini para validar a infraestrutura de IA.
+   * Executa um teste de fumaça para validar a nova arquitetura com PayloadTransmitter e GeminiPayloadBuilder.
    */
   public static runConnectionTest = catchAsync(async (_req: Request, res: Response) => {
-    // 1. Instancia o orquestrador de JSON
-    const builder = new GeminiJsonBuilder();
+    const promptMessage = 'Estou testando o novo PayloadTransmitter. Me dê uma resposta curta de confirmação.';
+    const systemInstruction = 'Você é um validador de sistemas. Responda apenas com a palavra: CONFIRMADO.';
+    const temperatureSetting = 0.3;
 
-    // 2. Injeta parâmetros e valores de teste simples
-    builder.setSystemInstruction(
-      'Você é o Mentor Jorel, um treinador de IA focado em alta performance. Responda de forma curta e profissional.'
-    );
-    builder.setTemperature(0.5);
-    builder.appendUserMessage('Estou iniciando o projeto hoje. Me dê uma frase de motivação técnica.');
+    let currentVersionIndex = 0;
+    const totalAvailableVersions = GeminiPayloadBuilder.getVersionsCount();
 
-    // 3. Monta o payload estruturado
-    const finalPayload = builder.build();
+    // Loop simplificado de teste simulando a máquina de estados
+    while (currentVersionIndex < totalAvailableVersions) {
+      try {
+        // 1. Solicita a montagem do pacote de estrutura para o builder do Gemini
+        const connectionPackage = GeminiPayloadBuilder.mountStructure(
+          currentVersionIndex,
+          promptMessage,
+          systemInstruction,
+          temperatureSetting
+        );
 
-    // 4. Envia para o Gateway conectar e despachar pela rede
-    const aiResponse = await geminiGateway.requestContentGeneration(finalPayload);
+        // 2. Dispara através do transmissor passivo de infraestrutura HTTP
+        const rawResponseText = await PayloadTransmitter.transmit({
+          url: connectionPackage.url,
+          apiKey: connectionPackage.apiKey,
+          payload: connectionPackage.payload
+        });
 
-    // 5. Retorna o resultado limpo para validar o sucesso do teste
-    return res.status(200).json({
-      success: true,
-      message: 'Comunicação com o Google Gemini realizada com sucesso!',
-      aiResponse: aiResponse
+        // 3. Destrincha o JSON retornado pela API do Google
+        const parsedData = JSON.parse(rawResponseText);
+        const aiResponseText = parsedData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        return res.status(200).json({
+          success: true,
+          message: 'Novo motor de IA validado com sucesso!',
+          currentVersionIndex,
+          aiResponse: aiResponseText.trim()
+        });
+
+      } catch (error: any) {
+        console.warn(`⚠️ [Smoke Test] Falhou no índice [${currentVersionIndex}]. Mudando de versão...`);
+        currentVersionIndex++;
+      }
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'Falha crítica: Todas as versões falharam no teste de fumaça.'
     });
   });
 }
