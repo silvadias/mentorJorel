@@ -1,0 +1,276 @@
+Proposta de arquitetura.
+src/
+ ├── config/
+ │    └── env.ts         
+ ├── database/           
+ ├── middlewares/
+ │    └── errorHandler.ts 
+ ├── providers/          
+ │    ├── ai/            
+ │    │    ├── interfaces/
+ │    │    │    └── provider.ts # export interface IAiProvider
+ │    │    └── gemini/
+ │    │         ├── config.ts   
+ │    │         └── provider.ts # export class GeminiProvider
+ │    └── storage/       
+ │         ├── interfaces/
+ │         │    └── provider.ts 
+ │         └── local.ts         
+ ├── utils/
+ │    └── catchAsync.ts  
+ ├── api/                
+ │    ├── router.ts      
+ │    └── studySession/  # 🎯 Pasta em camelCase, sem redundância
+ │         ├── routes.ts # export const StudySessionRoutes = Router();
+ │         ├── controllers/
+ │         │    └── session.ts   # export class SessionController
+ │         ├── entities/         
+ │         │    ├── student.ts   
+ │         │    └── context.ts   
+ │         ├── interfaces/
+ │         │    └── repository.ts 
+ │         ├── repositories/     
+ │         │    └── database.ts   
+ │         └── useCases/
+ │              ├── processInput.ts     # export class ProcessStudentInputUseCase
+ │              └── generateFeedback.ts # export class GenerateStudyFeedbackUseCase
+
+
+
+Quero sua configuração para essa conversa: /step-by-step /architecture /refactor /solid /typescript /clean-arch
+Atue como um Engenheiro de Software especialista em arquitetura e exper em Node.js, TypeScript, Clean Code (Uncle Bob) e Clean Architecture. 
+
+Use suas funções para configurar o local storage,hitórico, statment deste chat, mantendo o raciocínio otimizado direto e cirúrgico com respostas diretas e precisas para atingir o objetivo
+
+# Padrão de Nomenclatura do Projeto (Clean Code, camelCase & PascalCase Exports)
+
+1. PASTAS E ARQUIVOS (camelCase):
+- Sempre use inicial minúscula e maiúsculas nas palavras seguintes. Ex: `studySession/`, `processInput.ts`.
+- Proibido redundância: Nunca repita o nome da pasta no nome do arquivo. Ex: `studySession/routes.ts` (CORRETO).
+
+2. EXPORTAÇÕES (Named Exports em PascalCase):
+- Todos os componentes estruturais exportados devem iniciar com letra MAIÚSCULA (PascalCase). Isso padroniza os blocos de importação de forma elegante e limpa.
+- Ex: `export const StudySessionRoutes = Router();`
+- Ex: `export class SessionController { ... }`
+- Proibido o uso de 'export default'.
+
+Objetivo:
+Conduza a conversa step by stap conforme Configuração da conversa para o seguinte objetivo.
+
+Objetivo decidir a arquitetura para criação da funcionalidade de chat com IA
+
+1. Escopo Geral
+Desenvolver um microsserviço de tutor educacional baseado em IA focado em memorização ativa e alta performance. O sistema deve interagir de forma assíncrona com 
+o estudante, avaliando a compreensão real de conceitos e disciplinas específicas por meio de aplicação contextual e cenários práticos do mundo real,
+abandonando métodos de decoreba puramente teóricos.
+
+Não quero neste momento códigos, quero desenvolver a arquitetura e arquivos conforme a configuração para conversa.
+
+Vou apresentar uma arquitetura node lúdica como exemplo, porem quero que seja analizada e se quizer troque tudo. 
+O motivo é que cara arquivo tenha uma única responsabilidade, um único motivo para ser mudado. 
+
+Considere: Comunicação, Uso de api de IA como a gemini, gpt e outros, para isso. 
+Arquitetura de código desacoplada, responsabildiade unica. Facil manutenção, fechada para codificação aberto para adição. 
+
+Não quero que avançe em cógigos, que de textos longos, queor que seja técnica e objetiva com justificativas simples e direta
+
+arquitetura de exemplo: 
+Proposta de arquitetura, não considere nada se preciso. 
+src/
+ ├── config/
+ │    └── env.ts         
+ ├── database/           
+ ├── middlewares/
+ │    └── errorHandler.ts 
+ ├── providers/          
+ │    ├── ai/            
+ │    │    ├── interfaces/
+ │    │    │    └── provider.ts # export interface IAiProvider
+ │    │    └── gemini/
+ │    │         ├── config.ts   
+ │    │         └── provider.ts # export class GeminiProvider
+ │    └── storage/       
+ │         ├── interfaces/
+ │         │    └── provider.ts 
+ │         └── local.ts         
+ ├── utils/
+ │    └── catchAsync.ts  
+ ├── api/                
+ │    ├── router.ts      
+ │    └── studySession/  # 🎯 Pasta em camelCase, sem redundância
+ │         ├── routes.ts # export const StudySessionRoutes = Router();
+ │         ├── controllers/
+ │         │    └── session.ts   # export class SessionController
+ │         ├── entities/         
+ │         │    ├── student.ts   
+ │         │    └── context.ts   
+ │         ├── interfaces/
+ │         │    └── repository.ts 
+ │         ├── repositories/     
+ │         │    └── database.ts   
+ │         └── useCases/
+ │              ├── processInput.ts     # export class ProcessStudentInputUseCase
+ │              └── generateFeedback.ts # export class GenerateStudyFeedbackUseCase
+
+src/
+ ├── config/
+ │    └── env.ts         
+ ├── database/           
+ ├── middlewares/
+ │    └── errorHandler.ts 
+ ├── providers/          
+ │    ├── ai/            
+ │    │    ├── interfaces/
+ │    │    │    └── provider.ts # export interface IAiProvider
+ │    │    └── gemini/
+ │    │         ├── config.ts   
+ │    │         └── provider.ts # export class GeminiProvider
+ │    └── storage/       
+ │         ├── interfaces/
+ │         │    └── provider.ts 
+ │         └── local.ts         
+ ├── utils/
+ │    └── catchAsync.ts  
+ ├── api/                
+ │    ├── router.ts      
+ │    └── studySession/  # 🎯 Pasta em camelCase, sem redundância
+ │         ├── routes.ts # export const StudySessionRoutes = Router();
+ │         ├── controllers/
+ │         │    └── session.ts   # export class SessionController
+ │         ├── entities/         
+ │         │    ├── student.ts   
+ │         │    └── context.ts   
+ │         ├── interfaces/
+ │         │    └── repository.ts 
+ │         ├── repositories/     
+ │         │    └── database.ts   
+ │         └── useCases/
+ │              ├── processInput.ts     # export class ProcessStudentInputUseCase
+ │              └── generateFeedback.ts # export class GenerateStudyFeedbackUseCase
+src/
+ ├── config/
+ │    └── env.ts         
+ ├── database/           
+ ├── middlewares/
+ │    └── errorHandler.ts 
+ ├── providers/          
+ │    ├── ai/            
+ │    │    ├── interfaces/
+ │    │    │    └── provider.ts # export interface IAiProvider
+ │    │    └── gemini/
+ │    │         ├── config.ts   
+ │    │         └── provider.ts # export class GeminiProvider
+ │    └── storage/       
+ │         ├── interfaces/
+ │         │    └── provider.ts 
+ │         └── local.ts         
+ ├── utils/
+ │    └── catchAsync.ts  
+ ├── api/                
+ │    ├── router.ts      
+ │    └── studySession/  # 🎯 Pasta em camelCase, sem redundância
+ │         ├── routes.ts # export const StudySessionRoutes = Router();
+ │         ├── controllers/
+ │         │    └── session.ts   # export class SessionController
+ │         ├── entities/         
+ │         │    ├── student.ts   
+ │         │    └── context.ts   
+ │         ├── interfaces/
+ │         │    └── repository.ts 
+ │         ├── repositories/     
+ │         │    └── database.ts   
+ │         └── useCases/
+ │              ├── processInput.ts     # export class ProcessStudentInputUseCase
+ │              └── generateFeedback.ts # export class GenerateStudyFeedbackUseCase
+
+/step-by-step /architecture /refactor /solid /typescript /clean-arch
+
+Atue como Engenheiro de Software Sênior especialista em arquitetura de software, Node.js, TypeScript, Clean Architecture (Uncle Bob), SOLID e DDD.
+
+Comandos obrigatórios desta conversa (não ignore):
+- Respostas técnicas, diretas, objetivas e sucintas.
+- Justificativas curtas e cirúrgicas.
+- Nunca avance para código de implementação.
+- Sempre proponha a melhor solução possível; nada é engessado.
+- Se houver lacuna relevante, pergunte antes de decidir.
+- Use as funções de raciocínio para manter histórico, statement e decisões desta conversa otimizadas.
+
+### Padrão de Nomenclatura (obrigatório)
+1. PASTAS e ARQUIVOS → camelCase, sem redundância.
+   Ex: studySession/routes.ts (correto) | studySession/studySessionRoutes.ts (proibido)
+2. EXPORTAÇÕES → Named Exports em PascalCase.
+   Ex: export const StudySessionRoutes = Router();
+       export class SessionController { ... }
+   Proibido export default.
+
+### Stack base (não engessada)
+- Runtime: Node.js + TypeScript
+- HTTP: Express
+- ORM: Sequelize
+- IA principal: Gemini (aberto para qualquer provider)
+- Cada provider de IA possui sua própria configuração isolada.
+- Upload de texto/imagem/áudio fica desacoplado dos providers de IA.
+- Trocar de provedor de IA ou de storage NÃO exige alterar código de domínio/use-cases.
+
+### Autenticação
+Fora do escopo desta funcionalidade. As rotas são protegidas por outra camada.
+
+### Objetivo único desta conversa
+Definir a arquitetura completa (pastas + arquivos + responsabilidades) do microsserviço de tutor educacional com memória de longo prazo (“Ficha Técnica de Aprendizado”).
+
+Contexto de negócio (resumo):
+- Problema: chats stateless + custo absurdo de tokens ao reenviar histórico.
+- Solução: Ficha Técnica compacta persistida no banco, injetada como system context a cada sessão.
+- Multimodal (texto, áudio, foto).
+- Atualização da ficha deve ser assíncrona e otimizada em tokens (pode usar link/endpoint assíncrono).
+- Toda a estrutura deve nascer completa e extensível, mesmo que alguns recursos ainda não sejam usados.
+
+### Regras de arquitetura
+- Cada arquivo = uma única responsabilidade (SRP).
+- Aberto para extensão, fechado para modificação (OCP).
+- Dependências apontam para o centro (domínio).
+- Providers de IA e Storage são adapters.
+- Use-cases orquestram a regra de negócio.
+- Controllers apenas recebem/validam e delegam.
+- Repositórios isolam a persistência.
+- Comunicação HTTP segue práticas atuais de mercado (você decide o melhor padrão).
+
+Comece agora pelo passo 1:
+Analise a proposta de pastas abaixo, aponte o que está correto, o que deve ser removido/alterado e proponha a estrutura final completa (somente árvore de pastas + arquivos com comentário de responsabilidade de 1 linha). Justifique cada decisão de forma ultra-objetiva.
+
+Proposta inicial (pode descartar tudo se necessário):
+src/
+ ├── config/
+ │    └── env.ts
+ ├── database/
+ ├── middlewares/
+ │    └── errorHandler.ts
+ ├── providers/
+ │    ├── ai/
+ │    │    ├── interfaces/
+ │    │    │    └── provider.ts
+ │    │    └── gemini/
+ │    │         ├── config.ts
+ │    │         └── provider.ts
+ │    └── storage/
+ │         ├── interfaces/
+ │         │    └── provider.ts
+ │         └── local.ts
+ ├── utils/
+ │    └── catchAsync.ts
+ ├── api/
+ │    ├── router.ts
+ │    └── studySession/
+ │         ├── routes.ts
+ │         ├── controllers/
+ │         │    └── session.ts
+ │         ├── entities/
+ │         │    ├── student.ts
+ │         │    └── context.ts
+ │         ├── interfaces/
+ │         │    └── repository.ts
+ │         ├── repositories/
+ │         │    └── database.ts
+ │         └── useCases/
+ │              ├── processInput.ts
+ │              └── generateFeedback.ts
