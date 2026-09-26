@@ -8,9 +8,9 @@ http:
   url: "{{baseUrl}}/initial-chat"
   body:
     type: json
-    data: |
+    data: |-
       {
-        "prompt": "Olá! Se você estiver me ouvindo, responda apenas com a palavra: 'Sistemas Operacionais'."
+        "prompt": "então vamos começar o teste, a requisição que eta recebendo mantem histórico eu preciso enviar, estou enviando pelo body do meu express quais argumentos preciso enviar, se for um outro usuário por exemplo. so estou enviando o prompt na requisição, o que mais posso enviar"
       }
   auth: inherit
 
