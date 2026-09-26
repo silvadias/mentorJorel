@@ -1,0 +1,22 @@
+info:
+  name: payloadRequest
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/initial-chat"
+  body:
+    type: json
+    data: |
+      {
+        "prompt": "Olá! Se você estiver me ouvindo, responda apenas com a palavra: 'Sistemas Operacionais'."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

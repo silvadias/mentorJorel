@@ -19,5 +19,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "src/api/test/.controllerTest-01apiComunication.ts"]
+  "include": ["src/**/*", "src/api/test/.controllerTest-01apiComunication.ts", "src/api/test/.controller.ts"]
 }
