@@ -1,11 +1,9 @@
-import express from 'express';
-import errorHandler from './middlewares/errorHandler';
-import routes from './api/hub';
+import express          from 'express';
+import {ApiRouter}      from './apiRouter';
+import {ErrorHandler}   from './entryPoint/middlewares/errorHandler';
 
-const app = express();
+export const App = express();
 
-app.use(express.json());
-app.use(routes);
-app.use(errorHandler);
-
-export default app;
+App.use(express.json());
+App.use(ApiRouter);
+App.use(ErrorHandler);
