@@ -1,21 +1,21 @@
 import type { Request, Response } from 'express';
-import UserModel from './model';
-import catchAsync from '../../utils/catchAsync';
+import      {CatchAsync}          from '../../entryPoint/utils/catchAsync';
+import      {UsersModel}          from './model';
 
 interface CustomError extends Error {
   statusCode?: number;
 }
 
-class UserController {
-  static getAllUsers = catchAsync(async (req: Request, res: Response) => {
-    const users = UserModel.findAll();
+export class UsersController {
+  static getAllUsers = CatchAsync(async (req: Request, res: Response) => {
+    const users = UsersModel.findAll();
     return res.status(200).json({
       success: true,
       data: users
     });
   });
 
-  static createUser = catchAsync(async (req: Request, res: Response) => {
+  static createUser = CatchAsync(async (req: Request, res: Response) => {
     const { name, email } = req.body;
 
     if (!name || !email) {
@@ -24,7 +24,7 @@ class UserController {
       throw error;
     }
 
-    const newUser = UserModel.create({ name, email });
+    const newUser = UsersModel.create({ name, email });
     
     return res.status(201).json({
       success: true,
@@ -33,5 +33,3 @@ class UserController {
     });
   });
 }
-
-export default UserController;
