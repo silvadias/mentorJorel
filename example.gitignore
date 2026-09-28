@@ -1,0 +1,5 @@
+# Rename this file to .gitignore for git to correctly ignore system files 
+#and to follow clean code principles. After doing so, delete this comment.
+
+node_modules/
+dist/
