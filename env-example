@@ -1,4 +1,0 @@
-# Rename this file to .env for the application to work
-# and to follow clean code principles. After doing so, delete this comment.
-PORT=3000
-NODE_ENV=development

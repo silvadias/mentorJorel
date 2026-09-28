@@ -9,7 +9,7 @@ services:
       - "${PORT}:3000"
     environment:
       NODE_ENV: ${NODE_ENV}
-      CHOKIDAR_USEPOLLING: "true" #
+      CHOKIDAR_USEPOLLING: "true"
     volumes:
       - .:/usr/src/app
     networks:
