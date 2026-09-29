@@ -1,5 +1,4 @@
 [ESTRUTURA ATUAL DO TEMPLATE]
- abaixo segue a árvore atual do projeto:
 
 📂 .vscode/
 └── settings.json
@@ -7,6 +6,9 @@
 └── DDD.example.md
 📂 src/
 ├── 📂 api/
+│   ├── 📂 accessIdentification/     <-- NOVO PACOTE DE IDENTIFICAÇÃO DE ACESSOS
+│   │   └── 📂 contracts/
+│   │       └── 📄 deviceContext.ts   <-- CONTRATO DE MÁQUINA CONCLUÍDO (TypeScript Puro)
 │   ├── 📂 errors/
 │   │   ├── 📂 domain/
 │   │   │   └── home.ts
@@ -41,5 +43,3 @@
 📜 src/apiRouter.ts
 📜 src/app.ts
 📜 src/server.ts
-
----
