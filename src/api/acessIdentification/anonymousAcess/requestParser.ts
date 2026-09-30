@@ -1,22 +1,24 @@
-import { ApiError }                         from '../../errors/apiError';
-import type { AccessDeviceContext,
-              AccessDeviceBrowserMetadata } from '../contracts/deviceContext';
+import { ApiError } from '../../errors/apiError';
+import type { AnonymousDeviceContext, AnonymousBrowserMetadata } from './context';
 
-export interface RawDeviceInput {
-  readonly fingerprintId?: string;
-  readonly browserInstanceId?: string;
-  readonly permanentDeviceId?: string;
-  readonly userAgent?: string;
-  readonly ipAddress?: string;
-  readonly countryCode?: string;
-  readonly acceptLanguage?: string;
+/**
+ * DTO Agnóstico.
+ * Aceita explicitamente string ou undefined para satisfazer a flag exactOptionalPropertyTypes.
+ */
+export interface RawInput {
+  readonly fingerprintId?: string | undefined;
+  readonly browserInstanceId?: string | undefined;
+  readonly permanentDeviceId?: string | undefined;
+  readonly userAgent?: string | undefined;
+  readonly ipAddress?: string | undefined;
+  readonly countryCode?: string | undefined;
+  readonly acceptLanguage?: string | undefined;
 }
 
-export class ClientDeviceExtractor {
-
-  public static extract(input: RawDeviceInput): AccessDeviceContext {
+export class AnonymousDeviceRequestParser {
+  public static parse(input: RawInput): AnonymousDeviceContext {
     if (!input.fingerprintId || !input.browserInstanceId) {
-      throw new ApiError('MISSING_DEVICE_IDENTIFIERS' as any);
+      throw new ApiError('MISSING_DEVICE_IDENTIFIERS');
     }
 
     const currentTimestamp = new Date();
@@ -32,9 +34,9 @@ export class ClientDeviceExtractor {
     };
   }
 
-  private static extractMetadata(input: RawDeviceInput): AccessDeviceBrowserMetadata {
+  private static extractMetadata(input: RawInput): AnonymousBrowserMetadata {
     const userAgent = input.userAgent || 'unknown';
-    
+
     return {
       os: this.parseOperatingSystem(userAgent),
       browser: this.parseBrowser(userAgent),
@@ -55,7 +57,7 @@ export class ClientDeviceExtractor {
 
   private static parsePreferredLanguages(acceptLanguageHeader?: string): string[] {
     if (!acceptLanguageHeader) return ['en'];
-    
+
     return acceptLanguageHeader.split(',').map(language => {
       const segments = language.split(';');
       const primaryLanguageCode = segments.shift() ?? '';
@@ -67,7 +69,7 @@ export class ClientDeviceExtractor {
     return /mobile|android|iphone|ipad|phone/i.test(userAgent);
   }
 
-  private static parseOperatingSystem(userAgent: string): AccessDeviceBrowserMetadata['os'] {
+  private static parseOperatingSystem(userAgent: string): AnonymousBrowserMetadata['os'] {
     const lowerCaseUserAgent = userAgent.toLowerCase();
     if (lowerCaseUserAgent.includes('win')) return 'windows';
     if (lowerCaseUserAgent.includes('macintosh') || lowerCaseUserAgent.includes('mac os')) return 'macos';

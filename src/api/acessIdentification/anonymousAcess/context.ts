@@ -1,4 +1,4 @@
-export interface AccessDeviceBrowserMetadata {
+export interface AnonymousBrowserMetadata {
   readonly os: 'windows' | 'linux' | 'macos' | 'ios' | 'android' | 'unknown';
   readonly browser: string;
   readonly ipAddress: string;
@@ -8,11 +8,11 @@ export interface AccessDeviceBrowserMetadata {
   readonly isMobile: boolean;
 }
 
-export interface AccessDeviceContext {
+export interface AnonymousDeviceContext {
   readonly fingerprintId: string;
   readonly browserInstanceId: string;
   readonly permanentDeviceId?: string;
   readonly firstSeenAt: Date;
   readonly lastActivityAt: Date;
-  readonly metadata: AccessDeviceBrowserMetadata;
+  readonly metadata: AnonymousBrowserMetadata;
 }
