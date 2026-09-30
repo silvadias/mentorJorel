@@ -6,18 +6,18 @@
 └── 📄 DDD.example.md
 📂 src/
 ├── 📂 api/
-│   ├── 📂 accessIdentification/          <-- PACOTE DE IDENTIFICAÇÃO DE ACESSOS CONSOLIDADO
+│   ├── 📂 accessIdentification/
 │   │   ├── 📂 contracts/
-│   │   │   └── 📄 deviceContext.ts       <-- Contrato imutável de domínio puros (TypeScript)
+│   │   │   └── 📄 deviceContext.ts
 │   │   └── 📂 requestParsers/
-│   │       └── 📄 clientDeviceExtractor.ts <-- Extrator de DTO agnóstico e livre de acoplamentos
+│   │       └── 📄 clientDeviceExtractor.ts
 │   ├── 📂 errors/
 │   │   ├── 📂 domain/
-│   │   │   ├── 📄 accessIdentification.ts <-- Base de dados de erros granulares do domínio (ISO e HTTP)
+│   │   │   ├── 📄 accessIdentification.ts
 │   │   │   └── 📄 home.ts
-│   │   ├── 📄 apiError.ts                 <-- Classe estendida do motor de erros (Throw New ApiError)
-│   │   ├── 📄 catalog.ts                  <-- Agregador automático de dicionários de erros
-│   │   └── 📄 registy.ts                  <-- Registro centralizador de domínios expostos
+│   │   ├── 📄 apiError.ts
+│   │   ├── 📄 catalog.ts
+│   │   └── 📄 registy.ts
 │   ├── 📂 home/
 │   │   ├── 📄 controller.ts
 │   │   └── 📄 routes.ts
@@ -31,11 +31,16 @@
 │   └── 📂 mysql/
 │       ├── 📄 instance.ts
 │       └── 📄 tables.ts
-└── 📂 entryPoint/
-    ├── 📂 middlewares/
-    │   └── 📄 errorHandler.ts             <-- Captura global de exceções Express e ApiError
-    └── 📂 utils/
-        └── 📄 catchAsync.ts               <-- Middleware para resolução de Promises assíncronas
+├── 📂 entryPoint/
+│   ├── 📂 middlewares/
+│   │   └── 📄 errorHandler.ts
+│   └── 📂 utils/
+│       └── 📄 catchAsync.ts
+└── 📂 infrastructure/                   <-- NOVA PASTA DE INFRAESTRUTURA
+    └── 📂 httpTraffic/
+        ├── 📂 drivers/                  <-- (Próximo passo: expressHttpDriver.ts)
+        └── 📂 engine/
+            └── 📄 context.ts            <-- ARQUIVO CRIADO COM SUCESSO
 📜 .env
 📜 .gitignore
 📜 docker-compose.yml
