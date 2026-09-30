@@ -6,9 +6,11 @@
 └── DDD.example.md
 📂 src/
 ├── 📂 api/
-│   ├── 📂 accessIdentification/     <-- NOVO PACOTE DE IDENTIFICAÇÃO DE ACESSOS
-│   │   └── 📂 contracts/
-│   │       └── 📄 deviceContext.ts   <-- CONTRATO DE MÁQUINA CONCLUÍDO (TypeScript Puro)
+│   ├── 📂 accessIdentification/
+│   │   ├── 📂 contracts/
+│   │   │   └── 📄 deviceContext.ts
+│   │   └── 📂 requestParsers/
+│   │       └── 📄 clientDeviceExtractor.ts  <-- ADICIONADO CONFORME DELIBERAÇÃO
 │   ├── 📂 errors/
 │   │   ├── 📂 domain/
 │   │   │   └── home.ts
