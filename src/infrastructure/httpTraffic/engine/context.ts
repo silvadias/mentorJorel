@@ -1,3 +1,5 @@
+import type { SystemLogger } from '../../telemetry/engine/context';
+
 export interface HttpTrafficRequest<
   Payload = any, 
   QueryParameters = any, 
@@ -8,6 +10,7 @@ export interface HttpTrafficRequest<
     query: QueryParameters;
     params: RouteParameters;
     headers: HeaderProperties;
+    logger: SystemLogger;
 
   }
 

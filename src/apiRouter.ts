@@ -2,7 +2,7 @@ import type { HttpTrafficExchangeEngine }               from './infrastructure/h
 import      { initializeHomeRoutes }                    from './api/home/routes';
 import      { initializeUsersRoutes }                   from './api/users/routes';
 
-export function configureHttpTraffic(engine: HttpTrafficExchangeEngine): void {
+export function configureApiRoutes(engine: HttpTrafficExchangeEngine): void {
   initializeHomeRoutes(engine);
   initializeUsersRoutes(engine);
   
