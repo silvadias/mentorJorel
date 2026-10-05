@@ -1,10 +1,7 @@
-import { ApiError } from '../../errors/apiError';
-import type { AnonymousDeviceContext, AnonymousBrowserMetadata } from './context';
+import { DomainException }                from '../../../infrastructure/httpTraffic/engine/errors';
+import type { AnonymousDeviceContext,
+              AnonymousBrowserMetadata }  from './context';
 
-/**
- * DTO Agnóstico.
- * Aceita explicitamente string ou undefined para satisfazer a flag exactOptionalPropertyTypes.
- */
 export interface RawInput {
   readonly fingerprintId?: string | undefined;
   readonly browserInstanceId?: string | undefined;
@@ -13,12 +10,14 @@ export interface RawInput {
   readonly ipAddress?: string | undefined;
   readonly countryCode?: string | undefined;
   readonly acceptLanguage?: string | undefined;
+
 }
 
 export class AnonymousDeviceRequestParser {
   public static parse(input: RawInput): AnonymousDeviceContext {
     if (!input.fingerprintId || !input.browserInstanceId) {
-      throw new ApiError('MISSING_DEVICE_IDENTIFIERS');
+      throw new DomainException('MISSING_DEVICE_IDENTIFIERS');
+
     }
 
     const currentTimestamp = new Date();
@@ -31,6 +30,7 @@ export class AnonymousDeviceRequestParser {
       firstSeenAt: currentTimestamp,
       lastActivityAt: currentTimestamp,
       metadata,
+
     };
   }
 
@@ -45,6 +45,7 @@ export class AnonymousDeviceRequestParser {
       userAgent,
       preferredLanguages: this.parsePreferredLanguages(input.acceptLanguage),
       isMobile: this.checkIfMobileDevice(userAgent),
+
     };
   }
 
@@ -53,6 +54,7 @@ export class AnonymousDeviceRequestParser {
     const clientIpList = rawIpAddress.split(',');
     const firstIp = clientIpList.shift() ?? '127.0.0.1';
     return firstIp.trim();
+
   }
 
   private static parsePreferredLanguages(acceptLanguageHeader?: string): string[] {
@@ -63,10 +65,12 @@ export class AnonymousDeviceRequestParser {
       const primaryLanguageCode = segments.shift() ?? '';
       return primaryLanguageCode.trim();
     }).filter(Boolean);
+
   }
 
   private static checkIfMobileDevice(userAgent: string): boolean {
     return /mobile|android|iphone|ipad|phone/i.test(userAgent);
+
   }
 
   private static parseOperatingSystem(userAgent: string): AnonymousBrowserMetadata['os'] {
@@ -77,6 +81,7 @@ export class AnonymousDeviceRequestParser {
     if (lowerCaseUserAgent.includes('iphone') || lowerCaseUserAgent.includes('ipad')) return 'ios';
     if (lowerCaseUserAgent.includes('linux')) return 'linux';
     return 'unknown';
+
   }
 
   private static parseBrowser(userAgent: string): string {
@@ -87,4 +92,5 @@ export class AnonymousDeviceRequestParser {
     if (lowerCaseUserAgent.includes('firefox/')) return 'Firefox';
     return 'Unknown Browser';
   }
+
 }

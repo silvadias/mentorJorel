@@ -1,11 +1,11 @@
-import { Router }               from 'express';
-import { HomeRoutes }           from './api/home/routes';
-import { UsersRoutes }          from './api/users/routes';
-import { AccessIdentificationRoutes }  from './api/acessIdentification/routes';
+import type { HttpTrafficExchangeEngine }               from './infrastructure/httpTraffic/engine/context';
+import      { initializeHomeRoutes }                    from './api/home/routes';
+import      { initializeUsersRoutes }                   from './api/users/routes';
+import      { initializeAccessIdentificationRoutes }    from './api/accessIdentification/routes';
 
-export const ApiRouter = Router();
-
-ApiRouter.use('/',                          HomeRoutes);
-ApiRouter.use('/acess-identification',      AccessIdentificationRoutes)
-ApiRouter.use('/users',                     UsersRoutes);
-
+export function configureHttpTraffic(engine: HttpTrafficExchangeEngine): void {
+  initializeHomeRoutes(engine);
+  initializeUsersRoutes(engine);
+  initializeAccessIdentificationRoutes(engine);
+  
+}

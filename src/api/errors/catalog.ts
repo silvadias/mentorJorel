@@ -1,6 +1,9 @@
-import * as Domains from "./registy";
+import { HomeError }                    from "./domain/home";
+import { AccessIdentificationError }    from "./domain/accessIdentification";
 
-type ExtractChaves<T> = T extends any ? keyof T : never;
+export const ErrorCatalog = {
+  ...HomeError,
+  ...AccessIdentificationError
+} as const;
 
-export const ErrorCatalog = Object.assign({}, ...Object.values(Domains));
-export type ErrorCode = ExtractChaves<typeof Domains[keyof typeof Domains]>;
+export type ErrorCode = keyof typeof ErrorCatalog;

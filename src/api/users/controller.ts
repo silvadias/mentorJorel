@@ -1,35 +1,53 @@
-import type { Request, Response } from 'express';
-import      {CatchAsync}          from '../../entryPoint/utils/catchAsync';
-import      {UsersModel}          from './model';
+import type { HttpTrafficRequest,
+              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/context';
+import      { UsersModel }          from './model';
 
 interface CustomError extends Error {
   statusCode?: number;
+
 }
 
-export class UsersController {
-  static getAllUsers = CatchAsync(async (req: Request, res: Response) => {
-    const users = UsersModel.findAll();
-    return res.status(200).json({
-      success: true,
-      data: users
-    });
-  });
+export class UsersController {  
+  public static async getAllUsers(
+    _request: HttpTrafficRequest
 
-  static createUser = CatchAsync(async (req: Request, res: Response) => {
-    const { name, email } = req.body;
+  ): Promise<HttpTrafficResponse> {
+      const users = UsersModel.findAll();
 
-    if (!name || !email) {
-      const error: CustomError = new Error("Name and email are required fields");
-      error.statusCode = 400;
-      throw error;
+      return {
+        statusCode: 200,
+        body: {
+          success: true,
+          data: users
+        }
+      };
+
     }
 
-    const newUser = UsersModel.create({ name, email });
+  public static async createUser(
+    request: HttpTrafficRequest
+
+  ): Promise<HttpTrafficResponse> {
+      const { name, email } = request.body;
+
+      if (!name || !email) {
+        const error: CustomError = new Error("Name and email are required fields");
+        error.statusCode = 400;
+        throw error;
+
+      }
+
+      const newUser = UsersModel.create({ name, email });
     
-    return res.status(201).json({
-      success: true,
-      message: "User created successfully",
-      data: newUser
-    });
-  });
+      return {
+        statusCode: 201,
+        body: {
+          success: true,
+          message: "User created successfully",
+          data: newUser
+          
+        }
+      };
+    }
+
 }

@@ -1,6 +1,7 @@
-import { Router }       from 'express';
-import {HomeController} from './controller';
+import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/context';
+import      { HomeController }              from './controller';
 
-export const HomeRoutes = Router();
+export function initializeHomeRoutes(engine: HttpTrafficExchangeEngine): void {
+  engine.register('get', '/', HomeController.simulateUnexpectedError);
 
-HomeRoutes.get('/', HomeController.getResponse);
+}

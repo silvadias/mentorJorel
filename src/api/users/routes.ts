@@ -1,7 +1,8 @@
-import { Router } from 'express';
-import {UsersController} from './controller';
+import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/context';
+import      { UsersController }             from './controller';
 
-export const UsersRoutes = Router();
+export function initializeUsersRoutes(engine: HttpTrafficExchangeEngine): void {
+  engine.register('post', '/users', UsersController.createUser);
+  engine.register('get', '/users/', UsersController.getAllUsers);
 
-UsersRoutes.get('/', UsersController.getAllUsers);
-UsersRoutes.post('/', UsersController.createUser);
+}

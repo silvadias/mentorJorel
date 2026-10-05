@@ -1,13 +1,28 @@
-import type { Request, Response } from 'express';
-import      {Env}                 from '../../config/env';
+import      { Env }                       from '../../config/env';
+import      { DomainException }           from '../../infrastructure/httpTraffic/engine/errors';
+import type { HttpTrafficRequest,
+              HttpTrafficResponse }       from '../../infrastructure/httpTraffic/engine/context';
 
 export const HomeController = {
+  getResponse: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+    return {
+      statusCode: 200,
+      body: {
+        message: "Node.ts Standard Template with Express running perfectly inside Docker!",
+        status: "online",
+        environment: Env.nodeEnv
+      }
+    };
 
-  getResponse:(req: Request, res: Response) => {
-     return res.status(200).json({
-      message: "Node.ts Standard Template with Express running perfectly inside Docker!",
-      status: "online",
-      environment: Env.nodeEnv
-    });
+  },
+
+  simulateDomainError: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+    throw new DomainException("STUDENT_NOT_FOUND");
+
+  },
+
+  simulateUnexpectedError: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+    throw new Error("Falha catastrófica de conexão com serviço externo simulada!");
   }
+
 };

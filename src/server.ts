@@ -1,9 +1,18 @@
-import {Env}    from './config/env';
-import {App}    from './app';
+import      { Env }                         from './config/env';
+import      { ExpressHttpDriver }           from './infrastructure/httpTraffic/drivers/expressHttpDriver';
+import      { ApplicationFailureFormatter } from './infrastructure/httpTraffic/engine/failureFormatter';
+import      { configureHttpTraffic }        from './apiRouter';
+import type { HttpTrafficExchangeEngine }   from './infrastructure/httpTraffic/engine/context';
 
-App.listen(
-  Env.port,() => {
-    console.log(`Express server running on port${Env.port}`);
-    console.log(`Node  environment mode is ${Env.nodeEnv}`);
-  }
-);
+const coreFailureFormatter = new ApplicationFailureFormatter();
+
+const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
+  port: Env.port,
+  failureFormatter: coreFailureFormatter,
+  displayDebugDetails: Env.nodeEnv === 'development'
+  
+});
+
+configureHttpTraffic(serverEngine);
+
+serverEngine.start();
