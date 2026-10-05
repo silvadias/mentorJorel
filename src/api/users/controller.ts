@@ -28,16 +28,24 @@ export class UsersController {
     request: HttpTrafficRequest
 
   ): Promise<HttpTrafficResponse> {
-      const { name, email } = request.body;
+      const { 
+        name,
+        email
+      } = request.body;
 
-      if (!name || !email) {
+      if (
+        !name || !email
+      ) {
         const error: CustomError = new Error("Name and email are required fields");
         error.statusCode = 400;
         throw error;
 
       }
 
-      const newUser = UsersModel.create({ name, email });
+      const newUser = UsersModel.create({ 
+        name,
+        email
+      });
     
       return {
         statusCode: 201,

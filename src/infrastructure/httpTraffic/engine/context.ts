@@ -1,19 +1,22 @@
+import type { SystemLogger } from '../../telemetry/engine/context';
+
 export interface HttpTrafficRequest<
-  Payload = any, 
-  QueryParameters = any, 
-  RouteParameters = any, 
-  HeaderProperties = any
+  Payload           = any, 
+  QueryParameters   = any, 
+  RouteParameters   = any, 
+  HeaderProperties  = any
 > {
-    body: Payload;
-    query: QueryParameters;
-    params: RouteParameters;
-    headers: HeaderProperties;
+    body    : Payload;
+    query   : QueryParameters;
+    params  : RouteParameters;
+    headers : HeaderProperties;
+    logger  : SystemLogger;
 
   }
 
 export interface HttpTrafficResponse<Payload = any> {
   statusCode: number;
-  body: Payload;
+  body      : Payload;
 
 }
 

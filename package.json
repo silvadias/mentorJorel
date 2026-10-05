@@ -1,11 +1,11 @@
 {
   "name": "standard-node-template",
   "version": "1.0.0",
-  "description": "Standard Node.js template with Docker",
+  "description": "Standard Node.js template with Docker and Pluggable HTTP Adapter",
   "main": "./dist/server.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch ./src/server.ts",
+    "dev": "tsx watch --watch=.env ./src/server.ts",
     "build": "tsc",
     "start": "node ./dist/server.js"
   },
