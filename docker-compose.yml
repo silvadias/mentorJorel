@@ -7,9 +7,6 @@ services:
     command: sh -c "npm install && npm run dev"
     ports:
       - "${PORT}:3000"
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      CHOKIDAR_USEPOLLING: "true"
     volumes:
       - .:/usr/src/app
     networks:
@@ -17,4 +14,5 @@ services:
 
 networks:
   nodeNetwork:
+    name: mentorjorel_nodeNetwork
     driver: bridge
