@@ -1,6 +1,7 @@
 import type { HttpFailureFormatter,
               HttpFailurePayload } from './errors';
 import      { DomainException }    from './errors';
+import      { ValidationException } from './validator';
 
 export class ApplicationFailureFormatter implements HttpFailureFormatter {  
   public format(rawError: unknown, includeDebugDetails: boolean): { statusCode: number; payload: HttpFailurePayload } {
@@ -13,6 +14,19 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
           code: rawError.uniqueCode,
           message: rawError.message
 
+        }
+      };
+    
+    }
+
+    if (rawError instanceof ValidationException) {
+      return {
+        statusCode: 422,
+        payload: {
+          status: 'fail',
+          code: 'REQUEST_VALIDATION_FAILED',
+          message: 'The data provided fails to comply with the endpoint verification contract.',
+          errors: rawError.errors
         }
       };
     

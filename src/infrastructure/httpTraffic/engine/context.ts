@@ -23,7 +23,7 @@ export interface HttpTrafficResponse<Payload = any> {
 export type HttpTrafficHandler = (request: HttpTrafficRequest) => Promise<HttpTrafficResponse>;
 
 export interface HttpTrafficExchangeEngine {
-  register(method: 'get' | 'post' | 'put' | 'delete', resourcePath: string, handler: HttpTrafficHandler): void;
+  register(method: 'get' | 'post' | 'put' | 'delete', resourcePath: string, handler: HttpTrafficHandler, schema?: unknown): void;
   start(): void;
   
 }

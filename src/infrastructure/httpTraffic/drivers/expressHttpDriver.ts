@@ -6,6 +6,7 @@ import type { HttpTrafficExchangeEngine,
               HttpTrafficRequest }          from '../engine/context';
 import type { HttpFailureFormatter }        from '../engine/errors';
 import type { SystemLogger }                from '../../telemetry/engine/context';
+import      { ValidationException }         from '../../httpTraffic/engine/validator';
 
 export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly application        : ExpressEngine.Express;
@@ -33,7 +34,8 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   public register(
     method      : 'get' | 'post' | 'put' | 'delete', 
     resourcePath: string, 
-    handler     : HttpTrafficHandler
+    handler     : HttpTrafficHandler,
+    schema?     : unknown
 
   ): void {
       this.application[method](resourcePath, async (
@@ -54,6 +56,14 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
 
       try {
         contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
+
+        if (schema && typeof schema === 'object' && 'safeParse' in schema && typeof schema.safeParse === 'function') {
+          const validationResult = (schema as any).safeParse(incomingRequest.body);
+          if (!validationResult.success) {
+            const formattedErrors = validationResult.error.errors.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`);
+            throw new ValidationException(formattedErrors);
+          }
+        }
 
         const adaptedRequest: HttpTrafficRequest = {
           body    : incomingRequest.body,

@@ -21,6 +21,7 @@ export interface HttpFailurePayload {
   code          : string;
   message       : string;
   debugMessage? : string;
+  errors?       : string[];
 
 }
 

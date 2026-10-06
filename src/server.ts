@@ -1,5 +1,5 @@
 import      { Env }                           from './config/env';
-import      { ExpressHttpDriver }             from './infrastructure/httpTraffic/drivers/nodeExpress/expressHttpDriver';
+import      { ExpressHttpDriver }             from './infrastructure/httpTraffic/drivers/expressHttpDriver';
 import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/engine/failureFormatter';
 import      { SystemConsoleJsonDriver }       from './infrastructure/telemetry/drivers/systemConsoleJsonDriver';
 import      { configureApiRoutes }            from './apiRouter';
