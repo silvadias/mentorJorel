@@ -1,49 +1,51 @@
 [ESTRUTURA ATUAL DO TEMPLATE]
 
-📂 .vscode/
-└── 📄 settings.json              <-- Otimiza o desempenho do editor omitindo indexações pesadas.
-📂 src/
-├── 📂 api/                       <-- CAMADA DE NEGÓCIO E ENTREGA (Feature-by-Package)
-│   ├── 📂 accessIdentification/  <-- Domínio de Identificação de Dispositivos e Acessos
-│   │   ├── 📂 anonymousAccess/   <-- Sub-módulo isolado de fluxo de acessos anônimos
-│   │   │   ├── 📄 context.ts     <-- Tipagens de regras puras do sub-domínio anônimo
-│   │   │   ├── 📄 delivery.ts    <-- Controlador/Caso de uso específico do fluxo anônimo
-│   │   │   ├── 📄 requestParser.ts <-- DTO extractor agnóstico para sanitizar dados de entrada
-│   │   │   └── 📄 routes.ts       <-- Compositor de rotas aninhadas injetadas no motor HTTP
-│   │   └── 📄 routes.ts          <-- Ponto de entrada do pacote principal que delega sub-rotas
-│   ├── 📂 errors/                <-- ECOSSISTEMA DE FALHAS GRANULARES DO SISTEMA
-│   │   ├── 📂 domain/            <-- Os Dicionários puros e estritos de cada área de negócio
-│   │   │   ├── 📄 accessIdentification.ts <-- Catálogo literal de falhas de hardware e rede (ISO/HTTP)
-│   │   │   └── 📄 home.ts        <-- Catálogo literal de falhas cognitivas e de IA
-│   │   ├── 📄 catalog.ts         <-- Agregador estático unificado (`as const`) para autocomplete total
-│   │   └── 📄 registry.ts        <-- Centralizador agnóstico de mapeamento de domínios expostos
-│   ├── 📂 home/                  <-- Domínio Base de Diagnóstico da Aplicação
-│   │   ├── 📄 controller.ts      <-- Orquestrador de fluxo agnóstico com rotas de simulação de falhas
-│   │   └── 📄 routes.ts          <-- Registrador autônomo da rota raiz no motor HTTP
-│   └── 📂 users/                 <-- Domínio de Gerenciamento de Usuários
-│       ├── 📄 controller.ts      <-- Controlador puro (getAllUsers/createUser) sem vazar Express
-│       ├── 📄 model.ts           <-- Entidade e regras de persistência em memória de usuários
-│       └── 📄 routes.ts          <-- Registrador autônomo das rotas de usuários no motor HTTP
-├── 📂 config/
-│   └── 📄 env.ts                 <-- Centralizador fortemente tipado das variáveis contidas no `.env`
-├── 📂 database/
-│   └── 📂 mysql/                 <-- Detalhe Tecnológico de Persistência Relacional
-│       ├── 📄 instance.ts        <-- Conector e pool de drivers nativos do banco MySQL
-│       └── 📄 tables.ts          <-- DDL / Esquemas de estruturas físicas de tabelas
-└── 📂 infrastructure/            <-- CAMADA DE INFRAESTRUTURA ISOLADA (O Coração do Adapter)
-    └── 📂 httpTraffic/           <-- Contexto de gerenciamento de tráfego de rede
-        ├── 📂 drivers/           <-- Motores tecnológicos substituíveis e descartáveis
-        │   └── 📄 expressHttpDriver.ts <-- Detalhe do Express: implementa o motor e intercepta erros
-        └── 📂 engine/            <-- Regras lógicas e contratos imutáveis da aplicação
-            ├── 📄 context.ts     <-- Especificação tipada do fluxo HTTP (Payload, Request, Response)
-            ├── 📄 errors.ts      <-- A classe de exceção pura `DomainException` e contratos de payloads
-            └── 📄 failureFormatter.ts <-- Interceptador inteligente agnóstico de falhas brutas
-📜 src/apiRouter.ts               <-- Orquestrador central agnóstico (Liga os módulos ao motor injetado)
-📜 src/server.ts                  <-- Raiz de Composição (Composition Root): lê Env, ativa o driver e inicia o processo
-📜 .env                           <-- Segredos e chaves de ambiente do container Docker
-📜 .gitignore                     <-- Proteção contra envio de binários e node_modules para o Git
-📜 docker-compose.yml             <-- Orquestrador de infraestrutura local do container Node.js e MySQL
-📜 package-lock.json              <-- Árvore exata de resolução e integridade de dependências
-📜 package.json                   <-- Manifesto do projeto contendo scripts (tsx watch) e dependências do driver
-📜 README.md                      <-- Documentação técnica de onboarding do projeto
-📜 tsconfig.json                  <-- Governança de regras de compilação estrita do compilador TypeScript
+📂 / (Raiz do Projeto)
+├── 📂 .vscode/                     # Configurações de Governança do Editor
+│   └── 📄 settings.json            # Otimiza performance da IDE ocultando watchers pesados (dist/node_modules)
+├── 📂 docs/                        # Documentações Auxiliares e Diagramas de Escopo
+├── 📂 node_modules/                # Binários e Dependências físicas isoladas do ecossistema Node.js
+├── 📂 src/                         # Core Source: O Coração Tecnológico da Aplicação
+│   ├── 📂 api/                     # Camada de Negócio Pura e Agnóstica (Feature-by-Package)
+│   │   ├── 📂 errors/              # Barramento Central de Falhas de Domínio
+│   │   │   ├── 📂 domain/          # Dicionários Literais de Exceções por Contexto
+│   │   │   │   ├── 📄 accessIdentification.ts # Erros focados em ISO, autenticação e hardware
+│   │   │   │   └── 📄 home.ts      # Erros focados em diagnósticos e falhas cognitivas
+│   │   │   ├── 📄 catalog.ts       # Agregador estático unificado (`as const`) para autocomplete em design-time
+│   │   │   └── 📄 registry.ts      # Centralizador e exportador de módulos de erro expostos
+│   │   ├── 📂 home/                # Contexto Delimitado de Diagnóstico e Saúde do Sistema
+│   │   │   ├── 📄 controller.ts    # Controlador puro (Manipula requisições puras e simula quebras de resiliência)
+│   │   │   └── 📄 routes.ts        # Inicializador autônomo que pluga o domínio no motor abstrato
+│   │   └── 📂 users/               # Contexto Delimitado de Gerenciamento de Usuários
+│   │       ├── 📄 controller.ts    # Controlador limpo (Processa fluxos de usuários sem acoplamento a frameworks)
+│   │       ├── 📄 model.ts         # Entidades de negócio e persistência mockada provisória em memória
+│   │       └── 📄 routes.ts        # Acoplador agnóstico que expõe as portas de entrada de usuários
+│   ├── 📂 config/                  # Governança de Parâmetros Mundiais
+│   │   └── 📄 env.ts               # Tipagem forte de variáveis (Lê do .env com suporte a runtime do watcher)
+│   ├── 📂 database/                # Detalhes de Infraestrutura de Persistência Física
+│   │   └── 📂 mysql/               # Driver de Conexão Relacional MySQL
+│   │       ├── 📄 instance.ts      # Instanciação nativa do cliente e gerenciador de pooling de rede
+│   │       └── 📄 tables.ts        # Scripts de DDL (Criação e integridade física de tabelas)
+│   └── 📂 infrastructure/          # Camada de Periferias e Adaptadores Tecnológicos (Ports & Adapters)
+│       ├── 📂 httpTraffic/         # Contexto Delimitado de Tráfego de Redes
+│       │   ├── 📂 drivers/         # Motores Tecnológicos Descartáveis de Terceiros
+│       │   │   └── 📂 nodeExpress/ # Micro-ecossistema Autocontido do Driver Express (Princípio CCP)
+│       │   │       └── 📄 expressHttpDriver.ts # Detalhe do Express: Adapta rede, gera Trace ID e intercepta erros
+│       │   └── 📂 engine/          # Regras Lógicas e Interfaces Abstratas de Transporte (Ports)
+│       │       ├── 📄 context.ts   # Contratos de fluxo purificados (HttpTrafficRequest, HttpTrafficResponse)
+│       │       ├── 📄 errors.ts    # Especificação da DomainException e barramentos de payloads nativos
+│       │       └── 📄 failureFormatter.ts # Tradutor purificado de exceções para códigos de status HTTP
+│       └── 📂 telemetry/           # Contexto Delimitado de Observabilidade e Auditoria
+│           ├── 📂 drivers/         # Emissores Físicos de Logs estruturados
+│           │   └── 📄 systemConsoleJsonDriver.ts # Formata JSON: compactado para Produção / Pretty-Print para Dev
+│           └── 📂 engine/          # Contratos e Escopos de Telemetria (Ports)
+│               └── 📄 context.ts   # Interface SystemLogger (info, warn, error, audit com suporte a Trace ID)
+│   ├── 📄 apiRouter.ts             # Orquestrador Agnóstico Central: Conecta todas as rotas de domínio ao motor
+│   └── 📄 server.ts                # Raiz de Composição (Composition Root): Instancia logs, drivers e inicia o bootstrap
+├── 📄 .env                         # Segredos locais e chaves dinâmicas lidas em tempo de execução
+├── 📄 .gitignore                   # Proteção de Repositório (Impede vazamento de binários e segredos locais)
+├── 📄 docker-compose.yml           # Orquestrador de Hardware Local Enxuto (Puxa imagem Alpine e roda npm install)
+├── 📄 package-lock.json            # Árvore imutável de sub-dependências e hashes de segurança do Node.js
+├── 📄 package.json                 # Manifesto de dependências e scripts de automação de runtime (tsx watch)
+├── 📄 README.md                    # Documentação comercial de onboarding e convenções arquiteturais da banca
+└── 📄 tsconfig.json                # Governança estrita do compilador TypeScript (Flag exactOptionalPropertyTypes)
