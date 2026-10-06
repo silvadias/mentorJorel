@@ -7,7 +7,6 @@ import { HomeError }                 from "./domain/home";
 import { AccessIdentificationError } from "./domain/accessIdentification";
 import { SecurityError }             from "./domain/security";
 
-// O ÚNICO EXPORTADOR: Centraliza todas as chaves do sistema sob o mesmo teto
 export const ErrorCatalog = {
   ...HomeError,
   ...AccessIdentificationError,

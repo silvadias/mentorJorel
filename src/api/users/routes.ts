@@ -1,7 +1,8 @@
 import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/context';
+import type { JwtGuard }                    from '../../infrastructure/security/engine/jwtGuard';
 import      { UsersController }             from './controller';
 
-export function initializeUsersRoutes(engine: HttpTrafficExchangeEngine): void {
+export function initializeUsersRoutes(engine: HttpTrafficExchangeEngine, guard: JwtGuard): void {
   engine.register(
     'post',
     '/users',
@@ -11,6 +12,7 @@ export function initializeUsersRoutes(engine: HttpTrafficExchangeEngine): void {
   engine.register(
     'get',
     '/users/',
-    UsersController.getAllUsers);
+    guard.protect(UsersController.getAllUsers)
+  );
 
 }
