@@ -2,6 +2,6 @@ import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraff
 import      { HomeController }              from './controller';
 
 export function initializeHomeRoutes(engine: HttpTrafficExchangeEngine): void {
-  engine.register('get', '/', HomeController.simulateUnexpectedError);
+  engine.register('get', '/', HomeController.getResponse);
 
 }
