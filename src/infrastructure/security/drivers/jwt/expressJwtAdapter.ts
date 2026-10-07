@@ -1,9 +1,13 @@
+/**
+ * @file expressJwtAdapter.ts
+ * @description Adaptador de infraestrutura encapsulado responsável por assinar e traduzir payloads avançados de segurança.
+ */
+
 import      jwt                             from 'jsonwebtoken';
 import      crypto                          from 'crypto';
 import type { TokenCryptographerEngine,
               TokenSessionPayload }         from '../../engine/tokenContext';
 import      { DomainException }             from '../../../httpTraffic/engine/errors';
-
 
 export class ExpressJwtAdapter implements TokenCryptographerEngine {
   private readonly secretPrivateKey   : string;
@@ -20,10 +24,15 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
   public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt'>): Promise<string> {
     const generatedTokenId = crypto.randomUUID();
     
+    // COMPACTAÇÃO DE PERÍMETRO: Traduz variáveis de negócio longas para siglas enxutas de rede
     const tokenClaims = {
       sub : payload.actorId,
       did : payload.deviceFingerprintId,
-      jti : generatedTokenId
+      jti : generatedTokenId,
+      cip : payload.initialIpAddress,
+      uah : payload.clientUserAgentHash,
+      rcw : payload.requestSequenceCounter,
+      lca : Math.floor(payload.lastActivityAt.getTime() / 1000)
     };
 
     return jwt.sign(tokenClaims, this.secretPrivateKey, {
@@ -35,16 +44,29 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     try {
       const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
 
-      if (!decodedClaims['sub'] || !decodedClaims['did'] || !decodedClaims['jti']) {
+      // Validação Estrita de Presença: Se o token omitir qualquer marcador de perímetro, barra na portaria
+      if (!decodedClaims['sub'] || 
+          !decodedClaims['did'] || 
+          !decodedClaims['jti'] ||
+          !decodedClaims['cip'] ||
+          !decodedClaims['uah'] ||
+          decodedClaims['rcw'] === undefined ||
+          !decodedClaims['lca']
+        ) {
         throw new DomainException('SECURITY_TOKEN_CORRUPTED');
       }
 
+      // DESCOMPACTAÇÃO HUMANA: Devolve a tipagem rica com nomes memoráveis para o core do sistema
       return {
-        actorId             : decodedClaims['sub'],
-        deviceFingerprintId : decodedClaims['did'],
-        tokenUniqueId       : decodedClaims['jti'],
-        issuedAt            : new Date((decodedClaims['iat'] ?? 0) * 1000),
-        expiresAt           : new Date((decodedClaims['exp'] ?? 0) * 1000)
+        actorId                : decodedClaims['sub'],
+        deviceFingerprintId    : decodedClaims['did'],
+        tokenUniqueId          : decodedClaims['jti'],
+        initialIpAddress       : decodedClaims['cip'],
+        clientUserAgentHash    : decodedClaims['uah'],
+        requestSequenceCounter : decodedClaims['rcw'],
+        lastActivityAt         : new Date(decodedClaims['lca'] * 1000),
+        issuedAt               : new Date((decodedClaims['iat'] ?? 0) * 1000),
+        expiresAt              : new Date((decodedClaims['exp'] ?? 0) * 1000)
       };
 
     } catch (capturedError: unknown) {
