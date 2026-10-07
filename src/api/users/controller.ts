@@ -8,7 +8,21 @@ interface CustomError extends Error {
 }
 
 export class UsersController {  
-  public static async getAllUsers(
+    public static async getAllUsers(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
+    // CAPTURA TRANS-FRONTEIRA: O controlador de negócio lê a variável injetada nativamente pelo driver
+    const activeSession = request.session;
+
+    return {
+      statusCode: 200,
+      body: {
+        status         : 'success',
+        message        : 'A camada de negócios interceptou as variáveis de identificação de forma limpa.',
+        decodedSession : activeSession
+      }
+    };
+  }
+
+  /* public static async getAllUsers(
     _request: HttpTrafficRequest
 
   ): Promise<HttpTrafficResponse> {
@@ -22,7 +36,7 @@ export class UsersController {
         }
       };
 
-    }
+    } */
 
   public static async createUser(
     request: HttpTrafficRequest

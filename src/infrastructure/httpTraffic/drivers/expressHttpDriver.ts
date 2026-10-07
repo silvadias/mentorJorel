@@ -6,6 +6,7 @@ import type { HttpTrafficExchangeEngine,
               HttpTrafficRequest }          from '../engine/context';
 import type { HttpFailureFormatter }        from '../engine/errors';
 import type { SystemLogger }                from '../../telemetry/engine/context';
+import type { TokenCryptographerEngine }    from '../../security/engine/tokenContext';
 import      { ValidationException }         from '../../httpTraffic/engine/validator';
 
 export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
@@ -13,12 +14,14 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly listeningPort      : number;
   private readonly failureFormatter   : HttpFailureFormatter;
   private readonly systemLogger       : SystemLogger;
+  private readonly tokenEngine        : TokenCryptographerEngine;
   private readonly displayDebugDetails: boolean;
 
   constructor(configuration: { 
     port                   : number; 
     failureFormatter       : HttpFailureFormatter; 
     systemLogger           : SystemLogger;
+    tokenEngine            : TokenCryptographerEngine;
     displayDebugDetails    : boolean; 
   }) {
 
@@ -26,6 +29,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     this.listeningPort          = configuration.port;
     this.failureFormatter       = configuration.failureFormatter;
     this.systemLogger           = configuration.systemLogger;
+    this.tokenEngine            = configuration.tokenEngine;
     this.displayDebugDetails    = configuration.displayDebugDetails;
     this.application.use(express.json());
 
@@ -65,12 +69,34 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           }
         }
 
+        // HIDRATAÇÃO AUTOMÁTICA DA SESSÃO: Captura o cabeçalho e analisa o passaporte de forma silenciosa
+        const authorizationHeader = incomingRequest.headers['authorization'];
+        let activeSessionPayload  = {
+          actorId             : 'ANONYMOUS',
+          deviceFingerprintId : 'unknown',
+          tokenUniqueId       : 'unknown',
+          issuedAt            : new Date(),
+          expiresAt           : new Date()
+        };
+
+        if (authorizationHeader && typeof authorizationHeader === 'string' && authorizationHeader.startsWith('Bearer ')) {
+          try {
+            const cleanToken     = authorizationHeader.substring(7).trim();
+            const decodedSession = await this.tokenEngine.decrypt(cleanToken);
+            activeSessionPayload = decodedSession;
+          } catch (silentError: unknown) {
+            // Se o token estiver vencido ou adulterado, degrada silenciosamente para ANONYMOUS
+            contextualLogger.warn('Cryptographic token signature failed validation. Degrading request state to ANONYMOUS.');
+          }
+        }
+
         const adaptedRequest: HttpTrafficRequest = {
           body    : incomingRequest.body,
           query   : incomingRequest.query,
           params  : incomingRequest.params,
           headers : incomingRequest.headers,
-          logger  : contextualLogger
+          logger  : contextualLogger,
+          session : activeSessionPayload
 
         };
 

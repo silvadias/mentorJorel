@@ -1,4 +1,5 @@
-import type { SystemLogger } from '../../telemetry/engine/context';
+import type { SystemLogger }        from '../../telemetry/engine/context';
+import type { TokenSessionPayload } from '../../security/engine/tokenContext';
 
 export interface HttpTrafficRequest<
   Payload           = any, 
@@ -11,6 +12,8 @@ export interface HttpTrafficRequest<
     params  : RouteParameters;
     headers : HeaderProperties;
     logger  : SystemLogger;
+    // REVELAÇÃO DE PROPÓSITO: Contexto de sessão purificado disponível de forma nativa e transparente
+    session : TokenSessionPayload;
 
   }
 
