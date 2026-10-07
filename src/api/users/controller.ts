@@ -8,22 +8,10 @@ interface CustomError extends Error {
 }
 
 export class UsersController {  
-    public static async getAllUsers(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
-    // CAPTURA TRANS-FRONTEIRA: O controlador de negócio lê a variável injetada nativamente pelo driver
-    const activeSession = request.session;
+    
 
-    return {
-      statusCode: 200,
-      body: {
-        status         : 'success',
-        message        : 'A camada de negócios interceptou as variáveis de identificação de forma limpa.',
-        decodedSession : activeSession
-      }
-    };
-  }
-
-  /* public static async getAllUsers(
-    _request: HttpTrafficRequest
+  public static async getAllUsers(
+    request: HttpTrafficRequest
 
   ): Promise<HttpTrafficResponse> {
       const users = UsersModel.findAll();
@@ -36,7 +24,7 @@ export class UsersController {
         }
       };
 
-    } */
+    } 
 
   public static async createUser(
     request: HttpTrafficRequest
@@ -73,3 +61,19 @@ export class UsersController {
     }
 
 }
+
+//Para teste de jwt
+
+/* public static async getAllUsers(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
+    // CAPTURA TRANS-FRONTEIRA: O controlador de negócio lê a variável injetada nativamente pelo driver
+    const activeSession = request.session;
+
+    return {
+      statusCode: 200,
+      body: {
+        status         : 'success',
+        message        : 'A camada de negócios interceptou as variáveis de identificação de forma limpa.',
+        decodedSession : activeSession
+      }
+    };
+  } */

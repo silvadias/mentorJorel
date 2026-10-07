@@ -2,6 +2,13 @@ import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraff
 import      { HomeController }              from './controller';
 
 export function initializeHomeRoutes(engine: HttpTrafficExchangeEngine): void {
-  engine.register('get', '/', HomeController.getResponse);
+  engine.register(
+    'get',
+    '/',
+    HomeController.getResponse,
+    //* Desmarcar para simular o erro de domínio e erro de formato inesperado colocados no controller
+    //HomeController.simulateDomainError,
+    //HomeController.simulateUnexpectedError
+  );
 
 }
