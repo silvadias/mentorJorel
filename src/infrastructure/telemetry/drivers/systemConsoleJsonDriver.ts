@@ -1,13 +1,17 @@
-import        crypto        from 'crypto';
+import      crypto        from 'crypto';
 import type { SystemLogger,
-              LogMetadata } from '../engine/context';
+              LogMetadata } from '../engine/systemLogger';
 
 export class SystemConsoleJsonDriver implements SystemLogger {
   private readonly traceId            : string | undefined;
   private readonly contextualMetadata : LogMetadata | undefined;
   private readonly prettyFormat       : boolean;
 
-  constructor(traceId?: string, contextualMetadata?: LogMetadata, prettyFormat = false) {
+  constructor(
+    traceId?            : string,
+    contextualMetadata? : LogMetadata,
+    prettyFormat        = false
+  ) {
     this.traceId            = traceId;
     this.contextualMetadata = contextualMetadata;
     this.prettyFormat       = prettyFormat;
@@ -29,7 +33,11 @@ export class SystemConsoleJsonDriver implements SystemLogger {
 
   }
 
-  public error(message: string, rawError?: unknown, metadata?: LogMetadata): void {
+  public error(
+    message   : string,
+    rawError? : unknown,
+    metadata? : LogMetadata
+  ): void {
     const errorDetails = rawError instanceof Error 
       ? { name: rawError.name, message: rawError.message, stack: rawError.stack }
       : { raw: rawError };
@@ -38,34 +46,41 @@ export class SystemConsoleJsonDriver implements SystemLogger {
 
   }
 
-  public audit(action: string, actorId: string, metadata?: LogMetadata): void {
+  public audit(
+    action   : string, 
+    actorId  : string, 
+    metadata?: LogMetadata
+  ): void {
     const securityMetadata = { actorId, ...metadata };
     this.emit('AUDIT', `Security Audit Event: [${action}] executed by user [${actorId}]`, undefined, securityMetadata);
 
   }
 
-  private emit(level: 'INFO' | 'WARN' | 'ERROR' | 'AUDIT', message: string, error?: any, metadata?: LogMetadata): void {
-    let isolatedStack: string | undefined;
-    let targetError = error;
+  private emit(
+    level    : 'INFO' | 'WARN' | 'ERROR' | 'AUDIT',
+    message  : string, 
+    error?   : any,
+    metadata?: LogMetadata
+  ): void {
+    let isolatedStack : string | undefined;
+    let targetError   = error;
 
     if (this.prettyFormat && error && typeof error === 'object' && 'stack' in error) {
       isolatedStack = error.stack;
 
       const { stack, ...errorWithoutStack } = error;
       targetError = errorWithoutStack;
-
     }
 
     const logOutput = {
-      timestamp: new Date().toISOString(),
-      level,
-      ...(this.traceId && { traceId: this.traceId }),
-      message,
-      ...(targetError && { error: targetError }),
-      metadata: {
+      timestamp : new Date().toISOString(),
+      level     : level,
+      message   : message,
+      ...(this.traceId   && { traceId: this.traceId }),
+      ...(targetError    && { error: targetError }),
+      metadata  : {
         ...this.contextualMetadata,
         ...metadata
-
       }
     };
 
@@ -74,12 +89,12 @@ export class SystemConsoleJsonDriver implements SystemLogger {
       
       if (isolatedStack) {
         console.log(`\x1b[31m[Stack Trace]:\n${isolatedStack}\x1b[0m`);
-
       }
     } else {
-      console.log(JSON.stringify({ ...logOutput, ...(error && { error }) }));
-
+      console.log(JSON.stringify({ 
+        ...logOutput,
+        ...(error && { error: targetError })
+      }));
     }
   }
-  
 }

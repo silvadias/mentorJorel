@@ -3,11 +3,11 @@ import      crypto                          from 'crypto';
 import type * as ExpressEngine              from 'express';
 import type { HttpTrafficExchangeEngine, 
               HttpTrafficHandler,
-              HttpTrafficRequest }          from '../engine/context';
-import type { HttpFailureFormatter }        from '../engine/errors';
-import type { SystemLogger }                from '../../telemetry/engine/context';
-import type { TokenCryptographerEngine }    from '../../security/engine/tokenContext';
-import      { ValidationException }         from '../../httpTraffic/engine/validator';
+              HttpTrafficRequest }          from '../engine/httpTraffic';
+import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
+import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
+import type { TokenCryptographerEngine }    from '../../security/engine/tokenSession';
+import      { ValidationException }         from '../engine/httpValidation';
 
 export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly application        : ExpressEngine.Express;
@@ -43,18 +43,20 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
 
   ): void {
       this.application[method](resourcePath, async (
-        incomingRequest: ExpressEngine.Request, 
+        incomingRequest : ExpressEngine.Request, 
         outgoingResponse: ExpressEngine.Response
 
     ): Promise<void> => {      
       const uniqueTraceId     = crypto.randomUUID();
-      
-      // TRATAMENTO IMPLACÁVEL TYPE-SAFE: Normaliza qualquer estrutura de IP (Array ou String) em texto plano imune a undefined
-      const rawClientIp       = incomingRequest.ip || incomingRequest.headers['x-forwarded-for'] || '127.0.0.1';
-      const ipStringBase      = Array.isArray(rawClientIp) ? String(rawClientIp[0] || '127.0.0.1') : String(rawClientIp);
-      const clientIpAddress   = ipStringBase.split(',')[0]?.trim() || '127.0.0.1';
-      
-      const rawUserAgent      = incomingRequest.headers['user-agent'] || 'unknown';
+      const rawClientIp       = incomingRequest.ip ||
+                                incomingRequest.headers['x-forwarded-for'] ||
+                                '127.0.0.1';
+      const ipStringBase      = Array.isArray(rawClientIp) ? String(rawClientIp[0] ||
+                                '127.0.0.1') : String(rawClientIp);
+      const clientIpAddress   = ipStringBase.split(',')[0]?.trim() ||
+                                '127.0.0.1';
+      const rawUserAgent      = incomingRequest.headers['user-agent'] ||
+                                'unknown';
       const userAgentHash     = crypto.createHash('sha256').update(rawUserAgent).digest('hex').substring(0, 16);
 
       const transportMetadata = {
@@ -75,10 +77,10 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           if (!validationResult.success) {
             const formattedErrors = validationResult.error.errors.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`);
             throw new ValidationException(formattedErrors);
+
           }
         }
 
-        // HIDRATAÇÃO AUTOMÁTICA DA SESSÃO: Inicializa os campos avançados de auditoria e segurança de fluxo
         const authorizationHeader = incomingRequest.headers['authorization'];
         let activeSessionPayload: any = {
           actorId                : 'ANONYMOUS',
@@ -90,15 +92,21 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           issuedAt               : new Date(),
           expiresAt              : new Date(),
           lastActivityAt         : new Date()
+
         };
 
-        if (authorizationHeader && typeof authorizationHeader === 'string' && authorizationHeader.startsWith('Bearer ')) {
+        if (authorizationHeader && 
+            typeof authorizationHeader === 'string' &&
+            authorizationHeader.startsWith('Bearer ')) {
+
           try {
             const cleanToken     = authorizationHeader.substring(7).trim();
             const decodedSession = await this.tokenEngine.decrypt(cleanToken);
             activeSessionPayload = decodedSession;
+
           } catch (silentError: unknown) {
             contextualLogger.warn('Cryptographic token signature failed validation. Degrading request state to ANONYMOUS with real border metadata.');
+
           }
         }
 
@@ -124,6 +132,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         
         outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
         outgoingResponse.status(statusCode).json(payload);
+
       }
     });
   }
@@ -131,6 +140,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   public start(): void {
     this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
+      
     });
   }
 }

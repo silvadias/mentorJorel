@@ -1,4 +1,4 @@
-import type { HttpTrafficExchangeEngine }               from './infrastructure/httpTraffic/engine/context';
+import type { HttpTrafficExchangeEngine }               from './infrastructure/httpTraffic/engine/httpTraffic';
 import      { initializeHomeRoutes }                    from './api/home/routes';
 import      { initializeUsersRoutes }                   from './api/users/routes';
 

@@ -1,5 +1,5 @@
 import type { HttpTrafficRequest,
-              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/context';
+              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/httpTraffic';
 import      { UsersModel }          from './model';
 
 interface CustomError extends Error {

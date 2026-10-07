@@ -1,5 +1,5 @@
-import      { ErrorCatalog }    from '../../../api/errors/catalog';
-import type { ErrorCode }       from '../../../api/errors/catalog';
+import      { ErrorCatalog }    from './catalog';
+import type { ErrorCode }       from './catalog';
 
 export class DomainException extends Error {
   public readonly uniqueCode: string;

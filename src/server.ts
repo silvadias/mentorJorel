@@ -4,8 +4,8 @@ import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic
 import      { SystemConsoleJsonDriver }       from './infrastructure/telemetry/drivers/systemConsoleJsonDriver';
 import      { ExpressJwtAdapter }             from './infrastructure/security/drivers/jwt/expressJwtAdapter';
 import      { configureApiRoutes }            from './apiRouter';
-import type { HttpTrafficExchangeEngine }     from './infrastructure/httpTraffic/engine/context';
-import type { SystemLogger }                  from './infrastructure/telemetry/engine/context';
+import type { HttpTrafficExchangeEngine }     from './infrastructure/httpTraffic/engine/httpTraffic';
+import type { SystemLogger }                  from './infrastructure/telemetry/engine/systemLogger';
 
 const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
   undefined, 
@@ -14,15 +14,14 @@ const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
 );
 const coreFailureFormatter = new ApplicationFailureFormatter();
 
-// MOTOR DE SEGURANÇA PURA: Instanciado na raiz de composição técnica do servidor
 const securityTokenEngine = new ExpressJwtAdapter({ secretKey: 'CHAVE_SUPER_SECRETA_BOILERPLATE', expirationSeconds: 3600 });
 
 const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
-  port: Env.port,
-  failureFormatter: coreFailureFormatter,
-  systemLogger: systemTelemetryLogger,
-  tokenEngine: securityTokenEngine,
-  displayDebugDetails: Env.nodeEnv === 'development'
+  port                : Env.port,
+  failureFormatter    : coreFailureFormatter,
+  systemLogger        : systemTelemetryLogger,
+  tokenEngine         : securityTokenEngine,
+  displayDebugDetails : Env.nodeEnv === 'development'
 
 });
 

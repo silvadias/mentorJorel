@@ -1,7 +1,7 @@
 import      { Env }                       from '../../config/env';
-import      { DomainException }           from '../../infrastructure/httpTraffic/engine/errors';
+import      { DomainException }           from '../errors/domainException';
 import type { HttpTrafficRequest,
-              HttpTrafficResponse }       from '../../infrastructure/httpTraffic/engine/context';
+              HttpTrafficResponse }       from '../../infrastructure/httpTraffic/engine/httpTraffic';
 
 export const HomeController = {
   getResponse: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {

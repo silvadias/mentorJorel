@@ -1,17 +1,12 @@
-/**
- * @file expressJwtAdapter.ts
- * @description Adaptador de infraestrutura encapsulado responsável por assinar e traduzir payloads avançados de segurança.
- */
-
 import      jwt                             from 'jsonwebtoken';
 import      crypto                          from 'crypto';
 import type { TokenCryptographerEngine,
-              TokenSessionPayload }         from '../../engine/tokenContext';
-import      { DomainException }             from '../../../httpTraffic/engine/errors';
+              TokenSessionPayload }         from '../../engine/tokenSession';
+import      { DomainException }             from '../../../../api/errors/domainException';
 
 export class ExpressJwtAdapter implements TokenCryptographerEngine {
-  private readonly secretPrivateKey   : string;
-  private readonly expirationInSeconds : number;
+  private readonly secretPrivateKey     : string;
+  private readonly expirationInSeconds  : number;
 
   constructor(configuration: { 
     secretKey         : string; 
@@ -19,12 +14,12 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
   }) {
     this.secretPrivateKey     = configuration.secretKey;
     this.expirationInSeconds  = configuration.expirationSeconds;
+
   }
 
   public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt'>): Promise<string> {
     const generatedTokenId = crypto.randomUUID();
     
-    // COMPACTAÇÃO DE PERÍMETRO: Traduz variáveis de negócio longas para siglas enxutas de rede
     const tokenClaims = {
       sub : payload.actorId,
       did : payload.deviceFingerprintId,
@@ -44,7 +39,6 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     try {
       const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
 
-      // Validação Estrita de Presença: Se o token omitir qualquer marcador de perímetro, barra na portaria
       if (!decodedClaims['sub'] || 
           !decodedClaims['did'] || 
           !decodedClaims['jti'] ||
@@ -54,9 +48,9 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
           !decodedClaims['lca']
         ) {
         throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+
       }
 
-      // DESCOMPACTAÇÃO HUMANA: Devolve a tipagem rica com nomes memoráveis para o core do sistema
       return {
         actorId                : decodedClaims['sub'],
         deviceFingerprintId    : decodedClaims['did'],
@@ -67,18 +61,19 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
         lastActivityAt         : new Date(decodedClaims['lca'] * 1000),
         issuedAt               : new Date((decodedClaims['iat'] ?? 0) * 1000),
         expiresAt              : new Date((decodedClaims['exp'] ?? 0) * 1000)
+
       };
 
     } catch (capturedError: unknown) {
       if (capturedError instanceof DomainException) {
         throw capturedError;
-      }
 
+      }
       if (capturedError instanceof jwt.TokenExpiredError) {
         throw new DomainException('SECURITY_TOKEN_EXPIRED');
       }
-
       throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+      
     }
   }
 }

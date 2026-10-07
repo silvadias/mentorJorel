@@ -1,10 +1,16 @@
 import type { HttpFailureFormatter,
-              HttpFailurePayload } from './errors';
-import      { DomainException }    from './errors';
-import      { ValidationException } from './validator';
+              HttpFailurePayload }  from '../../../api/errors/domainException';
+import      { DomainException }     from '../../../api/errors/domainException';
+import      { ValidationException } from './httpValidation';
 
 export class ApplicationFailureFormatter implements HttpFailureFormatter {  
-  public format(rawError: unknown, includeDebugDetails: boolean): { statusCode: number; payload: HttpFailurePayload } {
+  public format(
+    rawError: unknown,
+    includeDebugDetails: boolean
+  ):{ 
+      statusCode: number; 
+      payload   : HttpFailurePayload 
+    }{
     
     if (rawError instanceof DomainException) {
       return {
@@ -15,8 +21,7 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
           message: rawError.message
 
         }
-      };
-    
+      };    
     }
 
     if (rawError instanceof ValidationException) {
@@ -27,9 +32,9 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
           code: 'REQUEST_VALIDATION_FAILED',
           message: 'The data provided fails to comply with the endpoint verification contract.',
           errors: rawError.errors
+
         }
-      };
-    
+      };    
     }
 
     const fallbackMessage = rawError instanceof Error ? rawError.message : 'Internal server error';
@@ -45,5 +50,4 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
       }
     };
   }
-
 }
