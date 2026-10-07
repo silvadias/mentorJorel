@@ -1,115 +1,296 @@
 # TypeScript API Boilerplate — Hexagonal Pluggable Adapter Engine
 
-Este projeto serve como um template (boilerplate) arquitetural de altíssimo nível, focado em **portabilidade absoluta**, **observabilidade avançada**, **segurança Zero-Trust** e **resiliência**. A engenharia do sistema rompe com o acoplamento tradicional a frameworks de mercado e adota o padrão **Adapter (Ports & Adapters)** combinado com **Feature-by-Package**, isolando 100% as regras de negócio contra tecnologias descartáveis de transporte de rede (Express, Fastify) e ferramentas acopladas de segurança ou logging.
+Este projeto é um boilerplate arquitetural de alta maturidade para APIs TypeScript, orientado a **portabilidade**, **isolamento de infraestrutura**, **observabilidade estruturada**, **segurança perimetral** e **resiliência**.
 
----
+A arquitetura combina **Clean Architecture (Ports & Adapters)** com **Feature-by-Package**, mantendo o núcleo da aplicação independente de frameworks de transporte, bibliotecas criptográficas e implementações específicas de logging. Tecnologias externas ficam concentradas em `drivers/`, enquanto os contratos estáveis do sistema permanecem em `engine/`.
 
-## 🏗️ Macro-Arquitetura e Engenharia do Sistema
+## Arquitetura
 
-A estrutura de diretórios prioriza o Princípio da Inversão de Dependências (**DIP**). O coração da aplicação (regras de domínio e controladores) manipula dados purificados em tempo de design, enquanto as ferramentas de terceiros e infraestruturas físicas (rede, telemetria, criptografia e autorização) ficam trancadas e isoladas em adaptadores periféricos e intercambiáveis.
-
-### Estrutura do Escopo Técnico Real
+A estrutura segue o princípio da **Inversão de Dependências (DIP)**: o domínio define contratos; os adaptadores implementam esses contratos.
 
 ```text
 src/
-├── api/                       # Camada de Negócio Pura e Agnóstica (Feature-by-Package)
-│   ├── errors/                # Barramento Central de Falhas de Domínio (DRY Absoluto)
-│   │   ├── domain/            # Dicionários literais de exceções por contexto (home, users, security)
-│   │   └── catalog.ts         # PONTO ÚNICO DE VERDADE MUNDIAL: Catálogo e ErrorCode unificados
-│   ├── home/                  # Domínio de Diagnóstico de Saúde do Sistema
-│   │   ├── controller.ts      # Controlador agnóstico integrado à telemetria injetada
-│   │   └── routes.ts          # Registrador autônomo de rotas no motor abstrato
-│   └── users/                 # Domínio de Usuários
-│       ├── controller.ts      # Controlador limpo livre de assinaturas HTTP nativas
-│       ├── model.ts           # Entidade e persistência mockada provisória em memória
-│       └── routes.ts          # Rota GET protegida declarativamente via JwtGuard
-├── config/                    # Governança de Parâmetros Globais Strongly-Typed
-│   └── env.ts                 # Tipagem estrita de propriedades (Dotenv com suporte a runtime do watcher)
-└── infrastructure/            # Camada de Periferias e Adaptadores Tecnológicos (Ports & Adapters)
-    ├── telemetry/             # Contexto Delimitado de Observabilidade e Auditoria
-    │   ├── drivers/           # Emissores de fluxos físicos estruturados
-    │   │   └── systemConsoleJsonDriver.ts # Formata JSON: compactado para Produção / Pretty-Print para Dev
-    │   └── engine/            # Contratos de Telemetria (Ports)
-    │       └── context.ts     # Interface SystemLogger (info, warn, error, audit com suporte a Trace ID)
-    ├── httpTraffic/           # Contexto Delimitado de Tráfego de Redes
-    │   ├── drivers/           # Motores Tecnológicos Descartáveis e Substituíveis
-    │   │   └── nodeExpress/   # Micro-ecossistema do Driver Express (Princípio CCP)
-    │   │       └── expressHttpDriver.ts # Adapta rede, gera Trace ID, injeta Logger e trata erros
-    │   └── engine/            # Regras e Contratos de Transporte (Ports)
-    │       ├── context.ts     # Interfaces de fluxo purificadas (HttpTrafficRequest/Response)
-    │       ├── errors.ts      # DomainException e barramentos de payloads globais
-    │       ├── failureFormatter.ts # Tradutor central de falhas com inteligência 422 e 500
-    │       └── validator.ts   # Contrato e exceção de validação de contratos de entrada na portaria
-    └── security/              # Contexto Delimitado de Segurança, Sessão e Autorização ABAC
-        ├── drivers/           # Implementações Concretas e Mocks Tecnológicos (Adapters)
-        │   ├── jwt/
-        │   │   └── expressJwtAdapter.ts # Criptografia isolada: traduz nomes humanos para dialetos RFC
-        │   └── mock/
-        │       └── AccessEvaluator.ts   # Simulador de regras de negócio, tempo e hierarquias com auditoria
-        └── engine/            # Contratos de Autenticação e Barreiras Agnósticas (Ports)
-            ├── accessEvaluator.ts # Abstração para avaliação dinâmica de direitos em tempo de execução
-            ├── jwtGuard.ts    # Porteiro de rotas: intercepta, descriptografa e bloqueia acessos de rede
-            └── tokenContext.ts # Contrato de token com nomes memoráveis humanos (actorId, deviceFingerprintId)
-├── apiRouter.ts               # Orquestrador Agnóstico Central de Módulos (Repassa o JwtGuard por DIP)
-└── server.ts                  # Raiz de Composição (Composition Root): Instancia chaves, logs, drivers e bootstrap
+├── api/                       # CAMADA DE DOMÍNIO E NEGÓCIO PURA (Soberana/Agnóstica)
+│   └── errors/                # Barramento Centralizado de Exceções de Domínio
+│       ├── domain/            # Dicionários literais de mensagens e chaves
+│       │   └── security.ts
+│       ├── catalog.ts         # Ponto Único de Verdade: ErrorCatalog e ErrorCode
+│       └── domainException.ts # Exceção de negócio soberana
+├── config/                    # Parâmetros globais e configuração strongly-typed
+│   └── env.ts                 # Tipagem estrita das variáveis de ambiente
+└── infrastructure/            # PERIFERIAS E ADAPTADORES (Ports & Adapters)
+    ├── telemetry/             # Observabilidade e não-repúdio
+    │   ├── engine/            # Contratos de abstração (Ports)
+    │   │   └── systemLogger.ts
+    │   └── drivers/            # Implementações substituíveis (Adapters)
+    │       └── systemConsoleJsonDriver.ts
+    ├── httpTraffic/            # Tráfego de rede e protocolo HTTP
+    │   ├── engine/            # Contratos de transporte
+    │   │   ├── httpTraffic.ts
+    │   │   └── httpValidation.ts
+    │   └── drivers/            # Motores tecnológicos
+    │       └── nodeExpress/
+    │           └── expressHttpDriver.ts
+    └── security/              # Segurança, sessão e criptografia
+        ├── engine/            # Contratos de sessão
+        │   └── tokenSession.ts
+        └── drivers/            # Implementações criptográficas
+            └── jwt/
+                └── expressJwtAdapter.ts
+├── apiRouter.ts               # Orquestrador agnóstico de rotas
+└── server.ts                  # Composition Root e bootstrap
 ```
 
----
+## Princípios arquiteturais
 
-## ⚙️ Padrões de Desenvolvimento & Convenções Estritas
+### Drivers e Engines
 
-Para preservar a imunidade arquitetural do template à medida que o sistema expande, siga rigorosamente as diretrizes estabelecidas:
+- **`drivers/`** contém os adaptadores que conhecem tecnologias específicas. O `expressHttpDriver.ts`, por exemplo, conhece o Express e concentra os detalhes da borda HTTP.
+- **`engine/`** contém os contratos e regras abstratas do ecossistema. Os drivers devem se adaptar aos contratos do sistema, e não o contrário.
 
-### 1. Padrão de Exportação e Importação (Imports)
-Todos os arquivos devem utilizar exportações nomeadas corporativas. O padrão de importação de contratos abstratos deve usar explicitamente a palavra-chave `import type` para otimizar a transpilação e evitar vazamento de dependências executáveis em tempo de execução:
+Essa separação permite substituir uma tecnologia de infraestrutura sem espalhar sua dependência pelo restante da aplicação.
+
+### Isolamento de frameworks
+
+O domínio não deve depender diretamente de assinaturas do Express ou de outros frameworks HTTP. A aplicação trabalha com estruturas próprias, como `HttpTrafficRequest` e `HttpTrafficResponse`.
+
+O framework é tratado como detalhe de infraestrutura.
+
+### Nomes que revelam propósito
+
+O dialeto compacto exigido por protocolos e bibliotecas externas fica encapsulado nos adaptadores. O restante do sistema utiliza nomes de domínio claros e fortemente tipados, como:
+
+- `actorId`
+- `deviceFingerprintId`
+- `initialIpAddress`
+- `requestSequenceCounter`
+- `lastActivityAt`
+
+Essa tradução mantém os detalhes de transporte e criptografia fora do núcleo da aplicação.
+
+## Observabilidade
+
+A telemetria é definida pelo contrato `SystemLogger`, localizado em `src/infrastructure/telemetry/engine/systemLogger.ts`.
+
+O contrato disponibiliza operações como:
+
+- `info()`
+- `warn()`
+- `error()`
+- `audit()`
+- `withContext(traceId, requestMetadata)`
+
+O uso genérico de `console.log()` no core é evitado. Cada ciclo de requisição pode carregar um **Trace ID**, permitindo rastrear o fluxo ponta a ponta.
+
+O `systemConsoleJsonDriver.ts` adapta esse contrato para a saída física:
+
+- em produção, emite JSON de linha única, adequado para ingestão em ferramentas de observabilidade;
+- em desenvolvimento, utiliza Pretty Print para facilitar a leitura humana.
+
+## Tráfego HTTP
+
+O contrato `HttpTrafficRequest` / `HttpTrafficResponse`, definido em `src/infrastructure/httpTraffic/engine/httpTraffic.ts`, representa o transporte de forma independente do framework.
+
+O `expressHttpDriver.ts` é o adaptador responsável pela borda HTTP. Ele:
+
+1. recebe o tráfego bruto;
+2. executa as validações de entrada;
+3. hidrata o contexto da requisição;
+4. integra o mecanismo de sessão por inversão de dependência;
+5. centraliza o tratamento de falhas;
+6. disponibiliza metadados de borda para auditoria.
+
+Quando não existe uma sessão válida, o fluxo pode operar com o ator `ANONYMOUS` e metadados de borda.
+
+Também são capturados dados como IP e um hash reduzido do User-Agent para uso nos cruzamentos de auditoria definidos pelo domínio.
+
+## Segurança e sessões
+
+O contrato `TokenCryptographerEngine` e o modelo `TokenSessionPayload` ficam em `src/infrastructure/security/engine/tokenSession.ts`.
+
+A interface abstrai a tecnologia utilizada para gerar e decifrar tokens, mantendo o restante da aplicação independente da biblioteca criptográfica.
+
+O `expressJwtAdapter.ts` é o único ponto autorizado a conhecer a implementação JWT externa. Ele traduz os nomes de domínio para os campos compactos do protocolo e converte erros da biblioteca em exceções nativas da aplicação.
+
+Exemplo:
 
 ```typescript
-// Correto: Inversão de Dependência com Type Safety
-import type { HttpTrafficRequest } from '../../infrastructure/httpTraffic/engine/context';
+throw new DomainException('SECURITY_TOKEN_EXPIRED');
 ```
 
-### 2. Isolamento de Frameworks (Tolerância Zero)
-Os controladores e rotas de domínio **são terminantemente proibidos** de importar assinaturas de frameworks de entrega (como Express ou Fastify). Eles recebem estruturas limpas (`HttpTrafficRequest`) e respondem devolvendo estruturas de dados puras (`HttpTrafficResponse`). O framework HTTP é apenas um detalhe invisível de infraestrutura.
+Essa abordagem evita que exceções específicas da biblioteca vazem para o domínio.
 
-### 3. Nomes Memoráveis que Revelam Propósito (Critério Ottinger)
-O dialeto interno de bibliotecas de criptografia de terceiros (`sub`, `did`, `jti`, `iat`, `exp`) fica trancado dentro do adaptador (`expressJwtAdapter.ts`). O restante de todo o sistema conversa em linguagem de negócios humana fortemente tipada e memorável:
+## Engenharia de erros
 
-*   `actorId`: Identificador único do usuário portador.
-*   `deviceFingerprintId`: Assinatura digital estável de hardware da máquina do cliente.
-*   `tokenUniqueId`: Identificador único do token utilizado contra ataques de repetição e vírus.
-*   `issuedAt` / `expiresAt`: Prazos de vigência e morte do passaporte criptográfico.
+O tratamento de falhas segue uma abordagem centralizada.
 
-### 4. Controle de Acesso ABAC & Hierarquia Reversa
-O `JwtGuard` atua estritamente como guarda de passaporte. Ele não valida permissões de forma engessada. Ele delega o direito de acesso ao contrato **`AccessEvaluator`** em tempo de execução puro.
-*   **Hierarquia Reversa:** Se um nível superior (Diretor/Empresa) revoga um privilégio, o motor calcula em tempo real e bloqueia o acesso na portaria de rede.
-*   **Estado Visual ("Meio Apagado"):** Ao bloquear por hierarquia, o sistema injeta o metadado declarativo no corpo da falha 403 (ex: `{ isAvailable: false, disabledBy: "Diretor" }`), permitindo ao frontend renderizar botões ou menus cinzas/bloqueados nativamente.
-*   **Não-Repúdio:** Toda e qualquer avaliação de segurança dispara um log de auditoria estruturado imutável, impossibilitando que qualquer ator negue a ação realizada.
+`src/api/errors/catalog.ts` funciona como a **Verdade Única de Erros**, reunindo o catálogo e os respectivos códigos. `domainException.ts` representa a exceção soberana do domínio.
 
-### 5. Telemetria Estruturada com Rastreabilidade (Trace ID)
-O objeto global `console.log()` é banido do core de negócios. Toda ação emite telemetria através do barramento agnóstico injetado na requisição (`request.logger`).
-*   **Trace ID Automático:** Cada ciclo de requisição ganha um identificador único exclusivo que viaja por todo o sistema.
-*   **JSON Camaleônico:** Em produção, os logs são emitidos em JSON de linha única compilado, ideais para ferramentas como Datadog ou Elasticsearch. Em desenvolvimento local, o sistema ativa o *Pretty Format* isolando e destacando as `[Stack Trace]` em vermelho para alta legibilidade humana.
-
-### 6. Engenharia de Erros com Propósito Revelado (DRY)
-A aplicação possui o arquivo unificado `src/api/errors/catalog.ts` como o **Ponto Único de Verdade** de falhas. Não utilize middlewares interceptadores específicos de ferramentas terceiras. Quando uma falha de negócio ocorre, dispara-se a exceção pura de domínio informando a chave literal do catálogo para autocomplete:
+Em vez de espalhar tratamento de erros específicos por controladores e casos de uso, o código lança uma exceção sem conhecer o mecanismo de transporte:
 
 ```typescript
-throw new DomainException("SECURITY_TOKEN_EXPIRED");
+throw new DomainException('SECURITY_TOKEN_CORRUPTED');
 ```
-O próprio driver ativo se encarrega de capturar a exceção e usar o `ApplicationFailureFormatter` de forma automatizada para desenhar a saída e injetar o código de status correto no cabeçalho HTTP (incluindo erros técnicos `422` de portaria de rede), eliminando completamente blocos `try/catch` genéricos de controle de fluxo nos controladores.
 
----
+A falha percorre o barramento até o adaptador de rede, onde é traduzida pelo mecanismo de formatação da aplicação para uma resposta HTTP estruturada.
 
-## 🚀 Como Usar este Boilerplate para Iniciar Novos Projetos
+## Rotas e princípio Open/Closed
 
-1. Configure as variáveis locais no arquivo `.env` da raiz baseado nas chaves contidas em `src/config/env.ts`.
-2. Para alternar dinamicamente o comportamento de formatação dos logs em desenvolvimento assistido, altere a flag `NODE_ENV` entre `development` e `production` e reinicie rapidamente o contêiner Docker para sincronizar o cache de variáveis do Linux.
-3. Crie suas novas pastas de domínio autocontidas dentro de `src/api/` (ex: `src/api/products/`).
-4. Desenvolva o controlador e utilize a função de inicialização agnóstica para plugar as novas rotas no motor abstrato.
-5. Registre a função de inicialização do seu novo pacote no orquestrador central da raiz (`src/apiRouter.ts`).
-6. Para proteger rotas privadas, envolva-as declarativamente no arquivo de rotas do domínio utilizando o método `guard.protect(controller)`.
+O arquivo de rotas deve permanecer concentrado no registro dos endpoints.
 
----
-### 🛠️ Mantenedor e Suporte Técnico
-* **Autor:** Luis Carlos da Silva Dias
-* **Contato:** silvadias.perfil@outlook.com
+A segurança de perímetro e a leitura de sessão são responsabilidades da infraestrutura de tráfego e de seus mecanismos de pipeline. Dessa forma, a expansão das políticas de segurança pode ocorrer sem acoplar regras tecnológicas aos módulos de domínio.
+
+A intenção é manter os componentes existentes fechados para modificações desnecessárias e abertos à extensão por novos adaptadores e políticas.
+
+## Próximo marco técnico
+
+Com a camada de tráfego, a telemetria estruturada e a hidratação de tokens encapsuladas, o próximo passo arquitetural é a implementação da camada de **Casos de Uso (`useCases`)**.
+
+O modelo planejado trabalha com **Identificação Progressiva** e **Atores Temporários**:
+
+1. uma requisição inicialmente anônima chega como `ANONYMOUS`;
+2. o caso de uso pode cruzar IP, hash do navegador e informações de hardware;
+3. sendo identificada uma nova entidade, um ID de negócio é criado;
+4. o token passa a representar esse ator temporário;
+5. quando o usuário realiza o cadastro oficial, os dados podem atualizar a mesma entidade, preservando seu histórico de uso.
+
+Essa etapa deverá manter as mesmas regras de isolamento: casos de uso e domínio não devem conhecer detalhes de Express, JWT ou outros mecanismos tecnológicos.
+
+## Configuração e execução
+
+As variáveis de ambiente são governadas por `src/config/env.ts`.
+
+Para o desenvolvimento assistido, o comportamento de logging pode ser alternado entre `development` e `production` por meio de `NODE_ENV`, conforme a configuração do projeto.
+
+Novos módulos de domínio devem ser organizados como pacotes autocontidos dentro de `src/api/`, mantendo suas regras separadas da infraestrutura.
+
+## Convenções
+
+### Imports
+
+Para contratos usados apenas como tipos, utilize `import type`:
+
+```typescript
+import type { HttpTrafficRequest } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+```
+
+### Dependências
+
+- mantenha dependências tecnológicas nos respectivos `drivers/`;
+- mantenha contratos e abstrações em `engine/`;
+- evite vazamento de tipos de frameworks para o domínio;
+- prefira exceções de domínio catalogadas a códigos e mensagens espalhados;
+- preserve nomes de negócio compreensíveis no core;
+- utilize injeção de dependências para conectar o núcleo aos adaptadores.
+
+## 💻 Arquitetura de Fluxo (Exemplo de Escala com Acoplamento Zero)
+
+### 🛣️ 1. A Fiação da Rota (`src/api/messages/routes.ts`)
+O arquivo de rotas possui responsabilidade única (SRP): mapear o método HTTP puro ao seu despachante, delegando a malha de validação de dados de forma declarativa e invisível.
+
+```typescript
+import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { MessagesController }          from './controller';
+import      { MessageInputSchema }          from './validation';
+
+export function initializeMessagesRoutes(engine: HttpTrafficExchangeEngine): void {
+  // A rota tem apenas a rota e o contrato sintático de entrada. Zero acoplamento com segurança.
+  engine.register(
+    'post',
+    '/messages',
+    MessagesController.dispatchSendMessage,
+    MessageInputSchema
+  );
+}
+```
+
+### 🎯 2. O Controlador Despachante (`src/api/messages/controller.ts`)
+O controlador atua estritamente como um tradutor de fronteira. Ele não executa lógicas de banco de dados, não valida e-mails e não faz cálculos temporais. Ele simplesmente captura o input limpo, lê a sessão hidratada pela rede e despacha para a Action executar o trabalho pesado.
+
+```typescript
+import type { HttpTrafficRequest,
+              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { SendMessageAction }   from './actions/sendMessageAction';
+
+export class MessagesController {
+  public static async dispatchSendMessage(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
+    
+    // Inversão de Controle: Instancia a ação de negócio injetando a telemetria contextual da requisição
+    const messageUseCase = new SendMessageAction(request.logger);
+
+    // Executa o Caso de Uso passando apenas os payloads purificados e a identidade isolada
+    const businessResult = await messageUseCase.execute({
+      promptText : request.body.prompt,
+      userSession: request.session
+    });
+
+    // Retorna a resposta visual adaptável para o controlador devolver à rede
+    return {
+      statusCode : 200,
+      body       : {
+        status : 'success',
+        data   : businessResult
+      }
+    };
+  }
+}
+```
+
+### ⚙️ 3. A Ação de Domínio / Caso de Uso (`src/api/messages/actions/sendMessageAction.ts`)
+O coração do software. Esta classe é imune a frameworks de rede (não sabe o que é Express ou cURL). Ela recebe estruturas fortemente tipadas em tempo de design, aplica as lógicas de bloqueio comportamental de anônimos, consome repositórios e emite auditorias estruturadas imutáveis.
+
+```typescript
+import type { SystemLogger }        from '../../../../infrastructure/telemetry/engine/systemLogger';
+import type { TokenSessionPayload } from '../../../../infrastructure/security/engine/tokenSession';
+import      { DomainException }     from '../../../errors/domainException';
+
+interface SendMessageInput {
+  readonly promptText  : string;
+  readonly userSession : TokenSessionPayload;
+}
+
+interface SendMessageOutput {
+  readonly aiResponse : string;
+  readonly promptId   : string;
+}
+
+export class SendMessageAction {
+  private readonly logger: SystemLogger;
+
+  constructor(logger: SystemLogger) {
+    this.logger = logger;
+  }
+
+  public async execute(input: SendMessageInput): Promise<SendMessageOutput> {
+    const { actorId, initialIpAddress, requestSequenceCounter } = input.userSession;
+
+    // BARREIRA DE COMPORTAMENTO: Se for um ator anônimo e o contador violar o limite contra vírus
+    if (actorId === 'ANONYMOUS' && requestSequenceCounter > 5) {
+      this.logger.warn(`Security threshold breached. IP [${initialIpAddress}] blocked by anti-bot policy.`);
+      throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+    }
+
+    // AUDITORIA NATIVA: Registro estruturado de não-repúdio gerado em formato JSON camaleônico
+    this.logger.audit('AI_PROMPT_PROCESSED', actorId, {
+      promptLength : input.promptText.length,
+      sequenceId   : requestSequenceCounter
+    });
+
+    // Simulando a execução real da regra de negócio (Consulta a IA / Banco de Dados de forma isolada)
+    return {
+      aiResponse : `Resposta computada para o prompt: ${input.promptText}`,
+      promptId   : 'prompt_uuid_999'
+    };
+  }
+}
+```
+
+### 💡 Por que esta dinâmica garante a Imunidade Arquitetural?
+-   **Validação Desacoplada:** Se o frontend enviar um JSON sem o campo `prompt`, o driver de rede barra na portaria (422) antes mesmo do `MessagesController` ser invocado [Uncle Bob].
+-   **Manutenabilidade e Escala:** Se a regra de bloqueio de bots mudar (ex: validar o hash do navegador em vez do contador), você altera **apenas um arquivo**: a action `SendMessageAction`. As rotas, os controladores e as criptografias do JWT permanecem **100% intocados e imunes**, impossibilitando que uma alteração lógica cause efeitos colaterais ou quebre outras partes do ecossistema [Uncle Bob, Farley].
+
+
+## Mantenedor
+
+**Autor:** Luis Carlos da Silva Dias  
+**Contato:** silvadias.perfil@outlook.com
