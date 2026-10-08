@@ -13,7 +13,7 @@ export const mockApiKeyTable: ApiKeyRow[] = [
     keyString   : 'gemini_free_token_test_123',
     appId       : 'app_partner_free_zone',
     developerId : 'dev_luis_dias_corporation',
-    planTier    : 'ENTERPRISE',
+    planTier    : 'FREE',
     isSuspended : 0
   },
   {
