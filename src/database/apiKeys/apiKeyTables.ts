@@ -1,15 +1,10 @@
-/**
- * @file apiKeyTables.ts
- * @description Tabela física simulada em memória (Driver) para armazenamento bruto de credenciais de parceiros (Multi-Tenant).
- */
-
 export interface ApiKeyRow {
   readonly id           : number;
   readonly keyString    : string;
   readonly appId        : string;
   readonly developerId  : string;
   readonly planTier     : 'FREE' | 'PREMIUM' | 'ENTERPRISE';
-  readonly isSuspended  : number; // 0 = Ativo, 1 = Suspenso (Dialeto puro de banco)
+  readonly isSuspended  : number;
 }
 
 export const mockApiKeyTable: ApiKeyRow[] = [
@@ -18,7 +13,7 @@ export const mockApiKeyTable: ApiKeyRow[] = [
     keyString   : 'gemini_free_token_test_123',
     appId       : 'app_partner_free_zone',
     developerId : 'dev_luis_dias_corporation',
-    planTier    : 'FREE',
+    planTier    : 'ENTERPRISE',
     isSuspended : 0
   },
   {

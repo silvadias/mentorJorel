@@ -1,8 +1,3 @@
-/**
- * @file apiKey.ts
- * @description Dicionário literal de mensagens de erro específicas para o perímetro de chaves de acesso Multi-Tenant.
- */
-
 export const ApiKeyErrors = {
   API_KEY_MISSING: {
     code       : 'API_KEY_MISSING',

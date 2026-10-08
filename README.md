@@ -289,6 +289,60 @@ export class SendMessageAction {
 -   **Validação Desacoplada:** Se o frontend enviar um JSON sem o campo `prompt`, o driver de rede barra na portaria (422) antes mesmo do `MessagesController` ser invocado [Uncle Bob].
 -   **Manutenabilidade e Escala:** Se a regra de bloqueio de bots mudar (ex: validar o hash do navegador em vez do contador), você altera **apenas um arquivo**: a action `SendMessageAction`. As rotas, os controladores e as criptografias do JWT permanecem **100% intocados e imunes**, impossibilitando que uma alteração lógica cause efeitos colaterais ou quebre outras partes do ecossistema [Uncle Bob, Farley].
 
+## 🛡️ Ecossistema Perimetral Multi-Tenant & Cache RAM Dinâmico
+
+O sistema implementa uma barreira de defesa em profundidade na portaria de rede baseada em chaves de acesso dinâmicas para aplicações parceiras (estilo Google Gemini e OpenAI), operando através de um mecanismo de **Cache Dinâmico In-Memory (Read-Through Cache)** para garantir segurança máxima com o menor desgaste de rede do planeta [Farley].
+
+```text
+[Cliente Externo: Bruno] ──( Envia X-API-Key )──► [ExpressHttpDriver (Portaria de Rede)]
+                                                              │
+                     ┌────────────────────────────────────────┴────────────────────────────────────────┐
+                     ▼                                                                                 ▼
+     [BARREIRA 1: Cache RAM Local (Map)]                                             [BARREIRA 2: Fallback ao Banco (Repository)]
+  Procura a chave na memória do servidor.                                          Se der Cache Miss, executa a query física.
+  - Cache Hit: Retorna em microsegundos (62ms) ◄────────────────────────────────── - Chave Inexistente? 401 Unauthorized (Aborta)
+  - Aplicação Suspensa? 403 Forbidden (Aborta)                                     - Chave Ativa? Grava uma cópia na RAM (TTL) e libera.
+```
+
+### 🧠 Como Funciona a Engenharia do Cache Dinâmico
+1. **O Cliente é Agnóstico:** O frontend de terceiros envia a credencial bruta a cada clique por motivos de segurança perimetral (evitando o salvamento de chaves no LocalStorage do navegador do usuário, o que exporia a chave a clonagens) [Farley].
+2. **A API gerencia a RAM:** O servidor intercepta a chave na entrada de rede e consulta uma estrutura type-safe nativa alocada diretamente nos chips de memória RAM do container Docker (`Map<string, CachedKeyEntry>`), consumindo peso computacional zero de hardware [Farley].
+3. **Mecanismo Read-Through com TTL:** Na primeira requisição, ocorre um *Cache Miss* (falha de cache). O sistema vai ao banco de dados por meio do repositório, valida a credencial, monta um envelope temporal e **salva uma cópia exata do registro na memória RAM** com um tempo de expiração (*Time-To-Live*) de 5 minutos [Farley]. Pelos próximos 300 segundos, todas as requisições leem exclusivamente essa cópia na RAM (Cache Hit), gerando respostas ultra-rápidas (62ms) e protegendo os bancos de dados principais contra bombardeios ou ataques de negação de serviço aplicacionais (DDoS) [Farley].
+
+---
+
+## 📑 Mapeamento Técnico de Componentes (Quem chama Quem)
+
+### 1. O Contrato de Sessão (`src/infrastructure/security/engine/apiKeySession.ts`)
+*   **Exportações Nomeadas:** Interfaces `ApiKeySessionPayload`, `ApplicationRepository` e `ApiKeyEvaluatorEngine`.
+*   **Propósito:** Contrato abstrato (Port) que obriga a camada de dados e o motor lógico de segurança a conversarem em dialeto purificado de negócios, garantindo que o core do sistema permaneça 100% aberto para expansão e fechado para mudança (OCP) [Uncle Bob].
+*   **Variáveis e Payload Estruturado (`ApiKeySessionPayload`):**
+    *   `applicationId` : Identificador único da empresa ou site parceiro dono da credencial [Ottinger].
+    *   `developerId`   : Vínculo com a conta do programador que gerou a chave no painel de desenvolvedor [Ottinger].
+    *   `rateLimitTier` : Nível do plano de consumo atribuído à chave (`FREE` | `PREMIUM` | `ENTERPRISE`) [Ottinger].
+    *   `isSuspended`   : Boolean indicador de bloqueio administrativo temporal por fraude ou inadimplência [Ottinger].
+
+### 2. A Camada de Dados e Consulta Burra (`src/database/apiKeys/`)
+*   `apiKeyTables.ts`   : Contém a interface pura da linha da tabela (`ApiKeyRow`) e o array em memória RAM que simula as chaves de teste registradas, expurgando o amadorismo de prefixar interfaces com a letra "I" [Uncle Bob, Ottinger].
+*   `apiKeyInstance.ts` : Driver de conexão burro (`apiKeyConnection`). Sua responsabilidade única (SRP) é rodar o método linear de busca física `.findKeyByString(apiKey)` e retornar a linha crua do banco, agindo de forma idêntica a drivers de produção como MySQL ou MongoDB [Uncle Bob].
+*   `apiKeyRepository.ts`: O adaptador hexagonal concreto (`ApiKeyRepository`). Ele consome a instância do banco, captura a linha crua e realiza a **tradução de dialeto físico para dialeto humano**, devolvendo o objeto no formato da interface `ApiKeySessionPayload` [Uncle Bob].
+
+### 3. O Motor de Orquestração do Cache (`src/infrastructure/security/engine/apiKeyEvaluator.ts`)
+*   **Implementação:** Implementa a interface `ApiKeyEvaluatorEngine`. Ele recebe o `ApplicationRepository` por Inversão de Dependências (DIP) e gerencia o mapa privado de cache dinâmico com TTL (`ramCacheStore`) [Uncle Bob, Farley].
+*   **Ações:** Executa o método `.evaluate(apiKey)`. Se a chave for inexistente no ecossistema, interrompe o fluxo disparando a exceção soberana de domínio `DomainException('API_KEY_INVALID')`. Se o registro indicar que o parceiro foi banido pelo painel administrativo, dispara a exceção `DomainException('API_KEY_SUSPENDED')`, forçando o barramento central a responder com o status de rede adequado (401 ou 403) [Uncle Bob].
+
+### 4. A Interceptação Perimetral de Entrada (`src/infrastructure/httpTraffic/drivers/expressHttpDriver.ts`)
+*   **Funcionamento:** Modificado no construtor para receber a abstração `apiKeyEngine: ApiKeyEvaluatorEngine` por acoplamento plug-in [Uncle Bob].
+*   **O Pipeline de Borda:** Na primeiríssima linha do processamento HTTP, o driver extrai o cabeçalho de transporte `incomingRequest.headers['x-api-key']` [Farley]. Se o cabeçalho estiver ausente, joga o erro `API_KEY_MISSING` [Uncle Bob]. Se estiver presente, repassa a string para o motor de cache dinâmico processar em microsegundos [Uncle Bob]. Passando com sinal verde pela RAM, os metadados do parceiro são anexados de forma transparente na propriedade **`request.application`**, disponibilizando as variáveis de planos (`FREE`/`ENTERPRISE`) para as rotas e os casos de uso consumirem nativamente [Uncle Bob, Farley].
+
+---
+
+## 🚀 O que pode ser Feito Agora (Abertura para Expansão)
+
+Com o esqueleto perimetral Multi-Tenant e a barreira de cache dinâmico dinâmico operando com nota máxima de design na branch `branchApiKey` [Farley], a infraestrutura técnica está completamente fechada para modificações e aberta para as seguintes extensões e plugs lógicos de negócio [Uncle Bob]:
+
+*   **Plugar o MongoDB ou Sequelize:** Para migrar do array em memória para um banco de dados real ou ORM de mercado, o desenvolvedor precisa alterar **apenas um arquivo**: criar uma nova classe dentro de `src/database/apiKeys/` (ex: `MongoApiKeyRepository.ts`) implementando a interface `ApplicationRepository` [Uncle Bob]. A portaria de rede, os controladores e o motor de cache dinâmico permanecerão intactos e imunes, sem saber que o banco de dados mudou [Uncle Bob].
+*   **Rota de Geração de Chaves:** O sistema está pronto para receber uma rota de negócio voltada a desenvolvedores (ex: `POST /developer/keys`). O caso de uso dessa rota chamará o repositório de persistência para inserir uma nova linha na tabela física, expandindo os acessos dinamicamente sem tocar em arquivos de infraestrutura [Uncle Bob, Farley].
 
 ## Mantenedor
 

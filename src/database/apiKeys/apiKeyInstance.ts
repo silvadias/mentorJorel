@@ -1,4 +1,5 @@
-import type { mockApiKeyTable, ApiKeyRow } from './apiKeyTables';
+import { mockApiKeyTable, 
+        type ApiKeyRow } from './apiKeyTables';
 
 export const apiKeyConnection = {
   query: {
