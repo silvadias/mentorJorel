@@ -7,7 +7,9 @@ import type { HttpTrafficExchangeEngine,
 import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
 import type { TokenCryptographerEngine }    from '../../security/engine/tokenSession';
+import type { ApiKeyEvaluatorEngine }       from '../../security/engine/apiKeySession';
 import      { ValidationException }         from '../engine/httpValidation';
+import      { DomainException }             from '../../../api/errors/domainException';
 
 export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly application        : ExpressEngine.Express;
@@ -15,6 +17,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly failureFormatter   : HttpFailureFormatter;
   private readonly systemLogger       : SystemLogger;
   private readonly tokenEngine        : TokenCryptographerEngine;
+  private readonly apiKeyEngine       : ApiKeyEvaluatorEngine;
   private readonly displayDebugDetails: boolean;
 
   constructor(configuration: { 
@@ -22,6 +25,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     failureFormatter       : HttpFailureFormatter; 
     systemLogger           : SystemLogger;
     tokenEngine            : TokenCryptographerEngine;
+    apiKeyEngine           : ApiKeyEvaluatorEngine;
     displayDebugDetails    : boolean; 
   }) {
 
@@ -30,6 +34,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     this.failureFormatter       = configuration.failureFormatter;
     this.systemLogger           = configuration.systemLogger;
     this.tokenEngine            = configuration.tokenEngine;
+    this.apiKeyEngine           = configuration.apiKeyEngine;
     this.displayDebugDetails    = configuration.displayDebugDetails;
     this.application.use(express.json());
 
@@ -70,6 +75,15 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       const contextualLogger = this.systemLogger.withContext(uniqueTraceId, transportMetadata);
 
       try {
+        // BARREIRA MESTRE MULTI-TENANT: Captura e avalia a API Key no Cache RAM antes de ler qualquer outra instrução
+        const rawApiKey = incomingRequest.headers['x-api-key'];
+        
+        if (!rawApiKey || typeof rawApiKey !== 'string') {
+          throw new DomainException('API_KEY_MISSING');
+        }
+
+        const authenticatedAppPayload = await this.apiKeyEngine.evaluate(rawApiKey.trim());
+
         contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
 
         if (schema && typeof schema === 'object' && 'safeParse' in schema && typeof schema.safeParse === 'function') {
@@ -111,12 +125,13 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         }
 
         const adaptedRequest: HttpTrafficRequest = {
-          body    : incomingRequest.body,
-          query   : incomingRequest.query,
-          params  : incomingRequest.params,
-          headers : incomingRequest.headers,
-          logger  : contextualLogger,
-          session : activeSessionPayload
+          body        : incomingRequest.body,
+          query       : incomingRequest.query,
+          params      : incomingRequest.params,
+          headers     : incomingRequest.headers,
+          logger      : contextualLogger,
+          session     : activeSessionPayload,
+          application : authenticatedAppPayload
 
         };
 
