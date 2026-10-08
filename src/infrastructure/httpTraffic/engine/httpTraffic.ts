@@ -1,5 +1,6 @@
 import type { SystemLogger }        from '../../telemetry/engine/systemLogger';
 import type { TokenSessionPayload } from '../../security/engine/tokenSession';
+import type { ApiKeySessionPayload } from '../../security/engine/apiKeySession';
 
 export interface HttpTrafficRequest<
   Payload           = any, 
@@ -7,18 +8,20 @@ export interface HttpTrafficRequest<
   RouteParameters   = any, 
   HeaderProperties  = any
 > {
-    body    : Payload;
-    query   : QueryParameters;
-    params  : RouteParameters;
-    headers : HeaderProperties;
-    logger  : SystemLogger;
-    session : TokenSessionPayload;
+    body        : Payload;
+    query       : QueryParameters;
+    params      : RouteParameters;
+    headers     : HeaderProperties;
+    logger      : SystemLogger;
+    session     : TokenSessionPayload;
+    application : ApiKeySessionPayload;
 
   }
 
 export interface HttpTrafficResponse<Payload = any> {
-  statusCode: number;
-  body      : Payload;
+  statusCode : number;
+  body       : Payload;
+  newToken?  : string;
 
 }
 

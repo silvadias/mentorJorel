@@ -10,7 +10,8 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
 
   constructor(configuration: { 
     secretKey         : string; 
-    expirationSeconds : number; 
+    expirationSeconds : number;
+
   }) {
     this.secretPrivateKey     = configuration.secretKey;
     this.expirationInSeconds  = configuration.expirationSeconds;
@@ -28,10 +29,12 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
       uah : payload.clientUserAgentHash,
       rcw : payload.requestSequenceCounter,
       lca : Math.floor(payload.lastActivityAt.getTime() / 1000)
+
     };
 
     return jwt.sign(tokenClaims, this.secretPrivateKey, {
       expiresIn: this.expirationInSeconds
+      
     });
   }
 
@@ -73,7 +76,7 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
         throw new DomainException('SECURITY_TOKEN_EXPIRED');
       }
       throw new DomainException('SECURITY_TOKEN_CORRUPTED');
-      
+
     }
   }
 }

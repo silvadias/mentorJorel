@@ -14,4 +14,5 @@ export interface TokenCryptographerEngine {
   
   generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'>): Promise<string>;
   decrypt(token: string): Promise<TokenSessionPayload>;
+
 }

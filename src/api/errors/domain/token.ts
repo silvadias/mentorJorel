@@ -14,4 +14,5 @@ export const SecurityError = {
     message    : "A assinatura física do dispositivo não bate com o passaporte ativo. Acesso bloqueado por segurança.",
     statusCode : 403
   }
+  
 } as const;

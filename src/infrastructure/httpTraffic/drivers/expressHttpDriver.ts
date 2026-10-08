@@ -122,6 +122,11 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
 
         const executionResponse = await handler(adaptedRequest);
         
+        // INTERCEPTAÇÃO DE SAÍDA: Se a camada de negócios emitiu um novo passaporte, injeta automaticamente no cabeçalho HTTP de resposta
+        if (executionResponse.newToken) {
+          outgoingResponse.setHeader('X-Session-Token', executionResponse.newToken);
+        }
+
         outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
         outgoingResponse.status(executionResponse.statusCode).json(executionResponse.body);
         

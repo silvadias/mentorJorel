@@ -12,8 +12,7 @@ export class DomainException extends Error {
     this.httpStatus         = errorConfiguration.statusCode;    
     Object.setPrototypeOf   (this, DomainException.prototype);
 
-  }  
-
+  } 
 }
 
 export interface HttpFailurePayload {
@@ -30,6 +29,5 @@ export interface HttpFailureFormatter {
     statusCode   : number;
     payload      : HttpFailurePayload;
 
-  };
-  
+  };  
 }
