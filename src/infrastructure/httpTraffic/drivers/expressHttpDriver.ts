@@ -9,6 +9,7 @@ import type { SystemLogger }                from '../../telemetry/engine/systemL
 import type { TokenCryptographerEngine }    from '../../security/engine/tokenSession';
 import type { ApiKeyEvaluatorEngine }       from '../../security/engine/apiKeySession';
 import      { RequestThrottler }            from '../../security/engine/requestThrottler';
+import      { ServerLifecycleGovernor }     from '../../security/engine/serverLifecycleGovernor';
 import      { ValidationException }         from '../engine/httpValidation';
 import      { DomainException }             from '../../../api/errors/domainException';
 
@@ -20,6 +21,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly tokenEngine        : TokenCryptographerEngine;
   private readonly apiKeyEngine       : ApiKeyEvaluatorEngine;
   private readonly throttlerEngine    : RequestThrottler;
+  private readonly lifecycleGovernor  : ServerLifecycleGovernor;
   private readonly displayDebugDetails: boolean;
 
   constructor(configuration: { 
@@ -29,6 +31,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     tokenEngine            : TokenCryptographerEngine;
     apiKeyEngine           : ApiKeyEvaluatorEngine;
     throttlerEngine        : RequestThrottler;
+    lifecycleGovernor      : ServerLifecycleGovernor;
     displayDebugDetails    : boolean; 
   }) {
 
@@ -39,6 +42,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     this.tokenEngine            = configuration.tokenEngine;
     this.apiKeyEngine           = configuration.apiKeyEngine;
     this.throttlerEngine        = configuration.throttlerEngine;
+    this.lifecycleGovernor      = configuration.lifecycleGovernor;
     this.displayDebugDetails    = configuration.displayDebugDetails;
     this.application.use(express.json());
 
@@ -54,6 +58,16 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         incomingRequest : ExpressEngine.Request, 
         outgoingResponse: ExpressEngine.Response
     ): Promise<void> => {      
+      
+      // MESTRE LIFE-CYCLE: Incrementa atômica e preventivamente o contador de conexões na RAM do servidor
+      try {
+        this.lifecycleGovernor.incrementActiveRequests();
+      } catch (terminationError: unknown) {
+        // Se o container estiver em processo de morte, rejeita a nova conexão imediatamente com 503
+        outgoingResponse.status(503).json({ status: 'fail', code: 'SERVER_TERMINATING', message: 'Servidor em processo de encerramento.' });
+        return;
+      }
+
       const uniqueTraceId     = crypto.randomUUID();
       const clientMetadata    = this.extractClientMetadata(incomingRequest);
       
@@ -100,6 +114,9 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         
         outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
         outgoingResponse.status(statusCode).json(payload);
+      } finally {
+        // MESTRE LIFE-CYCLE: Rastreabilidade indestrutível na RAM. Decrementa o contador obrigatoriamente na saída
+        this.lifecycleGovernor.decrementActiveRequests();
       }
     });
   }
@@ -149,9 +166,15 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     return anonymousPayload;
   }
 
-  public start(): void {
-    this.application.listen(this.listeningPort, () => {
+    public start(): void {
+    // 🛠️ MESTRE LIFE-CYCLE: Inicializa o driver de rede fisicamente e captura a instância pura do servidor HTTP
+    const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
     });
+
+    // 🔌 ORQUESTRAÇÃO DE SINAIS DO OS: Escuta e vincula os gatilhos do Linux de forma enclausurada e invisível para o server.ts
+    process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
+    process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
   }
+
 }

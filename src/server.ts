@@ -6,6 +6,7 @@ import      { ExpressJwtAdapter }             from './infrastructure/security/dr
 import      { ApiKeyRepository }              from './database/apiKeys/apiKeyRepository';
 import      { ApiKeyEvaluator }               from './infrastructure/security/engine/apiKeyEvaluator';
 import      { RequestThrottler }              from './infrastructure/security/engine/requestThrottler';
+import      { ServerLifecycleGovernor }       from './infrastructure/security/engine/serverLifecycleGovernor';
 import      { configureApiRoutes }            from './apiRouter';
 import type { HttpTrafficExchangeEngine }     from './infrastructure/httpTraffic/engine/httpTraffic';
 import type { SystemLogger }                  from './infrastructure/telemetry/engine/systemLogger';
@@ -21,6 +22,7 @@ const securityTokenEngine  = new ExpressJwtAdapter({ secretKey: 'CHAVE_SUPER_SEC
 const apiCredentialsStore  = new ApiKeyRepository();
 const dynamicApiKeyCache   = new ApiKeyEvaluator(apiCredentialsStore, 300);
 const requestLimitThrottler= new RequestThrottler(60); 
+const systemLifecycleZelador= new ServerLifecycleGovernor(systemTelemetryLogger, 20); // Janela de 20s para drenar a RAM
 
 const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
   port                : Env.port,
@@ -29,6 +31,7 @@ const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({
   tokenEngine         : securityTokenEngine,
   apiKeyEngine        : dynamicApiKeyCache,
   throttlerEngine     : requestLimitThrottler,
+  lifecycleGovernor   : systemLifecycleZelador, // INJEÇÃO DE GOVERNANÇA: Zeladoria ativa de conexões longas na portaria
   displayDebugDetails : Env.nodeEnv === 'development'
 
 });
@@ -37,4 +40,5 @@ systemTelemetryLogger.info(`Bootstrapping application core engine under environm
 
 configureApiRoutes(serverEngine);
 
+// 🎯 DISPARO ABSTRATO PURIFICADO: O servidor inicializa a rede sem vazar propriedades físicas do Express (Sinal Verde Máximo)
 serverEngine.start();
