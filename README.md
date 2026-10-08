@@ -344,6 +344,120 @@ Com o esqueleto perimetral Multi-Tenant e a barreira de cache dinâmico dinâmic
 *   **Plugar o MongoDB ou Sequelize:** Para migrar do array em memória para um banco de dados real ou ORM de mercado, o desenvolvedor precisa alterar **apenas um arquivo**: criar uma nova classe dentro de `src/database/apiKeys/` (ex: `MongoApiKeyRepository.ts`) implementando a interface `ApplicationRepository` [Uncle Bob]. A portaria de rede, os controladores e o motor de cache dinâmico permanecerão intactos e imunes, sem saber que o banco de dados mudou [Uncle Bob].
 *   **Rota de Geração de Chaves:** O sistema está pronto para receber uma rota de negócio voltada a desenvolvedores (ex: `POST /developer/keys`). O caso de uso dessa rota chamará o repositório de persistência para inserir uma nova linha na tabela física, expandindo os acessos dinamicamente sem tocar em arquivos de infraestrutura [Uncle Bob, Farley].
 
+## 🛡️ Malha de Segurança e Resiliência Internacional (Camada de Infraestrutura)
+
+O esqueleto possui um pipeline de defesa em profundidade e gerenciamento de processos na portaria de tráfego HTTP. Essas barreiras operam de forma agnóstica em nível de **Memória RAM local (peso computacional zero de hardware)**, garantindo imunidade absoluta contra robôs, bombardeios de requisições, colapsos de serviços externos e desligamentos abruptos [Farley].
+
+```text
+               JORNADA DE UM CLIQUE DO CLIENTE (PIPELINE SEQUENCIAL)
+               
+ [Navegador / Bruno] ───► [ExpressHttpDriver: Entrada de Rede]
+                                    │
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🧬 1. ServerLifecycleGovernor (Incrementa +1 na RAM)    │
+       │    * Rejeita a conexão com status 503 se o SO estiver  │
+       │      em processo de encerramento em nuvem (Docker).    │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Sinal Verde (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🔑 2. ApiKeyEvaluator (Cache RAM Dinâmico Read-Through)│
+       │    * Valida X-API-Key in microsegundos via RAM Cache.  │
+       │    * Cache Miss? Fallback ao banco e popula a RAM.     │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Chave Válida (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🛡️ 3. RequestThrottler (Regulador de Janela de Cliques) │
+       │    * Conta os cliques por minuto (Tenancy do Plano).   │
+       │    * Estourou a cota do plano? Status 429 Aborta.      │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Sob a Cota (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🎯 4. Execução do Caso de Uso (Seu Core de IA)          │
+       │    * Durante chamadas externas demoradas (OpenAI)...   │
+       │    * ServiceResilienceGate monitora o circuito.       │
+       │    * Falhou 5 vezes consecutivas? O portão abre e     │
+       │      desvia chamadas futuras com status 503 (0ms).    │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Fluxo Encerrado (Sucesso/Erro)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ ⚰️ 5. ExpressHttpDriver: Bloco Finally                 │
+       │    * Decrementa obrigatoriamente o contador (-1 na RAM).│
+       │    * Libera a morte segura do processo se for o último.│
+       └────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 📑 1. Regulador Dinâmico de Cliques (`RequestThrottler`)
+*   **Propósito:** Proteger os recursos computacionais do servidor e mitigar abusos de faturamento causados por scripts robôs em loops infinitos, aplicando limites estritos baseados no plano contratado da aplicação parceira (Multi-Tenant) [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/requestThrottler.ts`. Opera de forma nativa e agnóstica através do algoritmo de **Janela Deslizante Simplificada (*Fixed Window Rate Limiting*)** recorrendo a estruturas de `Map` da memória RAM do processo Node.js [Farley].
+*   **Variáveis e Janelas Internas:**
+    *   `RATE_LIMITS` : Dicionário imutável strongly-typed mapeando as cotas (`FREE: 10`, `PREMIUM: 100`, `ENTERPRISE: 1000` cliques a cada 60 segundos).
+    *   `appCountersStore` : Tabela efêmera em RAM que armazena a contagem ativa indexada por `applicationId`.
+    *   `ipCountersStore`  : Tabela efêmera em RAM indexada por `clientIp` com teto bruto de 200 cliques/minuto contra ataques DDoS na Camada 7.
+*   **Tratamento de Exceção:** Quando o contador atômico de uma chave supera o teto permitido dentro da janela ativa de 60 segundos, explode a exceção de domínio unificada do catálogo, interceptada na portaria com o status **`429 Too Many Requests` (REQUEST_THROTTLED)** [Farley].
+
+#### 🎮 Cenário Lúdico de Funcionamento do `RequestThrottler`
+Imagine uma balada exclusiva onde parceiros têm crachás de acesso. O parceiro **Luiz** tem o crachá plano `FREE`, que dá direito a apenas **10 drinques por minuto**. 
+Luiz decide trapacear e coloca um robô para pedir os 10 drinques na sinaleira de uma só vez em 2 segundos. Quando o robô de Luiz tenta pedir o **11º drinque** no 3º segundo, o barman (`RequestThrottler`), que tem um bloco de notas ultra-rápido na memória de sua cabeça (`Map`), olha e diz: *"Negado! Você estourou seu limite em menos de 60 segundos. Espere o relógio virar!"*. 
+O pedido nem chega a gastar os ingredientes do bar (sua CPU/IA), economizando os recursos da casa imediatamente com o erro `429` [Farley].
+
+```typescript
+// Exemplo sucinto de ativação automática perimetral no ExpressHttpDriver
+const apiCredentials = await this.apiKeyEngine.evaluate(String(request.headers['x-api-key']));
+
+// O Throttler intercepta e conta atômico na RAM. Se estourar 10 cliques do plano FREE, mata a requisição aqui!
+await this.throttlerEngine.throttle(apiCredentials.applicationId, apiCredentials.rateLimitTier, request.ipAddress);
+```
+
+---
+
+### 📑 2. Portão de Resiliência Contra Colapsos Externos (`ServiceResilienceGate`)
+*   **Propósito:** Blindar a API contra o **efeito cascata catastrófico de lentidão ou quedas de serviços terceiros** (como OpenAI, Gemini ou Gateways de Pagamento). Impede que conexões longas travadas consumam a memória RAM do contêiner Docker [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serviceResilienceGate.ts`. Funciona como um **Mecanismo de Disjuntor Técnico (*Circuit Breaker*)** de alta resiliência operando de forma desacoplada por domínio [Farley].
+*   **Os Três Estados Lógicos na Memória RAM:**
+    *   `CLOSED` 🟢 (Circuito Fechado): Estado operacional padrão. O tráfego para APIs de IA flui livremente. O portão monitora em silêncio.
+    *   `OPEN` 🔴 (Circuito Aberto): Se a API externa falhar consecutivamente por 5 vezes, o portão abre. Pelos próximos 60 segundos, qualquer disparo é interceptado e bloqueado na RAM em **0 milissegundos**, estourando o erro **`EXTERNAL_SERVICE_UNAVAILABLE` (Status 503)** sem tentar gastar tempo de rede com o serviço fora do ar [Farley].
+    *   `HALF_OPEN` 🟡 (Circuito Entreaberto): Passados os 60 segundos de repouso, o portão deixa passar uma única requisição de teste. Se falhar, volta para `OPEN` por mais um ciclo; se passar, restabelece o estado `CLOSED` automaticamente [Farley].
+*   **Variáveis Internas:** `consecutiveFailures` (Contador atômico de erros sequenciais), `currentState` (Indicador textual do estado ativo na RAM), e `nextAttemptAllowedAt` (Timestamp delimitador da janela de cooldown) [Ottinger].
+
+#### 🎮 Cenário Lúdico de Funcionamento do `ServiceResilienceGate`
+Você gerencia um restaurante e tem um motoboy terceirizado (**OpenAI**) para entregar pedidos longos. De repente, a avenida principal da cidade desaba e o motoboy começa a atrasar ou sumir. 
+O primeiro, o segundo e o terceiro cliente ligam reclamando de pane (`Error`). Ao atingir **5 falhas seguidas**, o gerente do restaurante liga o disjuntor de segurança (`ServiceResilienceGate` muda para `OPEN` 🔴). Pelos próximos 60 segundos, quando o 6º cliente tenta fazer um pedido, o gerente nem anota e nem chama o motoboy; ele diz na hora: *"Desculpe, nosso canal de entregas desabou, tente novamente em instantes!"*. 
+A resposta volta em **0 milissegundos**, evitando que a cozinha fique entulhada de pratos frios esperando um motoboy que nunca vai chegar (sua memória RAM travada por timeouts longos) [Farley].
+
+```typescript
+// Exemplo lúdico de uso dentro do Caso de Uso de Chat com Inteligência Artificial
+public async executeChatPrompt(prompt: string): string {
+  // Se o disjuntor estiver OPEN, barra na hora com erro 503 sem gastar processamento de rede!
+  this.openAiResilienceGate.verifyGateHealth();
+
+  try {
+    const aiResult = await apiOpenAiThirdParty.send(prompt);
+    this.openAiResilienceGate.recordSuccess(); // Sucesso: Limpa o circuito 🟢
+    return aiResult;
+  } catch (error) {
+    this.openAiResilienceGate.recordFailure(); // Falha: Conta +1 erro rumo ao bloqueio 🔴
+    throw error;
+  }
+}
+```
+
+---
+
+### 📑 3. Governador do Ciclo de Vida do Servidor (`ServerLifecycleGovernor`)
+*   **Propósito:** Garantir o encerramento seguro e livre de corrupção de transações ou dados da aplicação (**Graceful Shutdown**), coordenando de forma transparente a drenagem de conexões longas de Inteligência Artificial quando a infraestrutura em nuvem (Docker/Kubernetes) solicitar a substituição do contêiner [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serverLifecycleGovernor.ts`. O driver HTTP Express intercepta os sinais primitivos do sistema operacional Linux (`SIGTERM`, `SIGINT`) e delega o encerramento do processo de forma atômica para este governador [Uncle Bob].
+*   **O Pipeline de Drenagem In-Memory:**
+    *   **Entrada de Tráfego:** No início de cada requisição, o driver executa o método `.incrementActiveRequests()`, somando `+1` ao contador central de memória [Uncle Bob]. Se o sinal de encerramento já foi disparado, rejeita novos cliques com o status 503 (`SERVER_TERMINATING`).
+    *   **Saída de Tráfego:** Utilizando a cláusula de segurança **`finally`** do JavaScript na portaria de rede, o driver executa o método `.decrementActiveRequests()` de forma obrigatória (seja a requisição um sucesso ou um erro), subtraindo `-1` [Uncle Bob].
+
+
 ## Mantenedor
 
 **Autor:** Luis Carlos da Silva Dias  
