@@ -19,16 +19,16 @@ const coreFailureFormatter = new ApplicationFailureFormatter();
 
 const securityTokenEngine  = new ExpressJwtAdapter({ secretKey: 'CHAVE_SUPER_SECRETA_BOILERPLATE', expirationSeconds: 3600 });
 const apiCredentialsStore  = new ApiKeyRepository();
-const dynamicApiKeyCache   = new ApiKeyEvaluator(apiCredentialsStore, 300); // Aloca o cache RAM com TTL de 5 minutos
-const requestLimitThrottler= new RequestThrottler(60); // Inicializa a janela de regulação dinâmica para 60 segundos
+const dynamicApiKeyCache   = new ApiKeyEvaluator(apiCredentialsStore, 300);
+const requestLimitThrottler= new RequestThrottler(60); 
 
 const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
   port                : Env.port,
   failureFormatter    : coreFailureFormatter,
   systemLogger        : systemTelemetryLogger,
   tokenEngine         : securityTokenEngine,
-  apiKeyEngine        : dynamicApiKeyCache, // INJEÇÃO PERIMETRAL: Acopla a barreira de cache de alta velocidade na portaria
-  throttlerEngine     : requestLimitThrottler, // INJEÇÃO REGULADORA: Protege o ecossistema contra abuso de cliques/robôs na entrada
+  apiKeyEngine        : dynamicApiKeyCache,
+  throttlerEngine     : requestLimitThrottler,
   displayDebugDetails : Env.nodeEnv === 'development'
 
 });

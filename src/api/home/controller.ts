@@ -4,23 +4,22 @@ import type { HttpTrafficRequest,
               HttpTrafficResponse }       from '../../infrastructure/httpTraffic/engine/httpTraffic';
 
 export const HomeController = {
-  getResponse: async (request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+  getResponse: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
     return {
       statusCode: 200,
       body: {
         message: "Node.ts Standard Template with Express running perfectly inside Docker!",
         status: "online",
         environment: Env.nodeEnv
-
       }
     };
   },
-  simulateDomainError: async (request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+
+  simulateDomainError: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
     throw new DomainException("STUDENT_NOT_FOUND");
-
   },
-  simulateUnexpectedError: async (request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
-    throw new Error("Falha catastrófica de conexão com serviço externo simulada!");
 
+  simulateUnexpectedError: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+    throw new Error("Falha catastrófica de conexão com serviço externo simulada!");
   }
 };
