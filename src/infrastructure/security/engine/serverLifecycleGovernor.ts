@@ -26,7 +26,6 @@ export class ServerLifecycleGovernor {
   public decrementActiveRequests(): void {
     this.activeRequestsCounter--;
     
-    // Se o sinal de desligamento já foi disparado e o último prompt de IA terminou de computar
     if (this.isTerminating && this.activeRequestsCounter === 0) {
       this.systemLogger.info('All pending network operations successfully drained. Closing process safely.');
       process.exit(0);
@@ -57,7 +56,7 @@ export class ServerLifecycleGovernor {
     setTimeout(() => {
       this.systemLogger.error(`Graceful termination window timeout of [${this.terminationTimeoutMs}ms] breached. Forcing hard kill.`);
       process.exit(1);
-    }, this.terminationTimeoutMs).unref(); // O .unref() impede que o setTimeout segure o processo ativo inutilmente
+    }, this.terminationTimeoutMs).unref();
   }
 
   public isInTerminationState(): boolean {

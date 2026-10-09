@@ -5,7 +5,7 @@ import      { DomainException }       from '../../../api/errors/domainException'
 
 interface CachedKeyEntry {
   readonly payload   : ApiKeySessionPayload;
-  readonly expiresAt : number; // Unix timestamp de expiração na RAM
+  readonly expiresAt : number;
 }
 
 export class ApiKeyEvaluator implements ApiKeyEvaluatorEngine {

@@ -4,6 +4,7 @@ import { SecurityError }             from "./domain/token";
 import { ApiKeyErrors }              from "./domain/apiKey";
 import { ThrottlerErrors }           from "./domain/throttler";
 import { ServiceResilienceErrors }   from "./domain/serviceResilience";
+import { IdentityErrors } from "./domain/identity";
 
 export const ErrorCatalog = {
   ...HomeError,
@@ -11,7 +12,8 @@ export const ErrorCatalog = {
   ...SecurityError,
   ...ApiKeyErrors,
   ...ThrottlerErrors,
-  ...ServiceResilienceErrors
+  ...ServiceResilienceErrors,
+  ...IdentityErrors
   
 } as const;
 
