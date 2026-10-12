@@ -1,18 +1,31 @@
 import type { FederatedAuthenticator, FederatedIdentityPayload } from '../../../api/identity/ports/federatedAuthenticator';
+import      { DomainException }          from '../../../api/errors/domainException';
 
 export class GoogleAuthenticator implements FederatedAuthenticator {
 
-  public async authenticate(accessToken: string): Promise<FederatedIdentityPayload > {
-    if (accessToken === 'invalid_google_token') {
-      throw new Error('GOOGLE_API_AUTHENTICATION_FAILED');
-    }
+  public async authenticate(idToken: string): Promise <FederatedIdentityPayload>{
+    try {
+      const googleApiResponse = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
 
-    return {
-      externalId      : 'google_oauth2_sub_9992312',
-      email           : 'silvadias.perfil@outlook.com',
-      isEmailVerified : true,
-      fullName        : 'Luis Carlos Silva Dias',
-      avatarUrl       : 'https://googleusercontent.com'
-    };
+      if (!googleApiResponse.ok) {
+        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+      }
+
+      const googleRawProfile = await googleApiResponse.json() as any;
+
+      return {
+        externalId      : String(googleRawProfile.sub),
+        email           : String(googleRawProfile.email),
+        isEmailVerified : googleRawProfile.email_verified === true || googleRawProfile.email_verified === 'true',
+        fullName        : String(googleRawProfile.name),
+        avatarUrl       : String(googleRawProfile.picture || 'https://googleusercontent.com')
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+      }
+      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+    }
   }
 }
