@@ -10,7 +10,7 @@ A estrutura segue o princípio da **Inversão de Dependências (DIP)**: o domín
 
 ```text
 src/
-├── api/                       # CAMADA DE DOMÍNIO E NEGÓCIO PURA (Soberana/Agnóstica)
+├── api/                       # CAMADA DE DOMÍNIO - APENAS NEGÓCIO  (Agnóstico)
 │   └── errors/                # Barramento Centralizado de Exceções de Domínio
 │       ├── domain/            # Dicionários literais de mensagens e chaves
 │       │   └── security.ts
@@ -456,6 +456,188 @@ public async executeChatPrompt(prompt: string): string {
 *   **O Pipeline de Drenagem In-Memory:**
     *   **Entrada de Tráfego:** No início de cada requisição, o driver executa o método `.incrementActiveRequests()`, somando `+1` ao contador central de memória [Uncle Bob]. Se o sinal de encerramento já foi disparado, rejeita novos cliques com o status 503 (`SERVER_TERMINATING`).
     *   **Saída de Tráfego:** Utilizando a cláusula de segurança **`finally`** do JavaScript na portaria de rede, o driver executa o método `.decrementActiveRequests()` de forma obrigatória (seja a requisição um sucesso ou um erro), subtraindo `-1` [Uncle Bob].
+
+# 🏛️ Adendo de Documentação Técnica: Subdomínio de Identidade Progressiva
+
+Este documento serve como a especificação técnica oficial das novas engrenagens acopladas ao ecossistema Hexagonal do boilerplate. O módulo foi projetado sob o padrão **Ports & Adapters**, garantindo o isolamento completo do núcleo de negócios contra os dialetos de transporte de Big Techs externas.
+
+---
+
+## 📂 Novas Estruturas Incorporadas
+
+```text
+src/
+├── api/
+│   └── identity/                    # SUBDOMÍNIO DE ACESSO PROGRESSIVO
+│       ├── ports/                   # Contratos Abstratos (Interfaces Puras)
+│       │   ├── federatedAuthenticator.ts
+│       │   └── identityRepository.ts
+│       └── useCases/                # Regras de Negócio e Casos de Uso
+│           ├── associateExternalIdentity.ts
+│           └── registerAnonymousActor.ts
+└── infrastructure/
+    └── identityProviders/            # Periferias Substituíveis (Adapters)
+        └── google/
+            └── googleAuthenticator.ts # Driver de Produção Real (fetch/tokeninfo)
+```
+
+---
+
+## 🔑 1. Camada de Domínio: As Portas (`ports/`)
+
+As interfaces abaixo residem na camada soberana de negócio (`src/api/identity/ports/`). Elas não possuem o prefixo "I" (Capítulo 2 - *Clean Code*) e ditam as regras para os agentes externos.
+
+### 📄 `src/api/identity/ports/federatedAuthenticator.ts`
+Define o contrato de dados que qualquer provedor de login externo (Google, Facebook, LinkedIn) é obrigado a cumprir para entrar no sistema.
+
+```typescript
+export interface FederatedIdentityPayload {
+  readonly externalId       : string; // ID único imutável do provedor para auditoria
+  readonly email            : string; // Elo universal de unificação progressiva
+  readonly isEmailVerified  : boolean; // Validação contra e-mails falsos ou maliciosos
+  readonly fullName         : string; // Nome nominal para hidratação de perfil
+  readonly avatarUrl        : string; // URL da imagem para humanização visual da IA
+}
+
+export interface FederatedAuthenticator {
+  /**
+   * Valida a assinatura do token e extrai as informações do perfil de forma agnóstica.
+   */
+  authenticate(accessToken: string): Promise;
+}
+```
+
+### 📄 `src/api/identity/ports/identityRepository.ts`
+Define o contrato abstrato de persistência para validação de aplicações parceiras.
+
+```typescript
+import type { ApiKeySessionPayload } from '../../../infrastructure/security/engine/apiKeySession';
+
+export interface IdentityRepository {
+  /**
+   * Extrai os metadados de uma credencial cadastrada de forma polimórfica no banco.
+   */
+  findApplicationByKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
+}
+```
+
+---
+
+## 🎯 2. Camada de Domínio: Os Casos de Uso (`useCases/`)
+
+As regras puras de negócio operam de forma isolada na memória RAM, totalmente livres de assinaturas do Express ou rotas HTTP.
+
+### 📄 `src/api/identity/useCases/registerAnonymousActor.ts`
+Orquestra o primeiro milissegundo de acesso do cliente através de assinaturas de hardware temporárias.
+
+```typescript
+import type { SystemLogger } from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface RegisterAnonymousInput {
+  readonly deviceFingerprintId : string;
+  readonly initialIpAddress    : string;
+}
+
+export interface RegisterAnonymousOutput {
+  readonly actorId : string;
+  readonly status  : string;
+}
+
+export class RegisterAnonymousActorUseCase {
+  /**
+   * Registra o ator efêmero na memória para preservar o histórico de prompts da IA.
+   */
+  public async execute(input: RegisterAnonymousInput, logger: SystemLogger): Promise<RegisterAnonymousOutput> {
+    logger.info(`Registering dynamic anonymous boundary for hardware fingerprint: [${input.deviceFingerprintId}]`);
+
+    return {
+      actorId : `anonymous_${Date.now()}`,
+      status  : 'CREATED_EFEMERAL'
+    };
+  }
+}
+```
+
+### 📄 `src/api/identity/useCases/associateExternalIdentity.ts`
+Gerencia o mecanismo de **Identificação Progressiva**, unificando o histórico do ator anônimo através do e-mail verificado pela federação.
+
+```typescript
+import type { FederatedAuthenticator } from '../ports/federatedAuthenticator';
+import type { SystemLogger }           from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface AssociateIdentityInput {
+  readonly actorId     : string;
+  readonly accessToken : string;
+}
+
+export class AssociateExternalIdentityUseCase {
+  private readonly authenticator: FederatedAuthenticator;
+
+  constructor(authenticator: FederatedAuthenticator) {
+    this.authenticator = authenticator;
+  }
+
+  /**
+   * Vincula a credencial externa ao ID de negócio do ator local existente na RAM.
+   */
+  public async execute(input: AssociateIdentityInput, logger: SystemLogger): Promise<void> {
+    logger.info(`Initiating federation upgrade sequence for target actor: [${input.actorId}]`);
+
+    // Inversão de Controle: Aciona o contrato sem saber o provedor tecnológico de origem
+    const externalProfile = await this.authenticator.authenticate(input.accessToken);
+
+    logger.info(`Identity mapping secured between [${externalProfile.email}] and actor [${input.actorId}]`);
+  }
+}
+```
+
+---
+
+## 🔌 3. Camada de Infraestrutura: Os Adaptadores (`adapters/`)
+
+Os drivers externos ficam enclausurados em pacotes isolados. Se o formato de comunicação ou a API de terceiros mudar, apenas o arquivo periférico sofre manutenção, mantendo o core imune.
+
+### 📄 `src/infrastructure/identityProviders/google/googleAuthenticator.ts`
+Adaptador real de produção focado na Google Alphabet. O componente recorre ao `fetch` nativo do Node.js, descartando o acoplamento a SDKs pesados de terceiros.
+
+```typescript
+import type { FederatedAuthenticator, FederatedIdentityPayload } from '../../../api/identity/ports/federatedAuthenticator';
+import      { DomainException }          from '../../../api/errors/domainException';
+
+export class GoogleAuthenticator implements FederatedAuthenticator {
+  /**
+   * Dispara uma chamada HTTPS contra o servidor da Google para validar o ID Token de forma segura.
+   */
+  public async authenticate(idToken: string): Promise {
+    try {
+      // 🚀 CONEXÃO DE REDE REAL: Bate no endpoint oficial de validação de ID Tokens da Alphabet
+      const googleApiResponse = await fetch(`https://googleapis.com{idToken}`);
+
+      // Se a Google rejeitar a assinatura do token, aciona o barramento central de erros da API
+      if (!googleApiResponse.ok) {
+        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+      }
+
+      const googleRawProfile = await googleApiResponse.json() as any;
+
+      // 🥇 TRADUÇÃO DE DIALETO: Transforma o payload bruto do Google nas propriedades limpas do Domínio
+      return {
+        externalId      : String(googleRawProfile.sub), // O Google chama o ID imutável de 'sub'
+        email           : String(googleRawProfile.email),
+        isEmailVerified : googleRawProfile.email_verified === true || googleRawProfile.email_verified === 'true',
+        fullName        : String(googleRawProfile.name),
+        avatarUrl       : String(googleRawProfile.picture || 'https://googleusercontent.com')
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+      }
+      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+    }
+  }
+}
+```
 
 
 ## Mantenedor
