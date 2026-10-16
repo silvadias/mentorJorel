@@ -1,5 +1,5 @@
 import type { FederatedAuthenticator,
-              FederatedIdentityPayload } from '../../../api/identity/ports/federatedAuthenticator';
+              FederatedIdentityPayload } from '../engine/federatedAuthenticator';
 import      { DomainException }          from '../../../api/errors/domainException';
 
 export class LinkedinAuthenticator implements FederatedAuthenticator {

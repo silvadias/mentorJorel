@@ -1,4 +1,4 @@
-import type { FederatedAuthenticator, FederatedIdentityPayload } from '../../../api/identity/ports/federatedAuthenticator';
+import type { FederatedAuthenticator, FederatedIdentityPayload } from '../engine/federatedAuthenticator';
 import      { DomainException }          from '../../../api/errors/domainException';
 
 

@@ -1,4 +1,4 @@
-import type { FederatedAuthenticator } from '../ports/federatedAuthenticator';
+import type { FederatedAuthenticator } from '../../../infrastructure/identityProviders/engine/federatedAuthenticator';
 import type { SystemLogger }           from '../../../infrastructure/telemetry/engine/systemLogger';
 
 export interface AssociateIdentityInput {
