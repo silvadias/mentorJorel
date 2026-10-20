@@ -1,6 +1,6 @@
-import type { SystemLogger }        from '../../telemetry/engine/systemLogger';
-import type { TokenSessionPayload } from '../../security/engine/tokenSession';
-import type { ApiKeySessionPayload } from '../../security/engine/apiKeySession';
+import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
+import type { TokenSessionPayload }         from '../../security/engine/tokenSession';
+import type { ConsumerSpecificationEngine } from '../../security/consumerApi/engine/specification'; // ◄ Importação do novo motor integrado
 
 export interface HttpTrafficRequest<
   Payload           = any, 
@@ -8,27 +8,29 @@ export interface HttpTrafficRequest<
   RouteParameters   = any, 
   HeaderProperties  = any
 > {
-    body        : Payload;
-    query       : QueryParameters;
-    params      : RouteParameters;
-    headers     : HeaderProperties;
-    logger      : SystemLogger;
-    session     : TokenSessionPayload;
-    application : ApiKeySessionPayload;
-
-  }
+  body        : Payload;
+  query       : QueryParameters;
+  params      : RouteParameters;
+  headers     : HeaderProperties;
+  logger      : SystemLogger;
+  session     : TokenSessionPayload;
+  consumer    : ConsumerSpecificationEngine;
+}
 
 export interface HttpTrafficResponse<Payload = any> {
   statusCode : number;
   body       : Payload;
   newToken?  : string;
-
 }
 
 export type HttpTrafficHandler = (request: HttpTrafficRequest) => Promise<HttpTrafficResponse>;
 
 export interface HttpTrafficExchangeEngine {
-  register(method: 'get' | 'post' | 'put' | 'delete', resourcePath: string, handler: HttpTrafficHandler, schema?: unknown): void;
+  register(
+    method      : 'get' | 'post' | 'put' | 'delete', 
+    resourcePath: string, 
+    handler     : HttpTrafficHandler, 
+    schema?     : unknown
+  ): void;
   start(): void;
-  
 }

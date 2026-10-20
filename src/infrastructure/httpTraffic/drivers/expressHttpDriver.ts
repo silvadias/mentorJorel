@@ -7,7 +7,7 @@ import type { HttpTrafficExchangeEngine,
 import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
 import type { TokenCryptographerEngine }    from '../../security/engine/tokenSession';
-import type { ApiKeyEvaluatorEngine }       from '../../security/engine/apiKeySession';
+import type { ConsumerFinderEngine }        from '../../security/consumerApi/adapter/finder';
 import      { RequestThrottler }            from '../../security/engine/requestThrottler';
 import      { ServerLifecycleGovernor }     from '../../security/engine/serverLifecycleGovernor';
 import      { ValidationException }         from '../engine/httpValidation';
@@ -19,7 +19,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly failureFormatter   : HttpFailureFormatter;
   private readonly systemLogger       : SystemLogger;
   private readonly tokenEngine        : TokenCryptographerEngine;
-  private readonly apiKeyEngine       : ApiKeyEvaluatorEngine;
+  private readonly consumerEngine     : ConsumerFinderEngine;
   private readonly throttlerEngine    : RequestThrottler;
   private readonly lifecycleGovernor  : ServerLifecycleGovernor;
   private readonly displayDebugDetails: boolean;
@@ -29,23 +29,21 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     failureFormatter       : HttpFailureFormatter; 
     systemLogger           : SystemLogger;
     tokenEngine            : TokenCryptographerEngine;
-    apiKeyEngine           : ApiKeyEvaluatorEngine;
+    consumerEngine         : ConsumerFinderEngine;
     throttlerEngine        : RequestThrottler;
     lifecycleGovernor      : ServerLifecycleGovernor;
     displayDebugDetails    : boolean; 
   }) {
-
     this.application            = express();
     this.listeningPort          = configuration.port;
     this.failureFormatter       = configuration.failureFormatter;
     this.systemLogger           = configuration.systemLogger;
     this.tokenEngine            = configuration.tokenEngine;
-    this.apiKeyEngine           = configuration.apiKeyEngine;
+    this.consumerEngine         = configuration.consumerEngine;
     this.throttlerEngine        = configuration.throttlerEngine;
     this.lifecycleGovernor      = configuration.lifecycleGovernor;
     this.displayDebugDetails    = configuration.displayDebugDetails;
     this.application.use(express.json());
-
   }
 
   public register(
@@ -79,9 +77,20 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       });
 
       try {
-        // SRP FILTRO 1: Validação e Limitação Perimetral Multi-Tenant na Portaria
-        const authenticatedApp = await this.apiKeyEngine.evaluate(String(incomingRequest.headers['x-api-key'] || '').trim());
-        await this.throttlerEngine.throttle(authenticatedApp.applicationId, authenticatedApp.rateLimitTier, clientMetadata.ipAddress);
+        // 1. Executa a busca perimetral utilizando o motor unificado do Consumer
+        const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
+        
+        // 🛡️ BARREIRA DE PROTEÇÃO (Type Narrowing): Prova para o TS que a partir daqui o objeto nunca é nulo
+        if (!authenticatedConsumer) {
+          throw new DomainException('API_KEY_INVALID');
+        }
+
+        // Aplica o estrangulamento de requisições alimentando os novos campos purificados do domínio
+        await this.throttlerEngine.throttle(
+          authenticatedConsumer.ownerDeveloperIdentifier, 
+          authenticatedConsumer.rateLimitTier, 
+          clientMetadata.ipAddress
+        );
 
         contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
         this.validateInputSchema(schema, incomingRequest.body);
@@ -89,6 +98,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         // SRP FILTRO 2: Hidratação da Sessão do Usuário
         const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
 
+        // 2. Adapta o contêiner HTTP injetando o objeto consumer higienizado e tipado para as controllers
         const adaptedRequest: HttpTrafficRequest = {
           body        : incomingRequest.body,
           query       : incomingRequest.query,
@@ -96,7 +106,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           headers     : incomingRequest.headers,
           logger      : contextualLogger,
           session     : activeSessionPayload,
-          application : authenticatedApp
+          consumer    : authenticatedConsumer
         };
 
         const executionResponse = await handler(adaptedRequest);
@@ -115,7 +125,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
         outgoingResponse.status(statusCode).json(payload);
       } finally {
-        // MESTRE LIFE-CYCLE: Rastreabilidade indestrutível na RAM. Decrementa o contador obrigatoriamente na saída
+        // MESTRE LIFE-CYCLE: Decrementa o contador obrigatoriamente na saída perimetral
         this.lifecycleGovernor.decrementActiveRequests();
       }
     });
@@ -166,15 +176,14 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     return anonymousPayload;
   }
 
-    public start(): void {
+  public start(): void {
     // 🛠️ MESTRE LIFE-CYCLE: Inicializa o driver de rede fisicamente e captura a instância pura do servidor HTTP
     const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
     });
 
-    // 🔌 ORQUESTRAÇÃO DE SINAIS DO OS: Escuta e vincula os gatilhos do Linux de forma enclausurada e invisível para o server.ts
+    // 🔌 ORQUESTRAÇÃO DE SINAIS DO OS: Escuta e vincula os gatilhos do Linux de forma enclausurada e invisível
     process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
     process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
   }
-
 }
