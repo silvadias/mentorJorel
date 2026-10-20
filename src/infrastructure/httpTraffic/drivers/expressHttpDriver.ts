@@ -6,10 +6,10 @@ import type { HttpTrafficExchangeEngine,
               HttpTrafficRequest }          from '../engine/httpTraffic';
 import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
-import type { TokenCryptographerEngine }    from '../../security/engine/tokenSession';
-import type { ConsumerFinderEngine }        from '../../security/consumerApi/adapter/finder';
-import      { RequestThrottler }            from '../../security/engine/requestThrottler';
-import      { ServerLifecycleGovernor }     from '../../security/engine/serverLifecycleGovernor';
+import type { TokenCryptographerEngine }    from '../../security/token/engine/tokenSession';
+import type { ConsumerFinderEngine }        from '../../security/apiKeyTenant/adapter/finder';
+import      { RequestThrottler }            from '../../security/throttler/requestThrottler';
+import      { ServerLifecycleGovernor }     from '../../lifeCycle/serverLifecycleGovernor';
 import      { ValidationException }         from '../engine/httpValidation';
 import      { DomainException }             from '../../../api/errors/domainException';
 
@@ -61,7 +61,6 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       try {
         this.lifecycleGovernor.incrementActiveRequests();
       } catch (terminationError: unknown) {
-        // Se o container estiver em processo de morte, rejeita a nova conexão imediatamente com 503
         outgoingResponse.status(503).json({ status: 'fail', code: 'SERVER_TERMINATING', message: 'Servidor em processo de encerramento.' });
         return;
       }
@@ -77,28 +76,41 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       });
 
       try {
+        // 🛡️ BARREIRA 1: Proteção de Infraestrutura Base de Rede (IP do Cliente - Anti-DDoS Camada 7)
+        await this.throttlerEngine.throttle({
+          trackingKey : clientMetadata.ipAddress,
+          maxAllowed  : 200
+        });
+
         // 1. Executa a busca perimetral utilizando o motor unificado do Consumer
         const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
         
-        // 🛡️ BARREIRA DE PROTEÇÃO (Type Narrowing): Prova para o TS que a partir daqui o objeto nunca é nulo
         if (!authenticatedConsumer) {
           throw new DomainException('API_KEY_INVALID');
         }
 
-        // Aplica o estrangulamento de requisições alimentando os novos campos purificados do domínio
-        await this.throttlerEngine.throttle(
-          authenticatedConsumer.ownerDeveloperIdentifier, 
-          authenticatedConsumer.rateLimitTier, 
-          clientMetadata.ipAddress
-        );
+        // 💼 BARREIRA 2: Proteção de Contrato Comercial e Loops de Códigos de Terceiros (Tenant / Aplicação Parceira)
+        const tenantQuotaMap: Record<string, number> = { FREE: 10, PREMIUM: 100, ENTERPRISE: 1000 };
+        const tenantMaxAllowed = tenantQuotaMap[authenticatedConsumer.rateLimitTier] ?? 10;
+
+        await this.throttlerEngine.throttle({
+          trackingKey : authenticatedConsumer.identificationKey,
+          maxAllowed  : tenantMaxAllowed
+        });
+
+        // SRP FILTRO 2: Hidratação Única da Sessão do Usuário (Evita redeclaração e erro de escopo)
+        const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
+
+        // 👤 BARREIRA 3: Proteção Comportamental Humana (Usuário Final / Ator Isolado por Aplicação)
+        await this.throttlerEngine.throttle({
+          trackingKey : `user:${authenticatedConsumer.identificationKey}:${activeSessionPayload.actorId}`,
+          maxAllowed  : 30
+        });
 
         contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
         this.validateInputSchema(schema, incomingRequest.body);
 
-        // SRP FILTRO 2: Hidratação da Sessão do Usuário
-        const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
-
-        // 2. Adapta o contêiner HTTP injetando o objeto consumer higienizado e tipado para as controllers
+        // 2. Adapta o contêiner HTTP injetando o objeto consumer e session unificados para as controllers
         const adaptedRequest: HttpTrafficRequest = {
           body        : incomingRequest.body,
           query       : incomingRequest.query,
@@ -177,12 +189,10 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   }
 
   public start(): void {
-    // 🛠️ MESTRE LIFE-CYCLE: Inicializa o driver de rede fisicamente e captura a instância pura do servidor HTTP
     const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
     });
 
-    // 🔌 ORQUESTRAÇÃO DE SINAIS DO OS: Escuta e vincula os gatilhos do Linux de forma enclausurada e invisível
     process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
     process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
   }

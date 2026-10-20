@@ -1,6 +1,6 @@
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
-import type { TokenSessionPayload }         from '../../security/engine/tokenSession';
-import type { ConsumerSpecificationEngine } from '../../security/consumerApi/engine/specification'; // ◄ Importação do novo motor integrado
+import type { TokenSessionPayload }         from '../../security/token/engine/tokenSession';
+import type { ConsumerSpecificationEngine } from '../../security/apiKeyTenant/engine/specification'; // ◄ Importação do novo motor integrado
 
 export interface HttpTrafficRequest<
   Payload           = any, 

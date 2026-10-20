@@ -1,7 +1,7 @@
 import      jwt                             from 'jsonwebtoken';
 import      crypto                          from 'crypto';
 import type { TokenCryptographerEngine,
-              TokenSessionPayload }         from '../../engine/tokenSession';
+              TokenSessionPayload }         from '../../token/engine/tokenSession';
 import      { DomainException }             from '../../../../api/errors/domainException';
 
 export class ExpressJwtAdapter implements TokenCryptographerEngine {

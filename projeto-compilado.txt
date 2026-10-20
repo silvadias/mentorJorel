@@ -1,0 +1,4155 @@
+
+
+===== ARQUIVO: .gitignore =====
+
+node_modules/
+dist/
+
+===== ARQUIVO: .vscode/settings.json =====
+
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true
+  },
+  "watcher.exclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true
+  }
+}
+
+
+===== ARQUIVO: README.md =====
+
+# TypeScript API Boilerplate — Hexagonal Pluggable Adapter Engine
+
+Este projeto é um boilerplate arquitetural de alta maturidade para APIs TypeScript, orientado a **portabilidade**, **isolamento de infraestrutura**, **observabilidade estruturada**, **segurança perimetral** e **resiliência**.
+
+A arquitetura combina **Clean Architecture (Ports & Adapters)** com **Feature-by-Package**, mantendo o núcleo da aplicação independente de frameworks de transporte, bibliotecas criptográficas e implementações específicas de logging. Tecnologias externas ficam concentradas em `drivers/`, enquanto os contratos estáveis do sistema permanecem em `engine/`.
+
+## Arquitetura
+
+A estrutura segue o princípio da **Inversão de Dependências (DIP)**: o domínio define contratos; os adaptadores implementam esses contratos.
+
+```text
+src/
+├── api/                       # CAMADA DE DOMÍNIO - APENAS NEGÓCIO  (Agnóstico)
+│   └── errors/                # Barramento Centralizado de Exceções de Domínio
+│       ├── domain/            # Dicionários literais de mensagens e chaves
+│       │   └── security.ts
+│       ├── catalog.ts         # Ponto Único de Verdade: ErrorCatalog e ErrorCode
+│       └── domainException.ts # Exceção de negócio soberana
+├── config/                    # Parâmetros globais e configuração strongly-typed
+│   └── env.ts                 # Tipagem estrita das variáveis de ambiente
+└── infrastructure/            # PERIFERIAS E ADAPTADORES (Ports & Adapters)
+    ├── telemetry/             # Observabilidade e não-repúdio
+    │   ├── engine/            # Contratos de abstração (Ports)
+    │   │   └── systemLogger.ts
+    │   └── drivers/            # Implementações substituíveis (Adapters)
+    │       └── systemConsoleJsonDriver.ts
+    ├── httpTraffic/            # Tráfego de rede e protocolo HTTP
+    │   ├── engine/            # Contratos de transporte
+    │   │   ├── httpTraffic.ts
+    │   │   └── httpValidation.ts
+    │   └── drivers/            # Motores tecnológicos
+    │       └── nodeExpress/
+    │           └── expressHttpDriver.ts
+    └── security/              # Segurança, sessão e criptografia
+        ├── engine/            # Contratos de sessão
+        │   └── tokenSession.ts
+        └── drivers/            # Implementações criptográficas
+            └── jwt/
+                └── expressJwtAdapter.ts
+├── apiRouter.ts               # Orquestrador agnóstico de rotas
+└── server.ts                  # Composition Root e bootstrap
+```
+
+## Princípios arquiteturais
+
+### Drivers e Engines
+
+- **`drivers/`** contém os adaptadores que conhecem tecnologias específicas. O `expressHttpDriver.ts`, por exemplo, conhece o Express e concentra os detalhes da borda HTTP.
+- **`engine/`** contém os contratos e regras abstratas do ecossistema. Os drivers devem se adaptar aos contratos do sistema, e não o contrário.
+
+Essa separação permite substituir uma tecnologia de infraestrutura sem espalhar sua dependência pelo restante da aplicação.
+
+### Isolamento de frameworks
+
+O domínio não deve depender diretamente de assinaturas do Express ou de outros frameworks HTTP. A aplicação trabalha com estruturas próprias, como `HttpTrafficRequest` e `HttpTrafficResponse`.
+
+O framework é tratado como detalhe de infraestrutura.
+
+### Nomes que revelam propósito
+
+O dialeto compacto exigido por protocolos e bibliotecas externas fica encapsulado nos adaptadores. O restante do sistema utiliza nomes de domínio claros e fortemente tipados, como:
+
+- `actorId`
+- `deviceFingerprintId`
+- `initialIpAddress`
+- `requestSequenceCounter`
+- `lastActivityAt`
+
+Essa tradução mantém os detalhes de transporte e criptografia fora do núcleo da aplicação.
+
+## Observabilidade
+
+A telemetria é definida pelo contrato `SystemLogger`, localizado em `src/infrastructure/telemetry/engine/systemLogger.ts`.
+
+O contrato disponibiliza operações como:
+
+- `info()`
+- `warn()`
+- `error()`
+- `audit()`
+- `withContext(traceId, requestMetadata)`
+
+O uso genérico de `console.log()` no core é evitado. Cada ciclo de requisição pode carregar um **Trace ID**, permitindo rastrear o fluxo ponta a ponta.
+
+O `systemConsoleJsonDriver.ts` adapta esse contrato para a saída física:
+
+- em produção, emite JSON de linha única, adequado para ingestão em ferramentas de observabilidade;
+- em desenvolvimento, utiliza Pretty Print para facilitar a leitura humana.
+
+## Tráfego HTTP
+
+O contrato `HttpTrafficRequest` / `HttpTrafficResponse`, definido em `src/infrastructure/httpTraffic/engine/httpTraffic.ts`, representa o transporte de forma independente do framework.
+
+O `expressHttpDriver.ts` é o adaptador responsável pela borda HTTP. Ele:
+
+1. recebe o tráfego bruto;
+2. executa as validações de entrada;
+3. hidrata o contexto da requisição;
+4. integra o mecanismo de sessão por inversão de dependência;
+5. centraliza o tratamento de falhas;
+6. disponibiliza metadados de borda para auditoria.
+
+Quando não existe uma sessão válida, o fluxo pode operar com o ator `ANONYMOUS` e metadados de borda.
+
+Também são capturados dados como IP e um hash reduzido do User-Agent para uso nos cruzamentos de auditoria definidos pelo domínio.
+
+## Segurança e sessões
+
+O contrato `TokenCryptographerEngine` e o modelo `TokenSessionPayload` ficam em `src/infrastructure/security/engine/tokenSession.ts`.
+
+A interface abstrai a tecnologia utilizada para gerar e decifrar tokens, mantendo o restante da aplicação independente da biblioteca criptográfica.
+
+O `expressJwtAdapter.ts` é o único ponto autorizado a conhecer a implementação JWT externa. Ele traduz os nomes de domínio para os campos compactos do protocolo e converte erros da biblioteca em exceções nativas da aplicação.
+
+Exemplo:
+
+```typescript
+throw new DomainException('SECURITY_TOKEN_EXPIRED');
+```
+
+Essa abordagem evita que exceções específicas da biblioteca vazem para o domínio.
+
+## Engenharia de erros
+
+O tratamento de falhas segue uma abordagem centralizada.
+
+`src/api/errors/catalog.ts` funciona como a **Verdade Única de Erros**, reunindo o catálogo e os respectivos códigos. `domainException.ts` representa a exceção soberana do domínio.
+
+Em vez de espalhar tratamento de erros específicos por controladores e casos de uso, o código lança uma exceção sem conhecer o mecanismo de transporte:
+
+```typescript
+throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+```
+
+A falha percorre o barramento até o adaptador de rede, onde é traduzida pelo mecanismo de formatação da aplicação para uma resposta HTTP estruturada.
+
+## Rotas e princípio Open/Closed
+
+O arquivo de rotas deve permanecer concentrado no registro dos endpoints.
+
+A segurança de perímetro e a leitura de sessão são responsabilidades da infraestrutura de tráfego e de seus mecanismos de pipeline. Dessa forma, a expansão das políticas de segurança pode ocorrer sem acoplar regras tecnológicas aos módulos de domínio.
+
+A intenção é manter os componentes existentes fechados para modificações desnecessárias e abertos à extensão por novos adaptadores e políticas.
+
+## Próximo marco técnico
+
+Com a camada de tráfego, a telemetria estruturada e a hidratação de tokens encapsuladas, o próximo passo arquitetural é a implementação da camada de **Casos de Uso (`useCases`)**.
+
+O modelo planejado trabalha com **Identificação Progressiva** e **Atores Temporários**:
+
+1. uma requisição inicialmente anônima chega como `ANONYMOUS`;
+2. o caso de uso pode cruzar IP, hash do navegador e informações de hardware;
+3. sendo identificada uma nova entidade, um ID de negócio é criado;
+4. o token passa a representar esse ator temporário;
+5. quando o usuário realiza o cadastro oficial, os dados podem atualizar a mesma entidade, preservando seu histórico de uso.
+
+Essa etapa deverá manter as mesmas regras de isolamento: casos de uso e domínio não devem conhecer detalhes de Express, JWT ou outros mecanismos tecnológicos.
+
+## Configuração e execução
+
+As variáveis de ambiente são governadas por `src/config/env.ts`.
+
+Para o desenvolvimento assistido, o comportamento de logging pode ser alternado entre `development` e `production` por meio de `NODE_ENV`, conforme a configuração do projeto.
+
+Novos módulos de domínio devem ser organizados como pacotes autocontidos dentro de `src/api/`, mantendo suas regras separadas da infraestrutura.
+
+## Convenções
+
+### Imports
+
+Para contratos usados apenas como tipos, utilize `import type`:
+
+```typescript
+import type { HttpTrafficRequest } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+```
+
+### Dependências
+
+- mantenha dependências tecnológicas nos respectivos `drivers/`;
+- mantenha contratos e abstrações em `engine/`;
+- evite vazamento de tipos de frameworks para o domínio;
+- prefira exceções de domínio catalogadas a códigos e mensagens espalhados;
+- preserve nomes de negócio compreensíveis no core;
+- utilize injeção de dependências para conectar o núcleo aos adaptadores.
+
+## 💻 Arquitetura de Fluxo (Exemplo de Escala com Acoplamento Zero)
+
+### 🛣️ 1. A Fiação da Rota (`src/api/messages/routes.ts`)
+O arquivo de rotas possui responsabilidade única (SRP): mapear o método HTTP puro ao seu despachante, delegando a malha de validação de dados de forma declarativa e invisível.
+
+```typescript
+import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { MessagesController }          from './controller';
+import      { MessageInputSchema }          from './validation';
+
+export function initializeMessagesRoutes(engine: HttpTrafficExchangeEngine): void {
+  // A rota tem apenas a rota e o contrato sintático de entrada. Zero acoplamento com segurança.
+  engine.register(
+    'post',
+    '/messages',
+    MessagesController.dispatchSendMessage,
+    MessageInputSchema
+  );
+}
+```
+
+### 🎯 2. O Controlador Despachante (`src/api/messages/controller.ts`)
+O controlador atua estritamente como um tradutor de fronteira. Ele não executa lógicas de banco de dados, não valida e-mails e não faz cálculos temporais. Ele simplesmente captura o input limpo, lê a sessão hidratada pela rede e despacha para a Action executar o trabalho pesado.
+
+```typescript
+import type { HttpTrafficRequest,
+              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { SendMessageAction }   from './actions/sendMessageAction';
+
+export class MessagesController {
+  public static async dispatchSendMessage(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
+    
+    // Inversão de Controle: Instancia a ação de negócio injetando a telemetria contextual da requisição
+    const messageUseCase = new SendMessageAction(request.logger);
+
+    // Executa o Caso de Uso passando apenas os payloads purificados e a identidade isolada
+    const businessResult = await messageUseCase.execute({
+      promptText : request.body.prompt,
+      userSession: request.session
+    });
+
+    // Retorna a resposta visual adaptável para o controlador devolver à rede
+    return {
+      statusCode : 200,
+      body       : {
+        status : 'success',
+        data   : businessResult
+      }
+    };
+  }
+}
+```
+
+### ⚙️ 3. A Ação de Domínio / Caso de Uso (`src/api/messages/actions/sendMessageAction.ts`)
+O coração do software. Esta classe é imune a frameworks de rede (não sabe o que é Express ou cURL). Ela recebe estruturas fortemente tipadas em tempo de design, aplica as lógicas de bloqueio comportamental de anônimos, consome repositórios e emite auditorias estruturadas imutáveis.
+
+```typescript
+import type { SystemLogger }        from '../../../../infrastructure/telemetry/engine/systemLogger';
+import type { TokenSessionPayload } from '../../../../infrastructure/security/engine/tokenSession';
+import      { DomainException }     from '../../../errors/domainException';
+
+interface SendMessageInput {
+  readonly promptText  : string;
+  readonly userSession : TokenSessionPayload;
+}
+
+interface SendMessageOutput {
+  readonly aiResponse : string;
+  readonly promptId   : string;
+}
+
+export class SendMessageAction {
+  private readonly logger: SystemLogger;
+
+  constructor(logger: SystemLogger) {
+    this.logger = logger;
+  }
+
+  public async execute(input: SendMessageInput): Promise<SendMessageOutput> {
+    const { actorId, initialIpAddress, requestSequenceCounter } = input.userSession;
+
+    // BARREIRA DE COMPORTAMENTO: Se for um ator anônimo e o contador violar o limite contra vírus
+    if (actorId === 'ANONYMOUS' && requestSequenceCounter > 5) {
+      this.logger.warn(`Security threshold breached. IP [${initialIpAddress}] blocked by anti-bot policy.`);
+      throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+    }
+
+    // AUDITORIA NATIVA: Registro estruturado de não-repúdio gerado em formato JSON camaleônico
+    this.logger.audit('AI_PROMPT_PROCESSED', actorId, {
+      promptLength : input.promptText.length,
+      sequenceId   : requestSequenceCounter
+    });
+
+    // Simulando a execução real da regra de negócio (Consulta a IA / Banco de Dados de forma isolada)
+    return {
+      aiResponse : `Resposta computada para o prompt: ${input.promptText}`,
+      promptId   : 'prompt_uuid_999'
+    };
+  }
+}
+```
+
+### 💡 Por que esta dinâmica garante a Imunidade Arquitetural?
+-   **Validação Desacoplada:** Se o frontend enviar um JSON sem o campo `prompt`, o driver de rede barra na portaria (422) antes mesmo do `MessagesController` ser invocado [Uncle Bob].
+-   **Manutenabilidade e Escala:** Se a regra de bloqueio de bots mudar (ex: validar o hash do navegador em vez do contador), você altera **apenas um arquivo**: a action `SendMessageAction`. As rotas, os controladores e as criptografias do JWT permanecem **100% intocados e imunes**, impossibilitando que uma alteração lógica cause efeitos colaterais ou quebre outras partes do ecossistema [Uncle Bob, Farley].
+
+## 🛡️ Ecossistema Perimetral Multi-Tenant & Cache RAM Dinâmico
+
+O sistema implementa uma barreira de defesa em profundidade na portaria de rede baseada em chaves de acesso dinâmicas para aplicações parceiras (estilo Google Gemini e OpenAI), operando através de um mecanismo de **Cache Dinâmico In-Memory (Read-Through Cache)** para garantir segurança máxima com o menor desgaste de rede do planeta [Farley].
+
+```text
+[Cliente Externo: Bruno] ──( Envia X-API-Key )──► [ExpressHttpDriver (Portaria de Rede)]
+                                                              │
+                     ┌────────────────────────────────────────┴────────────────────────────────────────┐
+                     ▼                                                                                 ▼
+     [BARREIRA 1: Cache RAM Local (Map)]                                             [BARREIRA 2: Fallback ao Banco (Repository)]
+  Procura a chave na memória do servidor.                                          Se der Cache Miss, executa a query física.
+  - Cache Hit: Retorna em microsegundos (62ms) ◄────────────────────────────────── - Chave Inexistente? 401 Unauthorized (Aborta)
+  - Aplicação Suspensa? 403 Forbidden (Aborta)                                     - Chave Ativa? Grava uma cópia na RAM (TTL) e libera.
+```
+
+### 🧠 Como Funciona a Engenharia do Cache Dinâmico
+1. **O Cliente é Agnóstico:** O frontend de terceiros envia a credencial bruta a cada clique por motivos de segurança perimetral (evitando o salvamento de chaves no LocalStorage do navegador do usuário, o que exporia a chave a clonagens) [Farley].
+2. **A API gerencia a RAM:** O servidor intercepta a chave na entrada de rede e consulta uma estrutura type-safe nativa alocada diretamente nos chips de memória RAM do container Docker (`Map<string, CachedKeyEntry>`), consumindo peso computacional zero de hardware [Farley].
+3. **Mecanismo Read-Through com TTL:** Na primeira requisição, ocorre um *Cache Miss* (falha de cache). O sistema vai ao banco de dados por meio do repositório, valida a credencial, monta um envelope temporal e **salva uma cópia exata do registro na memória RAM** com um tempo de expiração (*Time-To-Live*) de 5 minutos [Farley]. Pelos próximos 300 segundos, todas as requisições leem exclusivamente essa cópia na RAM (Cache Hit), gerando respostas ultra-rápidas (62ms) e protegendo os bancos de dados principais contra bombardeios ou ataques de negação de serviço aplicacionais (DDoS) [Farley].
+
+---
+
+## 📑 Mapeamento Técnico de Componentes (Quem chama Quem)
+
+### 1. O Contrato de Sessão (`src/infrastructure/security/engine/apiKeySession.ts`)
+*   **Exportações Nomeadas:** Interfaces `ApiKeySessionPayload`, `ApplicationRepository` e `ApiKeyEvaluatorEngine`.
+*   **Propósito:** Contrato abstrato (Port) que obriga a camada de dados e o motor lógico de segurança a conversarem em dialeto purificado de negócios, garantindo que o core do sistema permaneça 100% aberto para expansão e fechado para mudança (OCP) [Uncle Bob].
+*   **Variáveis e Payload Estruturado (`ApiKeySessionPayload`):**
+    *   `applicationId` : Identificador único da empresa ou site parceiro dono da credencial [Ottinger].
+    *   `developerId`   : Vínculo com a conta do programador que gerou a chave no painel de desenvolvedor [Ottinger].
+    *   `rateLimitTier` : Nível do plano de consumo atribuído à chave (`FREE` | `PREMIUM` | `ENTERPRISE`) [Ottinger].
+    *   `isSuspended`   : Boolean indicador de bloqueio administrativo temporal por fraude ou inadimplência [Ottinger].
+
+### 2. A Camada de Dados e Consulta Burra (`src/database/apiKeys/`)
+*   `apiKeyTables.ts`   : Contém a interface pura da linha da tabela (`ApiKeyRow`) e o array em memória RAM que simula as chaves de teste registradas, expurgando o amadorismo de prefixar interfaces com a letra "I" [Uncle Bob, Ottinger].
+*   `apiKeyInstance.ts` : Driver de conexão burro (`apiKeyConnection`). Sua responsabilidade única (SRP) é rodar o método linear de busca física `.findKeyByString(apiKey)` e retornar a linha crua do banco, agindo de forma idêntica a drivers de produção como MySQL ou MongoDB [Uncle Bob].
+*   `apiKeyRepository.ts`: O adaptador hexagonal concreto (`ApiKeyRepository`). Ele consome a instância do banco, captura a linha crua e realiza a **tradução de dialeto físico para dialeto humano**, devolvendo o objeto no formato da interface `ApiKeySessionPayload` [Uncle Bob].
+
+### 3. O Motor de Orquestração do Cache (`src/infrastructure/security/engine/apiKeyEvaluator.ts`)
+*   **Implementação:** Implementa a interface `ApiKeyEvaluatorEngine`. Ele recebe o `ApplicationRepository` por Inversão de Dependências (DIP) e gerencia o mapa privado de cache dinâmico com TTL (`ramCacheStore`) [Uncle Bob, Farley].
+*   **Ações:** Executa o método `.evaluate(apiKey)`. Se a chave for inexistente no ecossistema, interrompe o fluxo disparando a exceção soberana de domínio `DomainException('API_KEY_INVALID')`. Se o registro indicar que o parceiro foi banido pelo painel administrativo, dispara a exceção `DomainException('API_KEY_SUSPENDED')`, forçando o barramento central a responder com o status de rede adequado (401 ou 403) [Uncle Bob].
+
+### 4. A Interceptação Perimetral de Entrada (`src/infrastructure/httpTraffic/drivers/expressHttpDriver.ts`)
+*   **Funcionamento:** Modificado no construtor para receber a abstração `apiKeyEngine: ApiKeyEvaluatorEngine` por acoplamento plug-in [Uncle Bob].
+*   **O Pipeline de Borda:** Na primeiríssima linha do processamento HTTP, o driver extrai o cabeçalho de transporte `incomingRequest.headers['x-api-key']` [Farley]. Se o cabeçalho estiver ausente, joga o erro `API_KEY_MISSING` [Uncle Bob]. Se estiver presente, repassa a string para o motor de cache dinâmico processar em microsegundos [Uncle Bob]. Passando com sinal verde pela RAM, os metadados do parceiro são anexados de forma transparente na propriedade **`request.application`**, disponibilizando as variáveis de planos (`FREE`/`ENTERPRISE`) para as rotas e os casos de uso consumirem nativamente [Uncle Bob, Farley].
+
+---
+
+## 🚀 O que pode ser Feito Agora (Abertura para Expansão)
+
+Com o esqueleto perimetral Multi-Tenant e a barreira de cache dinâmico dinâmico operando com nota máxima de design na branch `branchApiKey` [Farley], a infraestrutura técnica está completamente fechada para modificações e aberta para as seguintes extensões e plugs lógicos de negócio [Uncle Bob]:
+
+*   **Plugar o MongoDB ou Sequelize:** Para migrar do array em memória para um banco de dados real ou ORM de mercado, o desenvolvedor precisa alterar **apenas um arquivo**: criar uma nova classe dentro de `src/database/apiKeys/` (ex: `MongoApiKeyRepository.ts`) implementando a interface `ApplicationRepository` [Uncle Bob]. A portaria de rede, os controladores e o motor de cache dinâmico permanecerão intactos e imunes, sem saber que o banco de dados mudou [Uncle Bob].
+*   **Rota de Geração de Chaves:** O sistema está pronto para receber uma rota de negócio voltada a desenvolvedores (ex: `POST /developer/keys`). O caso de uso dessa rota chamará o repositório de persistência para inserir uma nova linha na tabela física, expandindo os acessos dinamicamente sem tocar em arquivos de infraestrutura [Uncle Bob, Farley].
+
+## 🛡️ Malha de Segurança e Resiliência Internacional (Camada de Infraestrutura)
+
+O esqueleto possui um pipeline de defesa em profundidade e gerenciamento de processos na portaria de tráfego HTTP. Essas barreiras operam de forma agnóstica em nível de **Memória RAM local (peso computacional zero de hardware)**, garantindo imunidade absoluta contra robôs, bombardeios de requisições, colapsos de serviços externos e desligamentos abruptos [Farley].
+
+```text
+               JORNADA DE UM CLIQUE DO CLIENTE (PIPELINE SEQUENCIAL)
+               
+ [Navegador / Bruno] ───► [ExpressHttpDriver: Entrada de Rede]
+                                    │
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🧬 1. ServerLifecycleGovernor (Incrementa +1 na RAM)    │
+       │    * Rejeita a conexão com status 503 se o SO estiver  │
+       │      em processo de encerramento em nuvem (Docker).    │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Sinal Verde (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🔑 2. ApiKeyEvaluator (Cache RAM Dinâmico Read-Through)│
+       │    * Valida X-API-Key in microsegundos via RAM Cache.  │
+       │    * Cache Miss? Fallback ao banco e popula a RAM.     │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Chave Válida (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🛡️ 3. RequestThrottler (Regulador de Janela de Cliques) │
+       │    * Conta os cliques por minuto (Tenancy do Plano).   │
+       │    * Estourou a cota do plano? Status 429 Aborta.      │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Sob a Cota (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🎯 4. Execução do Caso de Uso (Seu Core de IA)          │
+       │    * Durante chamadas externas demoradas (OpenAI)...   │
+       │    * ServiceResilienceGate monitora o circuito.       │
+       │    * Falhou 5 vezes consecutivas? O portão abre e     │
+       │      desvia chamadas futuras com status 503 (0ms).    │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Fluxo Encerrado (Sucesso/Erro)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ ⚰️ 5. ExpressHttpDriver: Bloco Finally                 │
+       │    * Decrementa obrigatoriamente o contador (-1 na RAM).│
+       │    * Libera a morte segura do processo se for o último.│
+       └────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 📑 1. Regulador Dinâmico de Cliques (`RequestThrottler`)
+*   **Propósito:** Proteger os recursos computacionais do servidor e mitigar abusos de faturamento causados por scripts robôs em loops infinitos, aplicando limites estritos baseados no plano contratado da aplicação parceira (Multi-Tenant) [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/requestThrottler.ts`. Opera de forma nativa e agnóstica através do algoritmo de **Janela Deslizante Simplificada (*Fixed Window Rate Limiting*)** recorrendo a estruturas de `Map` da memória RAM do processo Node.js [Farley].
+*   **Variáveis e Janelas Internas:**
+    *   `RATE_LIMITS` : Dicionário imutável strongly-typed mapeando as cotas (`FREE: 10`, `PREMIUM: 100`, `ENTERPRISE: 1000` cliques a cada 60 segundos).
+    *   `appCountersStore` : Tabela efêmera em RAM que armazena a contagem ativa indexada por `applicationId`.
+    *   `ipCountersStore`  : Tabela efêmera em RAM indexada por `clientIp` com teto bruto de 200 cliques/minuto contra ataques DDoS na Camada 7.
+*   **Tratamento de Exceção:** Quando o contador atômico de uma chave supera o teto permitido dentro da janela ativa de 60 segundos, explode a exceção de domínio unificada do catálogo, interceptada na portaria com o status **`429 Too Many Requests` (REQUEST_THROTTLED)** [Farley].
+
+#### 🎮 Cenário Lúdico de Funcionamento do `RequestThrottler`
+Imagine uma balada exclusiva onde parceiros têm crachás de acesso. O parceiro **Luiz** tem o crachá plano `FREE`, que dá direito a apenas **10 drinques por minuto**. 
+Luiz decide trapacear e coloca um robô para pedir os 10 drinques na sinaleira de uma só vez em 2 segundos. Quando o robô de Luiz tenta pedir o **11º drinque** no 3º segundo, o barman (`RequestThrottler`), que tem um bloco de notas ultra-rápido na memória de sua cabeça (`Map`), olha e diz: *"Negado! Você estourou seu limite em menos de 60 segundos. Espere o relógio virar!"*. 
+O pedido nem chega a gastar os ingredientes do bar (sua CPU/IA), economizando os recursos da casa imediatamente com o erro `429` [Farley].
+
+```typescript
+// Exemplo sucinto de ativação automática perimetral no ExpressHttpDriver
+const apiCredentials = await this.apiKeyEngine.evaluate(String(request.headers['x-api-key']));
+
+// O Throttler intercepta e conta atômico na RAM. Se estourar 10 cliques do plano FREE, mata a requisição aqui!
+await this.throttlerEngine.throttle(apiCredentials.applicationId, apiCredentials.rateLimitTier, request.ipAddress);
+```
+
+---
+
+### 📑 2. Portão de Resiliência Contra Colapsos Externos (`ServiceResilienceGate`)
+*   **Propósito:** Blindar a API contra o **efeito cascata catastrófico de lentidão ou quedas de serviços terceiros** (como OpenAI, Gemini ou Gateways de Pagamento). Impede que conexões longas travadas consumam a memória RAM do contêiner Docker [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serviceResilienceGate.ts`. Funciona como um **Mecanismo de Disjuntor Técnico (*Circuit Breaker*)** de alta resiliência operando de forma desacoplada por domínio [Farley].
+*   **Os Três Estados Lógicos na Memória RAM:**
+    *   `CLOSED` 🟢 (Circuito Fechado): Estado operacional padrão. O tráfego para APIs de IA flui livremente. O portão monitora em silêncio.
+    *   `OPEN` 🔴 (Circuito Aberto): Se a API externa falhar consecutivamente por 5 vezes, o portão abre. Pelos próximos 60 segundos, qualquer disparo é interceptado e bloqueado na RAM em **0 milissegundos**, estourando o erro **`EXTERNAL_SERVICE_UNAVAILABLE` (Status 503)** sem tentar gastar tempo de rede com o serviço fora do ar [Farley].
+    *   `HALF_OPEN` 🟡 (Circuito Entreaberto): Passados os 60 segundos de repouso, o portão deixa passar uma única requisição de teste. Se falhar, volta para `OPEN` por mais um ciclo; se passar, restabelece o estado `CLOSED` automaticamente [Farley].
+*   **Variáveis Internas:** `consecutiveFailures` (Contador atômico de erros sequenciais), `currentState` (Indicador textual do estado ativo na RAM), e `nextAttemptAllowedAt` (Timestamp delimitador da janela de cooldown) [Ottinger].
+
+#### 🎮 Cenário Lúdico de Funcionamento do `ServiceResilienceGate`
+Você gerencia um restaurante e tem um motoboy terceirizado (**OpenAI**) para entregar pedidos longos. De repente, a avenida principal da cidade desaba e o motoboy começa a atrasar ou sumir. 
+O primeiro, o segundo e o terceiro cliente ligam reclamando de pane (`Error`). Ao atingir **5 falhas seguidas**, o gerente do restaurante liga o disjuntor de segurança (`ServiceResilienceGate` muda para `OPEN` 🔴). Pelos próximos 60 segundos, quando o 6º cliente tenta fazer um pedido, o gerente nem anota e nem chama o motoboy; ele diz na hora: *"Desculpe, nosso canal de entregas desabou, tente novamente em instantes!"*. 
+A resposta volta em **0 milissegundos**, evitando que a cozinha fique entulhada de pratos frios esperando um motoboy que nunca vai chegar (sua memória RAM travada por timeouts longos) [Farley].
+
+```typescript
+// Exemplo lúdico de uso dentro do Caso de Uso de Chat com Inteligência Artificial
+public async executeChatPrompt(prompt: string): string {
+  // Se o disjuntor estiver OPEN, barra na hora com erro 503 sem gastar processamento de rede!
+  this.openAiResilienceGate.verifyGateHealth();
+
+  try {
+    const aiResult = await apiOpenAiThirdParty.send(prompt);
+    this.openAiResilienceGate.recordSuccess(); // Sucesso: Limpa o circuito 🟢
+    return aiResult;
+  } catch (error) {
+    this.openAiResilienceGate.recordFailure(); // Falha: Conta +1 erro rumo ao bloqueio 🔴
+    throw error;
+  }
+}
+```
+
+---
+
+### 📑 3. Governador do Ciclo de Vida do Servidor (`ServerLifecycleGovernor`)
+*   **Propósito:** Garantir o encerramento seguro e livre de corrupção de transações ou dados da aplicação (**Graceful Shutdown**), coordenando de forma transparente a drenagem de conexões longas de Inteligência Artificial quando a infraestrutura em nuvem (Docker/Kubernetes) solicitar a substituição do contêiner [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serverLifecycleGovernor.ts`. O driver HTTP Express intercepta os sinais primitivos do sistema operacional Linux (`SIGTERM`, `SIGINT`) e delega o encerramento do processo de forma atômica para este governador [Uncle Bob].
+*   **O Pipeline de Drenagem In-Memory:**
+    *   **Entrada de Tráfego:** No início de cada requisição, o driver executa o método `.incrementActiveRequests()`, somando `+1` ao contador central de memória [Uncle Bob]. Se o sinal de encerramento já foi disparado, rejeita novos cliques com o status 503 (`SERVER_TERMINATING`).
+    *   **Saída de Tráfego:** Utilizando a cláusula de segurança **`finally`** do JavaScript na portaria de rede, o driver executa o método `.decrementActiveRequests()` de forma obrigatória (seja a requisição um sucesso ou um erro), subtraindo `-1` [Uncle Bob].
+
+# 🏛️ Adendo de Documentação Técnica: Subdomínio de Identidade Progressiva
+
+Este documento serve como a especificação técnica oficial das novas engrenagens acopladas ao ecossistema Hexagonal do boilerplate. O módulo foi projetado sob o padrão **Ports & Adapters**, garantindo o isolamento completo do núcleo de negócios contra os dialetos de transporte de Big Techs externas.
+
+---
+
+## 📂 Novas Estruturas Incorporadas
+
+```text
+src/
+├── api/
+│   └── identity/                    # SUBDOMÍNIO DE ACESSO PROGRESSIVO
+│       ├── ports/                   # Contratos Abstratos (Interfaces Puras)
+│       │   ├── federatedAuthenticator.ts
+│       │   └── identityRepository.ts
+│       └── useCases/                # Regras de Negócio e Casos de Uso
+│           ├── associateExternalIdentity.ts
+│           └── registerAnonymousActor.ts
+└── infrastructure/
+    └── identityProviders/            # Periferias Substituíveis (Adapters)
+        └── google/
+            └── googleAuthenticator.ts # Driver de Produção Real (fetch/tokeninfo)
+```
+
+---
+
+## 🔑 1. Camada de Domínio: As Portas (`ports/`)
+
+As interfaces abaixo residem na camada soberana de negócio (`src/api/identity/ports/`). Elas não possuem o prefixo "I" (Capítulo 2 - *Clean Code*) e ditam as regras para os agentes externos.
+
+### 📄 `src/api/identity/ports/federatedAuthenticator.ts`
+Define o contrato de dados que qualquer provedor de login externo (Google, Facebook, LinkedIn) é obrigado a cumprir para entrar no sistema.
+
+```typescript
+export interface FederatedIdentityPayload {
+  readonly externalId       : string; // ID único imutável do provedor para auditoria
+  readonly email            : string; // Elo universal de unificação progressiva
+  readonly isEmailVerified  : boolean; // Validação contra e-mails falsos ou maliciosos
+  readonly fullName         : string; // Nome nominal para hidratação de perfil
+  readonly avatarUrl        : string; // URL da imagem para humanização visual da IA
+}
+
+export interface FederatedAuthenticator {
+  /**
+   * Valida a assinatura do token e extrai as informações do perfil de forma agnóstica.
+   */
+  authenticate(accessToken: string): Promise;
+}
+```
+
+### 📄 `src/api/identity/ports/identityRepository.ts`
+Define o contrato abstrato de persistência para validação de aplicações parceiras.
+
+```typescript
+import type { ApiKeySessionPayload } from '../../../infrastructure/security/engine/apiKeySession';
+
+export interface IdentityRepository {
+  /**
+   * Extrai os metadados de uma credencial cadastrada de forma polimórfica no banco.
+   */
+  findApplicationByKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
+}
+```
+
+---
+
+## 🎯 2. Camada de Domínio: Os Casos de Uso (`useCases/`)
+
+As regras puras de negócio operam de forma isolada na memória RAM, totalmente livres de assinaturas do Express ou rotas HTTP.
+
+### 📄 `src/api/identity/useCases/registerAnonymousActor.ts`
+Orquestra o primeiro milissegundo de acesso do cliente através de assinaturas de hardware temporárias.
+
+```typescript
+import type { SystemLogger } from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface RegisterAnonymousInput {
+  readonly deviceFingerprintId : string;
+  readonly initialIpAddress    : string;
+}
+
+export interface RegisterAnonymousOutput {
+  readonly actorId : string;
+  readonly status  : string;
+}
+
+export class RegisterAnonymousActorUseCase {
+  /**
+   * Registra o ator efêmero na memória para preservar o histórico de prompts da IA.
+   */
+  public async execute(input: RegisterAnonymousInput, logger: SystemLogger): Promise<RegisterAnonymousOutput> {
+    logger.info(`Registering dynamic anonymous boundary for hardware fingerprint: [${input.deviceFingerprintId}]`);
+
+    return {
+      actorId : `anonymous_${Date.now()}`,
+      status  : 'CREATED_EFEMERAL'
+    };
+  }
+}
+```
+
+### 📄 `src/api/identity/useCases/associateExternalIdentity.ts`
+Gerencia o mecanismo de **Identificação Progressiva**, unificando o histórico do ator anônimo através do e-mail verificado pela federação.
+
+```typescript
+import type { FederatedAuthenticator } from '../ports/federatedAuthenticator';
+import type { SystemLogger }           from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface AssociateIdentityInput {
+  readonly actorId     : string;
+  readonly accessToken : string;
+}
+
+export class AssociateExternalIdentityUseCase {
+  private readonly authenticator: FederatedAuthenticator;
+
+  constructor(authenticator: FederatedAuthenticator) {
+    this.authenticator = authenticator;
+  }
+
+  /**
+   * Vincula a credencial externa ao ID de negócio do ator local existente na RAM.
+   */
+  public async execute(input: AssociateIdentityInput, logger: SystemLogger): Promise<void> {
+    logger.info(`Initiating federation upgrade sequence for target actor: [${input.actorId}]`);
+
+    // Inversão de Controle: Aciona o contrato sem saber o provedor tecnológico de origem
+    const externalProfile = await this.authenticator.authenticate(input.accessToken);
+
+    logger.info(`Identity mapping secured between [${externalProfile.email}] and actor [${input.actorId}]`);
+  }
+}
+```
+
+---
+
+## 🔌 3. Camada de Infraestrutura: Os Adaptadores (`adapters/`)
+
+Os drivers externos ficam enclausurados em pacotes isolados. Se o formato de comunicação ou a API de terceiros mudar, apenas o arquivo periférico sofre manutenção, mantendo o core imune.
+
+### 📄 `src/infrastructure/identityProviders/google/googleAuthenticator.ts`
+Adaptador real de produção focado na Google Alphabet. O componente recorre ao `fetch` nativo do Node.js, descartando o acoplamento a SDKs pesados de terceiros.
+
+```typescript
+import type { FederatedAuthenticator, FederatedIdentityPayload } from '../../../api/identity/ports/federatedAuthenticator';
+import      { DomainException }          from '../../../api/errors/domainException';
+
+export class GoogleAuthenticator implements FederatedAuthenticator {
+  /**
+   * Dispara uma chamada HTTPS contra o servidor da Google para validar o ID Token de forma segura.
+   */
+  public async authenticate(idToken: string): Promise {
+    try {
+      // 🚀 CONEXÃO DE REDE REAL: Bate no endpoint oficial de validação de ID Tokens da Alphabet
+      const googleApiResponse = await fetch(`https://googleapis.com{idToken}`);
+
+      // Se a Google rejeitar a assinatura do token, aciona o barramento central de erros da API
+      if (!googleApiResponse.ok) {
+        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+      }
+
+      const googleRawProfile = await googleApiResponse.json() as any;
+
+      // 🥇 TRADUÇÃO DE DIALETO: Transforma o payload bruto do Google nas propriedades limpas do Domínio
+      return {
+        externalId      : String(googleRawProfile.sub), // O Google chama o ID imutável de 'sub'
+        email           : String(googleRawProfile.email),
+        isEmailVerified : googleRawProfile.email_verified === true || googleRawProfile.email_verified === 'true',
+        fullName        : String(googleRawProfile.name),
+        avatarUrl       : String(googleRawProfile.picture || 'https://googleusercontent.com')
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+      }
+      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+    }
+  }
+}
+```
+
+
+## Mantenedor
+
+**Autor:** Luis Carlos da Silva Dias  
+**Contato:** silvadias.perfil@outlook.com
+
+
+===== ARQUIVO: docker-compose.yml =====
+
+services:
+  server:
+    image: node:24-alpine
+    container_name: nodeContainer
+    user: "node"
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "${PORT}:3000"
+    volumes:
+      - .:/usr/src/app
+    networks:
+      - nodeNetwork
+
+networks:
+  nodeNetwork:
+    name: mentorjorel_nodeNetwork
+    driver: bridge
+
+
+===== ARQUIVO: docs/DDD.example.md =====
+
+Path to document your api
+
+===== ARQUIVO: package-lock.json =====
+
+{
+  "name": "standard-node-template",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "standard-node-template",
+      "version": "1.0.0",
+      "license": "MIT",
+      "dependencies": {
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "jsonwebtoken": "^9.0.3"
+      },
+      "devDependencies": {
+        "@types/express": "^5.0.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^22.10.2",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.2"
+      }
+    },
+    "node_modules/@esbuild/aix-ppc64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.28.2.tgz",
+      "integrity": "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==",
+      "cpu": [
+        "ppc64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "aix"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/android-arm": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.28.2.tgz",
+      "integrity": "sha512-kXXoiPVVGQcnIYGOeaovwOURpniDBpSq4A03qkQ+BMQqtGG6HYap3xne9C1O1yo4TR3qxlCX5IqqmX6fFo2Lqg==",
+      "cpu": [
+        "arm"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "android"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/android-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.28.2.tgz",
+      "integrity": "sha512-5YfKeeI8qWfBZIX+u2xZC3Zlb3Os/gLS2sbEKM+I4ZOcsWmHS2WLysCcQZDAFRslDUU5Oiq44gf6PYN1vGwG5A==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "android"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/android-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.28.2.tgz",
+      "integrity": "sha512-O387ite7SzUyCcy3JQX4P4bLtEA7bLLkx+esve5JHnyYfNTxcVpXZo9jhdB0lTKN44gztELTdU7nS8Nr16Fs1Q==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "android"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/darwin-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.28.2.tgz",
+      "integrity": "sha512-n4KqkOQrraxHJcgjM1RvwbigfQKIKJVpM7xp+KsxiyUSrRdIXnt73VhrPAx0fV44hgfmIVKjxMN9J1t5jySVkw==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "darwin"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/darwin-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.28.2.tgz",
+      "integrity": "sha512-uq6suIWYP37qzGddBKPw5QEQPi6HiLGsO7UmkpfyaYNQ3D+rN6w6WfwH+nuqcGXWvawGwxOEroO4YGnFh95azw==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "darwin"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/freebsd-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.28.2.tgz",
+      "integrity": "sha512-n+I0BTSRIoy+d6RPKnEVwql5UwBJolytvY4mAOIEJorKlqgPII8ix6slVVrfZ5Tnj7glIZvloylbB/EJPMWEXw==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "freebsd"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/freebsd-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.28.2.tgz",
+      "integrity": "sha512-78XJTJkvPs0kz2w61301PJjXl4g7q3JqiYMZ/M/yVI73EHBrCRTgkhu9oqG7vPqq+a/yadEW8aD+agKlk5xrmg==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "freebsd"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-arm": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.28.2.tgz",
+      "integrity": "sha512-XlDnu2q5yoqems+xay6wSAcg9DDD7K9RLKZEBOMZm3ckNpJBvOX20tSfby8KfrrhINDyv9V2YVZKY/SpoGJI8w==",
+      "cpu": [
+        "arm"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.28.2.tgz",
+      "integrity": "sha512-pW4AC0P3it8c7do9MVM4p51FzHzdM/TZrerurgRcHJ2WTa1VQ1CIq18xncfpBJw4ojkiZZrKW2yIBWBP92j6Ug==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-ia32": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.28.2.tgz",
+      "integrity": "sha512-CYbnj78HsIeA+DhgUKgFCfvNsTHFhMMrinUrMZpDXJXKN8T3XViTZ/+wtHeVxEWY8ewSzTFN+nRmSwO2tZaLUQ==",
+      "cpu": [
+        "ia32"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-loong64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.28.2.tgz",
+      "integrity": "sha512-buwkd8nsph4R+ajRvw0qM5Hja/TXQow3ptzWO2EbG/cqcIkHloRrdlBtQlshyYGTNFvfkfJ5tpPLVkY4DtsPfQ==",
+      "cpu": [
+        "loong64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-mips64el": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.28.2.tgz",
+      "integrity": "sha512-ZVykbDyk7519VwiNb9Lcj9m8XM6v5V9uKPvrEMkkEedVewf+0itkhahp4HDpgERXhwLRpWFypsGbG/J8s0QjJA==",
+      "cpu": [
+        "mips64el"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-ppc64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.28.2.tgz",
+      "integrity": "sha512-CAXl+Dtd9UUuJd8pKKdwh6MLm3MUMiqMPmhZ3tTSXPqfyQ3vDl6R5hZdZ/kYojK4ofXtdfSv1tFq8XzWx3heNQ==",
+      "cpu": [
+        "ppc64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-riscv64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.28.2.tgz",
+      "integrity": "sha512-GeXCej4IQtU1B+QlDV8W/RRvbzI3O/Stss+/bCXv4lZls5WGRtu2a+3JkA3i4qIUlMXpcHebWpF8AkJhATowuA==",
+      "cpu": [
+        "riscv64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-s390x": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.28.2.tgz",
+      "integrity": "sha512-3H1weTYZPxt/WOhByszQZybS9w5lKzUn1FDMsgEChbHWQwHYQQRfBxgCcZvPhjHfKyJjIievvMmEUawJrdY9Dg==",
+      "cpu": [
+        "s390x"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/linux-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.28.2.tgz",
+      "integrity": "sha512-4xTZr1FUmSoQW4XIWmit3tzQrUTZM+N3P0XV8xROKYF50XfI7xeO90+1bZvNwxIufQ9hDQVRJH5YhgPVF8A/HQ==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "linux"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/netbsd-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-arm64/-/netbsd-arm64-0.28.2.tgz",
+      "integrity": "sha512-sSATRjPeDBg3pdgHoQfoYBob11Kk1FGa9lui5RIHZCoCkJa9QKlvl3/vKz2usCmYYjs7ymJR/2Nnsqe+Hjt5nw==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "netbsd"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/netbsd-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.28.2.tgz",
+      "integrity": "sha512-lqnzCV+mM0gIADaKihiCg6ifgfU2L3h5E33rNQBN1Y4MaVGnzryzmvvf7UHxprpQdE8hpqLolJ9Rl+SkIRDpyw==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "netbsd"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/openbsd-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-arm64/-/openbsd-arm64-0.28.2.tgz",
+      "integrity": "sha512-AL2qJILH7lNjrDmCQDvdxMfAUIv8KMNZOvrwAQ8i8//ntL9FflhOyMJ8OZSMBb8/AWXe3/5v5S20y3zCoZWKoQ==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "openbsd"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/openbsd-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.28.2.tgz",
+      "integrity": "sha512-QtiuPytchRyC4rwUKhexJdQKvDuZ6hWloi3igqPQNUJCS1/v9EiO3UTOXR6A3FoMo4fnAKbWJdqaIwhOzh8qEw==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "openbsd"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/openharmony-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/openharmony-arm64/-/openharmony-arm64-0.28.2.tgz",
+      "integrity": "sha512-WkhYDmpTjLvGlScA1rwjRUmhl4k8oXR3cIbtqWmELgU/dFeHHlEllxDvdWcNJV9rbzCexB5vz8gtNewWLgCT7Q==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "openharmony"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/sunos-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.28.2.tgz",
+      "integrity": "sha512-GPMSkTOtMnv2U2F8gxe4Io6qmVs+YKyp832Etqqxr0hFngmXQ3rzwytelm3GIn7T4VviRUlf3sOgBOiTdvaf7g==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "sunos"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/win32-arm64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.28.2.tgz",
+      "integrity": "sha512-PIhhEkE9uPBleRBrQEJpUn7MBnibZzbGzYWPmY3x+YoVg/95zbjB4CxPPOQ8l5tYYM4mMaCthF8/1DIfBQQyWQ==",
+      "cpu": [
+        "arm64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "win32"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/win32-ia32": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.28.2.tgz",
+      "integrity": "sha512-YmJbfTlvU7Sdn9BB+4PRES4oB6pxgS37MAONj+hBr/cpXS1aBPKXxNnDbu+QCWPj0o9dgyxeq79g6c5P8KeuYA==",
+      "cpu": [
+        "ia32"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "win32"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@esbuild/win32-x64": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.28.2.tgz",
+      "integrity": "sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "win32"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/@types/body-parser": {
+      "version": "1.19.6",
+      "resolved": "https://registry.npmjs.org/@types/body-parser/-/body-parser-1.19.6.tgz",
+      "integrity": "sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@types/connect": "*",
+        "@types/node": "*"
+      }
+    },
+    "node_modules/@types/connect": {
+      "version": "3.4.38",
+      "resolved": "https://registry.npmjs.org/@types/connect/-/connect-3.4.38.tgz",
+      "integrity": "sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@types/node": "*"
+      }
+    },
+    "node_modules/@types/express": {
+      "version": "5.0.6",
+      "resolved": "https://registry.npmjs.org/@types/express/-/express-5.0.6.tgz",
+      "integrity": "sha512-sKYVuV7Sv9fbPIt/442koC7+IIwK5olP1KWeD88e/idgoJqDm3JV/YUiPwkoKK92ylff2MGxSz1CSjsXelx0YA==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@types/body-parser": "*",
+        "@types/express-serve-static-core": "^5.0.0",
+        "@types/serve-static": "^2"
+      }
+    },
+    "node_modules/@types/express-serve-static-core": {
+      "version": "5.1.3",
+      "resolved": "https://registry.npmjs.org/@types/express-serve-static-core/-/express-serve-static-core-5.1.3.tgz",
+      "integrity": "sha512-dPfW8NFiOF4wOHc7+N/QSxlY9cfSsenewGbAz8C8U/MULPd/YZ27LvJUIlzaXie7e6Ove9YunJGgC9tbHD2cKw==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@types/node": "*",
+        "@types/qs": "*",
+        "@types/range-parser": "*",
+        "@types/send": "*"
+      }
+    },
+    "node_modules/@types/http-errors": {
+      "version": "2.0.5",
+      "resolved": "https://registry.npmjs.org/@types/http-errors/-/http-errors-2.0.5.tgz",
+      "integrity": "sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/@types/jsonwebtoken": {
+      "version": "9.0.10",
+      "resolved": "https://registry.npmjs.org/@types/jsonwebtoken/-/jsonwebtoken-9.0.10.tgz",
+      "integrity": "sha512-asx5hIG9Qmf/1oStypjanR7iKTv0gXQ1Ov/jfrX6kS/EO0OFni8orbmGCn0672NHR3kXHwpAwR+B368ZGN/2rA==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@types/ms": "*",
+        "@types/node": "*"
+      }
+    },
+    "node_modules/@types/ms": {
+      "version": "2.1.0",
+      "resolved": "https://registry.npmjs.org/@types/ms/-/ms-2.1.0.tgz",
+      "integrity": "sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/@types/node": {
+      "version": "22.20.4",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.20.4.tgz",
+      "integrity": "sha512-zJRE40jpHtKqE/C4fgHrAKQLJuSpzEnP9ff9Y7YtoR3Wd2pwqzlekDeEuUQXjRd+QCYnVnNwuJYmhdk9XV8gvA==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "undici-types": "~6.21.0"
+      }
+    },
+    "node_modules/@types/qs": {
+      "version": "6.15.1",
+      "resolved": "https://registry.npmjs.org/@types/qs/-/qs-6.15.1.tgz",
+      "integrity": "sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/@types/range-parser": {
+      "version": "1.2.7",
+      "resolved": "https://registry.npmjs.org/@types/range-parser/-/range-parser-1.2.7.tgz",
+      "integrity": "sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/@types/send": {
+      "version": "1.2.1",
+      "resolved": "https://registry.npmjs.org/@types/send/-/send-1.2.1.tgz",
+      "integrity": "sha512-arsCikDvlU99zl1g69TcAB3mzZPpxgw0UQnaHeC1Nwb015xp8bknZv5rIfri9xTOcMuaVgvabfIRA7PSZVuZIQ==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@types/node": "*"
+      }
+    },
+    "node_modules/@types/serve-static": {
+      "version": "2.2.0",
+      "resolved": "https://registry.npmjs.org/@types/serve-static/-/serve-static-2.2.0.tgz",
+      "integrity": "sha512-8mam4H1NHLtu7nmtalF7eyBH14QyOASmcxHhSfEoRyr0nP/YdoesEtU+uSRvMe96TW/HPTtkoKqQLl53N7UXMQ==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "@types/http-errors": "*",
+        "@types/node": "*"
+      }
+    },
+    "node_modules/accepts": {
+      "version": "1.3.8",
+      "resolved": "https://registry.npmjs.org/accepts/-/accepts-1.3.8.tgz",
+      "integrity": "sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==",
+      "license": "MIT",
+      "dependencies": {
+        "mime-types": "~2.1.34",
+        "negotiator": "0.6.3"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/array-flatten": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz",
+      "integrity": "sha512-PCVAQswWemu6UdxsDFFX/+gVeYqKAod3D3UVm91jHwynguOwAvYPhx8nNlM++NqRcK6CxxpUafjmhIdKiHibqg==",
+      "license": "MIT"
+    },
+    "node_modules/body-parser": {
+      "version": "1.20.8",
+      "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-1.20.8.tgz",
+      "integrity": "sha512-JNcyFQ64OiijEkPzUBTCe+hyPXUD/3LEldGQ6iF5LR1w00mx9o7xtDWHXBY2iItjdCFGoilOLNQbH943ut7pHA==",
+      "license": "MIT",
+      "dependencies": {
+        "bytes": "~3.1.2",
+        "content-type": "~1.0.5",
+        "debug": "2.6.9",
+        "depd": "2.0.0",
+        "destroy": "~1.2.0",
+        "http-errors": "~2.0.1",
+        "iconv-lite": "~0.4.24",
+        "on-finished": "~2.4.1",
+        "qs": "~6.16.0",
+        "raw-body": "~2.5.3",
+        "type-is": "~1.6.18",
+        "unpipe": "~1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.8",
+        "npm": "1.2.8000 || >= 1.4.16"
+      }
+    },
+    "node_modules/body-parser/node_modules/qs": {
+      "version": "6.16.0",
+      "resolved": "https://registry.npmjs.org/qs/-/qs-6.16.0.tgz",
+      "integrity": "sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==",
+      "license": "BSD-3-Clause",
+      "dependencies": {
+        "es-define-property": "^1.0.1",
+        "side-channel": "^1.1.1"
+      },
+      "engines": {
+        "node": ">=0.6"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/buffer-equal-constant-time": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/buffer-equal-constant-time/-/buffer-equal-constant-time-1.0.1.tgz",
+      "integrity": "sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==",
+      "license": "BSD-3-Clause"
+    },
+    "node_modules/bytes": {
+      "version": "3.1.2",
+      "resolved": "https://registry.npmjs.org/bytes/-/bytes-3.1.2.tgz",
+      "integrity": "sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/call-bind-apply-helpers": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/call-bind-apply-helpers/-/call-bind-apply-helpers-1.0.2.tgz",
+      "integrity": "sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "function-bind": "^1.1.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/call-bound": {
+      "version": "1.0.4",
+      "resolved": "https://registry.npmjs.org/call-bound/-/call-bound-1.0.4.tgz",
+      "integrity": "sha512-+ys997U96po4Kx/ABpBCqhA9EuxJaQWDQg7295H4hBphv3IZg0boBKuwYpt4YXp6MZ5AmZQnU/tyMTlRpaSejg==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.2",
+        "get-intrinsic": "^1.3.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/content-disposition": {
+      "version": "0.5.4",
+      "resolved": "https://registry.npmjs.org/content-disposition/-/content-disposition-0.5.4.tgz",
+      "integrity": "sha512-FveZTNuGw04cxlAiWbzi6zTAL/lhehaWbTtgluJh4/E95DqMwTmha3KZN1aAWA8cFIhHzMZUvLevkw5Rqk+tSQ==",
+      "license": "MIT",
+      "dependencies": {
+        "safe-buffer": "5.2.1"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/content-type": {
+      "version": "1.0.5",
+      "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.5.tgz",
+      "integrity": "sha512-nTjqfcBFEipKdXCv4YDQWCfmcLZKm81ldF0pAopTvyrFGVbcR6P/VAAd5G7N+0tTr8QqiU0tFadD6FK4NtJwOA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/cookie": {
+      "version": "0.7.2",
+      "resolved": "https://registry.npmjs.org/cookie/-/cookie-0.7.2.tgz",
+      "integrity": "sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/cookie-signature": {
+      "version": "1.0.7",
+      "resolved": "https://registry.npmjs.org/cookie-signature/-/cookie-signature-1.0.7.tgz",
+      "integrity": "sha512-NXdYc3dLr47pBkpUCHtKSwIOQXLVn8dZEuywboCOJY/osA0wFSLlSawr3KN8qXJEyX66FcONTH8EIlVuK0yyFA==",
+      "license": "MIT"
+    },
+    "node_modules/debug": {
+      "version": "2.6.9",
+      "resolved": "https://registry.npmjs.org/debug/-/debug-2.6.9.tgz",
+      "integrity": "sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==",
+      "license": "MIT",
+      "dependencies": {
+        "ms": "2.0.0"
+      }
+    },
+    "node_modules/depd": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/depd/-/depd-2.0.0.tgz",
+      "integrity": "sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/destroy": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/destroy/-/destroy-1.2.0.tgz",
+      "integrity": "sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8",
+        "npm": "1.2.8000 || >= 1.4.16"
+      }
+    },
+    "node_modules/dotenv": {
+      "version": "16.6.1",
+      "resolved": "https://registry.npmjs.org/dotenv/-/dotenv-16.6.1.tgz",
+      "integrity": "sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==",
+      "license": "BSD-2-Clause",
+      "engines": {
+        "node": ">=12"
+      },
+      "funding": {
+        "url": "https://dotenvx.com"
+      }
+    },
+    "node_modules/dunder-proto": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/dunder-proto/-/dunder-proto-1.0.1.tgz",
+      "integrity": "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.1",
+        "es-errors": "^1.3.0",
+        "gopd": "^1.2.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/ecdsa-sig-formatter": {
+      "version": "1.0.11",
+      "resolved": "https://registry.npmjs.org/ecdsa-sig-formatter/-/ecdsa-sig-formatter-1.0.11.tgz",
+      "integrity": "sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==",
+      "license": "Apache-2.0",
+      "dependencies": {
+        "safe-buffer": "^5.0.1"
+      }
+    },
+    "node_modules/ee-first": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/ee-first/-/ee-first-1.1.1.tgz",
+      "integrity": "sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==",
+      "license": "MIT"
+    },
+    "node_modules/encodeurl": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/encodeurl/-/encodeurl-2.0.0.tgz",
+      "integrity": "sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/es-define-property": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/es-define-property/-/es-define-property-1.0.1.tgz",
+      "integrity": "sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/es-errors": {
+      "version": "1.3.0",
+      "resolved": "https://registry.npmjs.org/es-errors/-/es-errors-1.3.0.tgz",
+      "integrity": "sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/es-object-atoms": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/es-object-atoms/-/es-object-atoms-1.1.2.tgz",
+      "integrity": "sha512-HWcBoN6NileqtSydK2FqHbS/LoDd2pqrnQHLyJzBj4kOp/ky2MWMN694xOfkK8/SnUsW2DH7EfyVlydKCsm1Zw==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/esbuild": {
+      "version": "0.28.2",
+      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+      "integrity": "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==",
+      "dev": true,
+      "hasInstallScript": true,
+      "license": "MIT",
+      "bin": {
+        "esbuild": "bin/esbuild"
+      },
+      "engines": {
+        "node": ">=18"
+      },
+      "optionalDependencies": {
+        "@esbuild/aix-ppc64": "0.28.2",
+        "@esbuild/android-arm": "0.28.2",
+        "@esbuild/android-arm64": "0.28.2",
+        "@esbuild/android-x64": "0.28.2",
+        "@esbuild/darwin-arm64": "0.28.2",
+        "@esbuild/darwin-x64": "0.28.2",
+        "@esbuild/freebsd-arm64": "0.28.2",
+        "@esbuild/freebsd-x64": "0.28.2",
+        "@esbuild/linux-arm": "0.28.2",
+        "@esbuild/linux-arm64": "0.28.2",
+        "@esbuild/linux-ia32": "0.28.2",
+        "@esbuild/linux-loong64": "0.28.2",
+        "@esbuild/linux-mips64el": "0.28.2",
+        "@esbuild/linux-ppc64": "0.28.2",
+        "@esbuild/linux-riscv64": "0.28.2",
+        "@esbuild/linux-s390x": "0.28.2",
+        "@esbuild/linux-x64": "0.28.2",
+        "@esbuild/netbsd-arm64": "0.28.2",
+        "@esbuild/netbsd-x64": "0.28.2",
+        "@esbuild/openbsd-arm64": "0.28.2",
+        "@esbuild/openbsd-x64": "0.28.2",
+        "@esbuild/openharmony-arm64": "0.28.2",
+        "@esbuild/sunos-x64": "0.28.2",
+        "@esbuild/win32-arm64": "0.28.2",
+        "@esbuild/win32-ia32": "0.28.2",
+        "@esbuild/win32-x64": "0.28.2"
+      }
+    },
+    "node_modules/escape-html": {
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/escape-html/-/escape-html-1.0.3.tgz",
+      "integrity": "sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow==",
+      "license": "MIT"
+    },
+    "node_modules/etag": {
+      "version": "1.8.1",
+      "resolved": "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
+      "integrity": "sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/express": {
+      "version": "4.22.2",
+      "resolved": "https://registry.npmjs.org/express/-/express-4.22.2.tgz",
+      "integrity": "sha512-IuL+Elrou2ZvCFHs18/CIzy2Nzvo25nZ1/D2eIZlz7c+QUayAcYoiM2BthCjs+EBHVpjYjcuLDAiCWgeIX3X1Q==",
+      "license": "MIT",
+      "dependencies": {
+        "accepts": "~1.3.8",
+        "array-flatten": "1.1.1",
+        "body-parser": "~1.20.5",
+        "content-disposition": "~0.5.4",
+        "content-type": "~1.0.4",
+        "cookie": "~0.7.1",
+        "cookie-signature": "~1.0.6",
+        "debug": "2.6.9",
+        "depd": "2.0.0",
+        "encodeurl": "~2.0.0",
+        "escape-html": "~1.0.3",
+        "etag": "~1.8.1",
+        "finalhandler": "~1.3.1",
+        "fresh": "~0.5.2",
+        "http-errors": "~2.0.0",
+        "merge-descriptors": "1.0.3",
+        "methods": "~1.1.2",
+        "on-finished": "~2.4.1",
+        "parseurl": "~1.3.3",
+        "path-to-regexp": "~0.1.12",
+        "proxy-addr": "~2.0.7",
+        "qs": "~6.15.1",
+        "range-parser": "~1.2.1",
+        "safe-buffer": "5.2.1",
+        "send": "~0.19.0",
+        "serve-static": "~1.16.2",
+        "setprototypeof": "1.2.0",
+        "statuses": "~2.0.1",
+        "type-is": "~1.6.18",
+        "utils-merge": "1.0.1",
+        "vary": "~1.1.2"
+      },
+      "engines": {
+        "node": ">= 0.10.0"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/express"
+      }
+    },
+    "node_modules/finalhandler": {
+      "version": "1.3.2",
+      "resolved": "https://registry.npmjs.org/finalhandler/-/finalhandler-1.3.2.tgz",
+      "integrity": "sha512-aA4RyPcd3badbdABGDuTXCMTtOneUCAYH/gxoYRTZlIJdF0YPWuGqiAsIrhNnnqdXGswYk6dGujem4w80UJFhg==",
+      "license": "MIT",
+      "dependencies": {
+        "debug": "2.6.9",
+        "encodeurl": "~2.0.0",
+        "escape-html": "~1.0.3",
+        "on-finished": "~2.4.1",
+        "parseurl": "~1.3.3",
+        "statuses": "~2.0.2",
+        "unpipe": "~1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/forwarded": {
+      "version": "0.2.0",
+      "resolved": "https://registry.npmjs.org/forwarded/-/forwarded-0.2.0.tgz",
+      "integrity": "sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/fresh": {
+      "version": "0.5.2",
+      "resolved": "https://registry.npmjs.org/fresh/-/fresh-0.5.2.tgz",
+      "integrity": "sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/fsevents": {
+      "version": "2.3.3",
+      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz",
+      "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
+      "dev": true,
+      "hasInstallScript": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "darwin"
+      ],
+      "engines": {
+        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
+      }
+    },
+    "node_modules/function-bind": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz",
+      "integrity": "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==",
+      "license": "MIT",
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/get-intrinsic": {
+      "version": "1.3.0",
+      "resolved": "https://registry.npmjs.org/get-intrinsic/-/get-intrinsic-1.3.0.tgz",
+      "integrity": "sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.2",
+        "es-define-property": "^1.0.1",
+        "es-errors": "^1.3.0",
+        "es-object-atoms": "^1.1.1",
+        "function-bind": "^1.1.2",
+        "get-proto": "^1.0.1",
+        "gopd": "^1.2.0",
+        "has-symbols": "^1.1.0",
+        "hasown": "^2.0.2",
+        "math-intrinsics": "^1.1.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/get-proto": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/get-proto/-/get-proto-1.0.1.tgz",
+      "integrity": "sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==",
+      "license": "MIT",
+      "dependencies": {
+        "dunder-proto": "^1.0.1",
+        "es-object-atoms": "^1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/gopd": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/gopd/-/gopd-1.2.0.tgz",
+      "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/has-symbols": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmjs.org/has-symbols/-/has-symbols-1.1.0.tgz",
+      "integrity": "sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/hasown": {
+      "version": "2.0.4",
+      "resolved": "https://registry.npmjs.org/hasown/-/hasown-2.0.4.tgz",
+      "integrity": "sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==",
+      "license": "MIT",
+      "dependencies": {
+        "function-bind": "^1.1.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/http-errors": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmjs.org/http-errors/-/http-errors-2.0.1.tgz",
+      "integrity": "sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==",
+      "license": "MIT",
+      "dependencies": {
+        "depd": "~2.0.0",
+        "inherits": "~2.0.4",
+        "setprototypeof": "~1.2.0",
+        "statuses": "~2.0.2",
+        "toidentifier": "~1.0.1"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/express"
+      }
+    },
+    "node_modules/iconv-lite": {
+      "version": "0.4.24",
+      "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.4.24.tgz",
+      "integrity": "sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==",
+      "license": "MIT",
+      "dependencies": {
+        "safer-buffer": ">= 2.1.2 < 3"
+      },
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/inherits": {
+      "version": "2.0.4",
+      "resolved": "https://registry.npmjs.org/inherits/-/inherits-2.0.4.tgz",
+      "integrity": "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==",
+      "license": "ISC"
+    },
+    "node_modules/ipaddr.js": {
+      "version": "1.9.1",
+      "resolved": "https://registry.npmjs.org/ipaddr.js/-/ipaddr.js-1.9.1.tgz",
+      "integrity": "sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.10"
+      }
+    },
+    "node_modules/jsonwebtoken": {
+      "version": "9.0.3",
+      "resolved": "https://registry.npmjs.org/jsonwebtoken/-/jsonwebtoken-9.0.3.tgz",
+      "integrity": "sha512-MT/xP0CrubFRNLNKvxJ2BYfy53Zkm++5bX9dtuPbqAeQpTVe0MQTFhao8+Cp//EmJp244xt6Drw/GVEGCUj40g==",
+      "license": "MIT",
+      "dependencies": {
+        "jws": "^4.0.1",
+        "lodash.includes": "^4.3.0",
+        "lodash.isboolean": "^3.0.3",
+        "lodash.isinteger": "^4.0.4",
+        "lodash.isnumber": "^3.0.3",
+        "lodash.isplainobject": "^4.0.6",
+        "lodash.isstring": "^4.0.1",
+        "lodash.once": "^4.0.0",
+        "ms": "^2.1.1",
+        "semver": "^7.5.4"
+      },
+      "engines": {
+        "node": ">=12",
+        "npm": ">=6"
+      }
+    },
+    "node_modules/jsonwebtoken/node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
+    },
+    "node_modules/jwa": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmjs.org/jwa/-/jwa-2.0.1.tgz",
+      "integrity": "sha512-hRF04fqJIP8Abbkq5NKGN0Bbr3JxlQ+qhZufXVr0DvujKy93ZCbXZMHDL4EOtodSbCWxOqR8MS1tXA5hwqCXDg==",
+      "license": "MIT",
+      "dependencies": {
+        "buffer-equal-constant-time": "^1.0.1",
+        "ecdsa-sig-formatter": "1.0.11",
+        "safe-buffer": "^5.0.1"
+      }
+    },
+    "node_modules/jws": {
+      "version": "4.0.1",
+      "resolved": "https://registry.npmjs.org/jws/-/jws-4.0.1.tgz",
+      "integrity": "sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==",
+      "license": "MIT",
+      "dependencies": {
+        "jwa": "^2.0.1",
+        "safe-buffer": "^5.0.1"
+      }
+    },
+    "node_modules/lodash.includes": {
+      "version": "4.3.0",
+      "resolved": "https://registry.npmjs.org/lodash.includes/-/lodash.includes-4.3.0.tgz",
+      "integrity": "sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isboolean": {
+      "version": "3.0.3",
+      "resolved": "https://registry.npmjs.org/lodash.isboolean/-/lodash.isboolean-3.0.3.tgz",
+      "integrity": "sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isinteger": {
+      "version": "4.0.4",
+      "resolved": "https://registry.npmjs.org/lodash.isinteger/-/lodash.isinteger-4.0.4.tgz",
+      "integrity": "sha512-DBwtEWN2caHQ9/imiNeEA5ys1JoRtRfY3d7V9wkqtbycnAmTvRRmbHKDV4a0EYc678/dia0jrte4tjYwVBaZUA==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isnumber": {
+      "version": "3.0.3",
+      "resolved": "https://registry.npmjs.org/lodash.isnumber/-/lodash.isnumber-3.0.3.tgz",
+      "integrity": "sha512-QYqzpfwO3/CWf3XP+Z+tkQsfaLL/EnUlXWVkIk5FUPc4sBdTehEqZONuyRt2P67PXAk+NXmTBcc97zw9t1FQrw==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isplainobject": {
+      "version": "4.0.6",
+      "resolved": "https://registry.npmjs.org/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz",
+      "integrity": "sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isstring": {
+      "version": "4.0.1",
+      "resolved": "https://registry.npmjs.org/lodash.isstring/-/lodash.isstring-4.0.1.tgz",
+      "integrity": "sha512-0wJxfxH1wgO3GrbuP+dTTk7op+6L41QCXbGINEmD+ny/G/eCqGzxyCsh7159S+mgDDcoarnBw6PC1PS5+wUGgw==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.once": {
+      "version": "4.1.1",
+      "resolved": "https://registry.npmjs.org/lodash.once/-/lodash.once-4.1.1.tgz",
+      "integrity": "sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==",
+      "license": "MIT"
+    },
+    "node_modules/math-intrinsics": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmjs.org/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
+      "integrity": "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/media-typer": {
+      "version": "0.3.0",
+      "resolved": "https://registry.npmjs.org/media-typer/-/media-typer-0.3.0.tgz",
+      "integrity": "sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/merge-descriptors": {
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/merge-descriptors/-/merge-descriptors-1.0.3.tgz",
+      "integrity": "sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==",
+      "license": "MIT",
+      "funding": {
+        "url": "https://github.com/sponsors/sindresorhus"
+      }
+    },
+    "node_modules/methods": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/methods/-/methods-1.1.2.tgz",
+      "integrity": "sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/mime": {
+      "version": "1.6.0",
+      "resolved": "https://registry.npmjs.org/mime/-/mime-1.6.0.tgz",
+      "integrity": "sha512-x0Vn8spI+wuJ1O6S7gnbaQg8Pxh4NNHb7KSINmEWKiPE4RKOplvijn+NkmYmmRgP68mc70j2EbeTFRsrswaQeg==",
+      "license": "MIT",
+      "bin": {
+        "mime": "cli.js"
+      },
+      "engines": {
+        "node": ">=4"
+      }
+    },
+    "node_modules/mime-db": {
+      "version": "1.52.0",
+      "resolved": "https://registry.npmjs.org/mime-db/-/mime-db-1.52.0.tgz",
+      "integrity": "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/mime-types": {
+      "version": "2.1.35",
+      "resolved": "https://registry.npmjs.org/mime-types/-/mime-types-2.1.35.tgz",
+      "integrity": "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==",
+      "license": "MIT",
+      "dependencies": {
+        "mime-db": "1.52.0"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/ms": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.0.0.tgz",
+      "integrity": "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==",
+      "license": "MIT"
+    },
+    "node_modules/negotiator": {
+      "version": "0.6.3",
+      "resolved": "https://registry.npmjs.org/negotiator/-/negotiator-0.6.3.tgz",
+      "integrity": "sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/object-inspect": {
+      "version": "1.13.4",
+      "resolved": "https://registry.npmjs.org/object-inspect/-/object-inspect-1.13.4.tgz",
+      "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/on-finished": {
+      "version": "2.4.1",
+      "resolved": "https://registry.npmjs.org/on-finished/-/on-finished-2.4.1.tgz",
+      "integrity": "sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==",
+      "license": "MIT",
+      "dependencies": {
+        "ee-first": "1.1.1"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/parseurl": {
+      "version": "1.3.3",
+      "resolved": "https://registry.npmjs.org/parseurl/-/parseurl-1.3.3.tgz",
+      "integrity": "sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/path-to-regexp": {
+      "version": "0.1.13",
+      "resolved": "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.13.tgz",
+      "integrity": "sha512-A/AGNMFN3c8bOlvV9RreMdrv7jsmF9XIfDeCd87+I8RNg6s78BhJxMu69NEMHBSJFxKidViTEdruRwEk/WIKqA==",
+      "license": "MIT"
+    },
+    "node_modules/proxy-addr": {
+      "version": "2.0.7",
+      "resolved": "https://registry.npmjs.org/proxy-addr/-/proxy-addr-2.0.7.tgz",
+      "integrity": "sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==",
+      "license": "MIT",
+      "dependencies": {
+        "forwarded": "0.2.0",
+        "ipaddr.js": "1.9.1"
+      },
+      "engines": {
+        "node": ">= 0.10"
+      }
+    },
+    "node_modules/qs": {
+      "version": "6.15.3",
+      "resolved": "https://registry.npmjs.org/qs/-/qs-6.15.3.tgz",
+      "integrity": "sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==",
+      "license": "BSD-3-Clause",
+      "dependencies": {
+        "es-define-property": "^1.0.1",
+        "side-channel": "^1.1.1"
+      },
+      "engines": {
+        "node": ">=0.6"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/range-parser": {
+      "version": "1.2.1",
+      "resolved": "https://registry.npmjs.org/range-parser/-/range-parser-1.2.1.tgz",
+      "integrity": "sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/raw-body": {
+      "version": "2.5.3",
+      "resolved": "https://registry.npmjs.org/raw-body/-/raw-body-2.5.3.tgz",
+      "integrity": "sha512-s4VSOf6yN0rvbRZGxs8Om5CWj6seneMwK3oDb4lWDH0UPhWcxwOWw5+qk24bxq87szX1ydrwylIOp2uG1ojUpA==",
+      "license": "MIT",
+      "dependencies": {
+        "bytes": "~3.1.2",
+        "http-errors": "~2.0.1",
+        "iconv-lite": "~0.4.24",
+        "unpipe": "~1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/safe-buffer": {
+      "version": "5.2.1",
+      "resolved": "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.2.1.tgz",
+      "integrity": "sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==",
+      "funding": [
+        {
+          "type": "github",
+          "url": "https://github.com/sponsors/feross"
+        },
+        {
+          "type": "patreon",
+          "url": "https://www.patreon.com/feross"
+        },
+        {
+          "type": "consulting",
+          "url": "https://feross.org/support"
+        }
+      ],
+      "license": "MIT"
+    },
+    "node_modules/safer-buffer": {
+      "version": "2.1.2",
+      "resolved": "https://registry.npmjs.org/safer-buffer/-/safer-buffer-2.1.2.tgz",
+      "integrity": "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==",
+      "license": "MIT"
+    },
+    "node_modules/semver": {
+      "version": "7.8.5",
+      "resolved": "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz",
+      "integrity": "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==",
+      "license": "ISC",
+      "bin": {
+        "semver": "bin/semver.js"
+      },
+      "engines": {
+        "node": ">=10"
+      }
+    },
+    "node_modules/send": {
+      "version": "0.19.2",
+      "resolved": "https://registry.npmjs.org/send/-/send-0.19.2.tgz",
+      "integrity": "sha512-VMbMxbDeehAxpOtWJXlcUS5E8iXh6QmN+BkRX1GARS3wRaXEEgzCcB10gTQazO42tpNIya8xIyNx8fll1OFPrg==",
+      "license": "MIT",
+      "dependencies": {
+        "debug": "2.6.9",
+        "depd": "2.0.0",
+        "destroy": "1.2.0",
+        "encodeurl": "~2.0.0",
+        "escape-html": "~1.0.3",
+        "etag": "~1.8.1",
+        "fresh": "~0.5.2",
+        "http-errors": "~2.0.1",
+        "mime": "1.6.0",
+        "ms": "2.1.3",
+        "on-finished": "~2.4.1",
+        "range-parser": "~1.2.1",
+        "statuses": "~2.0.2"
+      },
+      "engines": {
+        "node": ">= 0.8.0"
+      }
+    },
+    "node_modules/send/node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
+    },
+    "node_modules/serve-static": {
+      "version": "1.16.3",
+      "resolved": "https://registry.npmjs.org/serve-static/-/serve-static-1.16.3.tgz",
+      "integrity": "sha512-x0RTqQel6g5SY7Lg6ZreMmsOzncHFU7nhnRWkKgWuMTu5NN0DR5oruckMqRvacAN9d5w6ARnRBXl9xhDCgfMeA==",
+      "license": "MIT",
+      "dependencies": {
+        "encodeurl": "~2.0.0",
+        "escape-html": "~1.0.3",
+        "parseurl": "~1.3.3",
+        "send": "~0.19.1"
+      },
+      "engines": {
+        "node": ">= 0.8.0"
+      }
+    },
+    "node_modules/setprototypeof": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/setprototypeof/-/setprototypeof-1.2.0.tgz",
+      "integrity": "sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==",
+      "license": "ISC"
+    },
+    "node_modules/side-channel": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/side-channel/-/side-channel-1.1.1.tgz",
+      "integrity": "sha512-6x6dK6zJdpTzF4sQeNYxwtvBzf6Eg4GtlesS94HOvTudUeyK2WXAaIfmDgsyslYrRBeFIlsi54AYsFGUuhmvrQ==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "object-inspect": "^1.13.4",
+        "side-channel-list": "^1.0.1",
+        "side-channel-map": "^1.0.1",
+        "side-channel-weakmap": "^1.0.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-list": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/side-channel-list/-/side-channel-list-1.0.1.tgz",
+      "integrity": "sha512-mjn/0bi/oUURjc5Xl7IaWi/OJJJumuoJFQJfDDyO46+hBWsfaVM65TBHq2eoZBhzl9EchxOijpkbRC8SVBQU0w==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "object-inspect": "^1.13.4"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-map": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/side-channel-map/-/side-channel-map-1.0.1.tgz",
+      "integrity": "sha512-VCjCNfgMsby3tTdo02nbjtM/ewra6jPHmpThenkTYh8pG9ucZ/1P8So4u4FGBek/BjpOVsDCMoLA/iuBKIFXRA==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bound": "^1.0.2",
+        "es-errors": "^1.3.0",
+        "get-intrinsic": "^1.2.5",
+        "object-inspect": "^1.13.3"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-weakmap": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/side-channel-weakmap/-/side-channel-weakmap-1.0.2.tgz",
+      "integrity": "sha512-WPS/HvHQTYnHisLo9McqBHOJk2FkHO/tlpvldyrnem4aeQp4hai3gythswg6p01oSoTl58rcpiFAjF2br2Ak2A==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bound": "^1.0.2",
+        "es-errors": "^1.3.0",
+        "get-intrinsic": "^1.2.5",
+        "object-inspect": "^1.13.3",
+        "side-channel-map": "^1.0.1"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/statuses": {
+      "version": "2.0.2",
+      "resolved": "https://registry.npmjs.org/statuses/-/statuses-2.0.2.tgz",
+      "integrity": "sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/toidentifier": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/toidentifier/-/toidentifier-1.0.1.tgz",
+      "integrity": "sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.6"
+      }
+    },
+    "node_modules/tsx": {
+      "version": "4.23.15",
+      "resolved": "https://registry.npmjs.org/tsx/-/tsx-4.23.15.tgz",
+      "integrity": "sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "esbuild": "~0.28.0"
+      },
+      "bin": {
+        "tsx": "dist/cli.mjs"
+      },
+      "engines": {
+        "node": ">=18.0.0"
+      },
+      "optionalDependencies": {
+        "fsevents": "~2.3.3"
+      }
+    },
+    "node_modules/type-is": {
+      "version": "1.6.18",
+      "resolved": "https://registry.npmjs.org/type-is/-/type-is-1.6.18.tgz",
+      "integrity": "sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==",
+      "license": "MIT",
+      "dependencies": {
+        "media-typer": "0.3.0",
+        "mime-types": "~2.1.24"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/typescript": {
+      "version": "5.9.3",
+      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+      "dev": true,
+      "license": "Apache-2.0",
+      "bin": {
+        "tsc": "bin/tsc",
+        "tsserver": "bin/tsserver"
+      },
+      "engines": {
+        "node": ">=14.17"
+      }
+    },
+    "node_modules/undici-types": {
+      "version": "6.21.0",
+      "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz",
+      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+      "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/unpipe": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/unpipe/-/unpipe-1.0.0.tgz",
+      "integrity": "sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/utils-merge": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/utils-merge/-/utils-merge-1.0.1.tgz",
+      "integrity": "sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4.0"
+      }
+    },
+    "node_modules/vary": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/vary/-/vary-1.1.2.tgz",
+      "integrity": "sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    }
+  }
+}
+
+
+===== ARQUIVO: package.json =====
+
+{
+  "name": "standard-node-template",
+  "version": "1.0.0",
+  "description": "Standard Node.js template with Docker and Pluggable HTTP Adapter",
+  "main": "./dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --watch=.env ./src/server.ts",
+    "build": "tsc",
+    "start": "node ./dist/server.js"
+  },
+  "author": "Luis Carlos da Silva Dias (https://github.com)",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
+
+
+===== ARQUIVO: src/api/errors/catalog.ts =====
+
+import { HomeError }                 from "./domain/home";
+import { AccessIdentificationError } from "./domain/accessIdentification";
+import { SecurityError }             from "./domain/token";
+import { ApiKeyErrors }              from "./domain/apiKey";
+import { ThrottlerErrors }           from "./domain/throttler";
+import { ServiceResilienceErrors }   from "./domain/serviceResilience";
+import { IdentityErrors } from "./domain/identity";
+
+export const ErrorCatalog = {
+  ...HomeError,
+  ...AccessIdentificationError,
+  ...SecurityError,
+  ...ApiKeyErrors,
+  ...ThrottlerErrors,
+  ...ServiceResilienceErrors,
+  ...IdentityErrors
+  
+} as const;
+
+export type ErrorCode = keyof typeof ErrorCatalog;
+
+
+===== ARQUIVO: src/api/errors/domain/accessIdentification.ts =====
+
+export const AccessIdentificationError = {
+  MISSING_DEVICE_IDENTIFIERS: {
+    code: "MISSING_DEVICE_IDENTIFIERS",
+    message: "Os identificadores vitais do hardware (Fingerprint ou Browser Instance ID) estão ausentes na requisição.",
+    statusCode: 400,
+  },
+  INVALID_FINGERPRINT_FORMAT: {
+    code: "INVALID_FINGERPRINT_FORMAT",
+    message: "A assinatura estrutural (Fingerprint ID) informada não atende aos padrões de codificação esperados.",
+    statusCode: 400,
+  },
+  INVALID_BROWSER_INSTANCE_FORMAT: {
+    code: "INVALID_BROWSER_INSTANCE_FORMAT",
+    message: "O identificador de ciclo do navegador (Browser Instance ID) está malformado.",
+    statusCode: 400,
+  },
+  INVALID_PERMANENT_DEVICE_TOKEN: {
+    code: "INVALID_PERMANENT_DEVICE_TOKEN",
+    message: "O token de persistência física (Permanent Device ID) é inválido ou expirou.",
+    statusCode: 422,
+  },
+
+  // AccessDeviceBrowserMetadata
+  MISSING_USER_AGENT: {
+    code: "MISSING_USER_AGENT",
+    message: "O cabeçalho identificador do agente do usuário (User-Agent) é obrigatório e não foi informado.",
+    statusCode: 400,
+  },
+  UNSUPPORTED_OPERATING_SYSTEM: {
+    code: "UNSUPPORTED_OPERATING_SYSTEM",
+    message: "O sistema operacional extraído do dispositivo não é suportado pelas regras corporativas.",
+    statusCode: 422,
+  },
+  INVALID_IP_ADDRESS_FORMAT: {
+    code: "INVALID_IP_ADDRESS_FORMAT",
+    message: "A string de rede fornecida não corresponde a um endereço de protocolo IP (v4 ou v6) válido.",
+    statusCode: 400,
+  },
+  INVALID_COUNTRY_CODE: {
+    code: "INVALID_COUNTRY_CODE",
+    message: "O código de localização geográfica do país deve seguir estritamente o padrão ISO 3166-1 Alpha-2.",
+    statusCode: 400,
+  },
+  MISSING_PREFERRED_LANGUAGES: {
+    code: "MISSING_PREFERRED_LANGUAGES",
+    message: "A lista de idiomas preferidos do navegador (Accept-Language) não pôde ser interpretada.",
+    statusCode: 400,
+  }
+} as const;
+
+
+===== ARQUIVO: src/api/errors/domain/apiKey.ts =====
+
+export const ApiKeyErrors = {
+  API_KEY_MISSING: {
+    code       : 'API_KEY_MISSING',
+    statusCode : 401,
+    message    : 'A requisição operacional não forneceu a chave de credencial X-API-Key necessária para acesso.'
+  },
+  API_KEY_INVALID: {
+    code       : 'API_KEY_INVALID',
+    statusCode : 401,
+    message    : 'A chave de credencial fornecida encontra-se incorreta, corrompida ou inexistente no ecossistema.'
+  },
+  API_KEY_SUSPENDED: {
+    code       : 'API_KEY_SUSPENDED',
+    statusCode : 403,
+    message    : 'Este terminal de aplicação parceira encontra-se administrativamente suspenso por violação de termos de uso.'
+  }
+};
+
+
+===== ARQUIVO: src/api/errors/domain/home.ts =====
+
+export const HomeError = {
+  STUDENT_NOT_FOUND: {
+    code: "STUDENT_NOT_FOUND",
+    message: "O estudante informado não foi encontrado no sistema.",
+    statusCode: 404,
+  },
+  SUBJECT_NOT_CLASSIFIED: {
+    code: "SUBJECT_NOT_CLASSIFIED",
+    message: "A IA não conseguiu classificar este assunto na árvore cognitiva.",
+    statusCode: 422,
+  },
+  AI_INVALID_RESPONSE: {
+    code: "AI_INVALID_RESPONSE",
+    message: "A resposta retornada pela IA não atende ao formato estruturado exigido.",
+    statusCode: 502,
+  }
+} as const;
+
+
+===== ARQUIVO: src/api/errors/domain/identity.ts =====
+
+/**
+ * @file identity.ts
+ * @description Dicionário literal de mensagens de erro específicas para o perímetro de identificação progressiva e acessos.
+ */
+
+export const IdentityErrors = {
+  FEDERATED_AUTHENTICATION_FAILED: {
+    code       : 'FEDERATED_AUTHENTICATION_FAILED',
+    statusCode : 401,
+    message    : 'A validação de identidade junto ao provedor externo falhou ou o token fornecido encontra-se expirado.'
+  },
+  IDENTITY_PROVIDER_COLLISION: {
+    code       : 'IDENTITY_PROVIDER_COLLISION',
+    statusCode : 409,
+    message    : 'Esta conta de provedor externo já encontra-se vinculada e em posse de outra identidade ativa no sistema.'
+  },
+  ACTOR_NOT_FOUND: {
+    code       : 'ACTOR_NOT_FOUND',
+    statusCode : 404,
+    message    : 'O identificador de ator operacional fornecido não foi localizado no ecossistema de dados ativo.'
+  },
+  IDENTITY_PROVIDER_UNSUPPORTED: {
+    code       : 'IDENTITY_PROVIDER_UNSUPPORTED',
+    statusCode : 400,
+    message    : 'O provedor de identidade externa solicitado não possui suporte técnico ou foi desativado na plataforma.'
+  },
+  ANONYMOUS_SESSION_EXPIRED: {
+    code       : 'ANONYMOUS_SESSION_EXPIRED',
+    statusCode : 401,
+    message    : 'A assinatura temporal do seu dispositivo efêmero expirou. É necessária a renovação da assinatura de hardware.'
+  }
+};
+
+
+===== ARQUIVO: src/api/errors/domain/serviceResilience.ts =====
+
+export const ServiceResilienceErrors = {
+  EXTERNAL_SERVICE_UNAVAILABLE: {
+    code       : 'EXTERNAL_SERVICE_UNAVAILABLE',
+    statusCode : 503,
+    message    : 'O serviço externo de processamento integrado encontra-se temporariamente instável ou fora do ar. A operação foi abortada de forma segura.'
+  }
+};
+
+
+===== ARQUIVO: src/api/errors/domain/throttler.ts =====
+
+export const ThrottlerErrors = {
+  REQUEST_THROTTLED: {
+    code       : 'REQUEST_THROTTLED',
+    statusCode : 429,
+    message    : 'A taxa de requisições operacionais permitida para a sua credencial foi excedida. Aguarde antes de realizar novos disparos.'
+  }
+};
+
+
+===== ARQUIVO: src/api/errors/domain/token.ts =====
+
+export const SecurityError = {
+  SECURITY_TOKEN_EXPIRED: {
+    code       : "SECURITY_TOKEN_EXPIRED",
+    message    : "O passaporte de segurança expirou. Por favor, realize uma nova identificação.",
+    statusCode : 401
+  },
+  SECURITY_TOKEN_CORRUPTED: {
+    code       : "SECURITY_TOKEN_CORRUPTED",
+    message    : "A assinatura do passaporte digital é inválida ou foi corrompida por terceiros.",
+    statusCode : 401
+  },
+  SECURITY_TOKEN_COMPROMISED: {
+    code       : "SECURITY_TOKEN_COMPROMISED",
+    message    : "A assinatura física do dispositivo não bate com o passaporte ativo. Acesso bloqueado por segurança.",
+    statusCode : 403
+  }
+  
+} as const;
+
+
+===== ARQUIVO: src/api/errors/domainException.ts =====
+
+import      { ErrorCatalog }    from './catalog';
+import type { ErrorCode }       from './catalog';
+
+export class DomainException extends Error {
+  public readonly uniqueCode: string;
+  public readonly httpStatus: number;
+
+  constructor(catalogCode: ErrorCode) {
+    const                   errorConfiguration = ErrorCatalog[catalogCode];    
+    super                   (errorConfiguration.message);    
+    this.uniqueCode         = errorConfiguration.code;
+    this.httpStatus         = errorConfiguration.statusCode;    
+    Object.setPrototypeOf   (this, DomainException.prototype);
+
+  } 
+}
+
+export interface HttpFailurePayload {
+  status        : 'error' | 'fail';
+  code          : string;
+  message       : string;
+  debugMessage? : string;
+  errors?       : string[];
+
+}
+
+export interface HttpFailureFormatter {
+  format(rawError: unknown, includeDebugDetails: boolean): {
+    statusCode   : number;
+    payload      : HttpFailurePayload;
+
+  };  
+}
+
+
+===== ARQUIVO: src/api/home/controller.ts =====
+
+import      { Env }                       from '../../config/env';
+import      { DomainException }           from '../errors/domainException';
+import type { HttpTrafficRequest,
+              HttpTrafficResponse }       from '../../infrastructure/httpTraffic/engine/httpTraffic';
+
+export const HomeController = {
+  getResponse: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+    return {
+      statusCode: 200,
+      body: {
+        message: "Node.ts Standard Template with Express running perfectly inside Docker!",
+        status: "online",
+        environment: Env.nodeEnv
+      }
+    };
+  },
+
+  simulateDomainError: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+    throw new DomainException("STUDENT_NOT_FOUND");
+  },
+
+  simulateUnexpectedError: async (_request: HttpTrafficRequest): Promise<HttpTrafficResponse> => {
+    throw new Error("Falha catastrófica de conexão com serviço externo simulada!");
+  }
+};
+
+
+===== ARQUIVO: src/api/home/routes.ts =====
+
+import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { HomeController }              from './controller';
+
+export function initializeHomeRoutes(engine: HttpTrafficExchangeEngine): void {
+  engine.register(
+    'get',
+    '/',
+    HomeController.getResponse
+    //* Desmarcar para simular o erro de domínio e erro de formato inesperado colocados no controller
+    //HomeController.simulateDomainError,
+    //HomeController.simulateUnexpectedError
+  );
+
+}
+
+
+===== ARQUIVO: src/api/identity/useCases/associateExternalIdentity.ts =====
+
+import type { FederatedAuthenticator } from '../../../infrastructure/identityProviders/engine/federatedAuthenticator';
+import type { SystemLogger }           from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface AssociateIdentityInput {
+  readonly actorId     : string;
+  readonly accessToken : string;
+}
+
+export class AssociateExternalIdentityUseCase {
+  private readonly authenticator: FederatedAuthenticator;
+
+  constructor(authenticator: FederatedAuthenticator) {
+    this.authenticator = authenticator;
+  }
+
+
+  public async execute(input: AssociateIdentityInput, logger: SystemLogger): Promise<void> {
+    logger.info(`Initiating federation upgrade sequence for target actor: [${input.actorId}]`);
+
+    const externalProfile = await this.authenticator.authenticate(input.accessToken);
+
+    logger.info(`Identity mapping secured between [${externalProfile.email}] and actor [${input.actorId}]`);
+  }
+}
+
+
+===== ARQUIVO: src/api/identity/useCases/registerAnonymousActor.ts =====
+
+import type { SystemLogger } from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface RegisterAnonymousInput {
+  readonly deviceFingerprintId : string;
+  readonly initialIpAddress    : string;
+}
+
+export interface RegisterAnonymousOutput {
+  readonly actorId : string;
+  readonly status  : string;
+}
+
+export class RegisterAnonymousActorUseCase {
+
+  public async execute(input: RegisterAnonymousInput, logger: SystemLogger): Promise<RegisterAnonymousOutput> {
+    logger.info(`Registering dynamic anonymous boundary for hardware fingerprint: [${input.deviceFingerprintId}]`);
+
+    return {
+      actorId : `anonymous_${Date.now()}`,
+      status  : 'CREATED_EFEMERAL'
+    };
+  }
+}
+
+===== ARQUIVO: src/api/users/controller.ts =====
+
+import type { HttpTrafficRequest,
+              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { UsersModel }          from './model';
+
+interface CustomError extends Error {
+  statusCode?: number;
+
+}
+
+export class UsersController {  
+    
+
+  public static async getAllUsers(
+    request: HttpTrafficRequest
+
+  ): Promise<HttpTrafficResponse> {
+      const users = UsersModel.findAll();
+
+      return {
+        statusCode: 200,
+        body: {
+          success: true,
+          data: users
+        }
+      };
+
+    } 
+
+  public static async createUser(
+    request: HttpTrafficRequest
+
+  ): Promise<HttpTrafficResponse> {
+      const { 
+        name,
+        email
+      } = request.body;
+
+      if (
+        !name || !email
+      ) {
+        const error: CustomError = new Error("Name and email are required fields");
+        error.statusCode = 400;
+        throw error;
+
+      }
+
+      const newUser = UsersModel.create({ 
+        name,
+        email
+      });
+    
+      return {
+        statusCode: 201,
+        body: {
+          success: true,
+          message: "User created successfully",
+          data: newUser
+          
+        }
+      };
+    }
+
+}
+
+//Para teste de jwt
+
+/* public static async getAllUsers(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
+    // CAPTURA TRANS-FRONTEIRA: O controlador de negócio lê a variável injetada nativamente pelo driver
+    const activeSession = request.session;
+
+    return {
+      statusCode: 200,
+      body: {
+        status         : 'success',
+        message        : 'A camada de negócios interceptou as variáveis de identificação de forma limpa.',
+        decodedSession : activeSession
+      }
+    };
+  } */
+
+===== ARQUIVO: src/api/users/model.ts =====
+
+import      { mysqlConnection } from '../../database/mysql/instance';
+import type {IMySQLUserRow }    from '../../database/mysql/tables';
+
+export interface User extends IMySQLUserRow {}
+
+export class UsersModel {
+  public static findAll(): User[] {
+
+    return mysqlConnection.query.selectUsers();
+
+  }
+
+  public static create(
+    data: { 
+    name: string; 
+    email: string 
+  }): User {
+    const newUser = mysqlConnection.query.insertUser(data);
+
+    return newUser;
+
+  }
+  
+}
+
+===== ARQUIVO: src/api/users/routes.ts =====
+
+import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { UsersController }             from './controller';
+
+export function initializeUsersRoutes(engine: HttpTrafficExchangeEngine): void {
+  engine.register(
+    'post',
+    '/users',
+    UsersController.createUser
+
+  );  
+  engine.register(
+    'get',
+    '/users/',
+    UsersController.getAllUsers
+
+  );
+}
+
+
+===== ARQUIVO: src/apiRouter.ts =====
+
+import type { HttpTrafficExchangeEngine }               from './infrastructure/httpTraffic/engine/httpTraffic';
+import      { initializeHomeRoutes }                    from './api/home/routes';
+import      { initializeUsersRoutes }                   from './api/users/routes';
+
+export function configureApiRoutes(engine: HttpTrafficExchangeEngine): void {
+  initializeHomeRoutes(engine);
+  initializeUsersRoutes(engine);
+  
+}
+
+
+===== ARQUIVO: src/config/env.ts =====
+
+import 'dotenv/config';
+
+export const Env = {
+  port:     Number(process.env  ['PORT'])          || 3000,
+  nodeEnv:  process.env         ['NODE_ENV']       || 'development',
+  
+};
+
+===== ARQUIVO: src/database/apiKeys/apiKeyTables.ts =====
+
+export interface ApiKeyRow {
+  readonly id                  : number;
+  readonly keyString           : string;
+  readonly applicationAppId    : string;
+  readonly developerId         : string;
+  readonly planTier            : 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+  readonly isSuspendedNumber   : number; // ◄ Revela que o banco guarda um número (0 ou 1) e não booleano
+}
+
+export const mockApiKeyTable: ApiKeyRow[] = [
+  {
+    id                  : 1,
+    keyString           : 'gemini_free_token_test_123',
+    applicationAppId    : 'app_partner_free_zone',
+    developerId         : 'dev_luis_dias_corporation',
+    planTier            : 'FREE',
+    isSuspendedNumber   : 0 // 0 significa Ativo no banco
+  },
+  {
+    id                  : 2,
+    keyString           : 'openai_premium_token_secure_456',
+    applicationAppId    : 'app_enterprise_ai_core',
+    developerId         : 'dev_silva_dias_perfil',
+    planTier            : 'ENTERPRISE',
+    isSuspendedNumber   : 1 // 1 significa Suspenso no banco
+  }
+];
+
+
+===== ARQUIVO: src/database/mysql/instance.ts =====
+
+import { mysqlUsersTable } from './tables';
+
+export const mysqlConnection = {
+  query: {
+    selectUsers : () => mysqlUsersTable,
+    insertUser  : (
+      data: { 
+      name: string; 
+      email: string 
+    }) => {
+      const newRow = { 
+        id: mysqlUsersTable.length + 1, ...data 
+      };
+      mysqlUsersTable.push(newRow);
+
+      return newRow;
+    }
+  }
+
+};
+
+
+===== ARQUIVO: src/database/mysql/tables.ts =====
+
+export interface IMySQLUserRow {
+  id    : number;
+  name  : string;
+  email : string;
+}
+
+export const mysqlUsersTable: IMySQLUserRow[] = [
+  { id: 1, 
+    name: "Luis Carlos", 
+    email: "silvadias.perfil@outlook.com" 
+  },
+  { id: 2,
+    name: "John Doe",
+    email: "john@example.com"
+  }
+];
+
+
+===== ARQUIVO: src/infrastructure/httpTraffic/drivers/expressHttpDriver.ts =====
+
+import      express                         from 'express';
+import      crypto                          from 'crypto';
+import type * as ExpressEngine              from 'express';
+import type { HttpTrafficExchangeEngine, 
+              HttpTrafficHandler,
+              HttpTrafficRequest }          from '../engine/httpTraffic';
+import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
+import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
+import type { TokenCryptographerEngine }    from '../../security/engine/tokenSession';
+import type { ConsumerFinderEngine }        from '../../security/consumerApi/adapter/finder';
+import      { RequestThrottler }            from '../../security/engine/requestThrottler';
+import      { ServerLifecycleGovernor }     from '../../security/engine/serverLifecycleGovernor';
+import      { ValidationException }         from '../engine/httpValidation';
+import      { DomainException }             from '../../../api/errors/domainException';
+
+export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
+  private readonly application        : ExpressEngine.Express;
+  private readonly listeningPort      : number;
+  private readonly failureFormatter   : HttpFailureFormatter;
+  private readonly systemLogger       : SystemLogger;
+  private readonly tokenEngine        : TokenCryptographerEngine;
+  private readonly consumerEngine     : ConsumerFinderEngine;
+  private readonly throttlerEngine    : RequestThrottler;
+  private readonly lifecycleGovernor  : ServerLifecycleGovernor;
+  private readonly displayDebugDetails: boolean;
+
+  constructor(configuration: { 
+    port                   : number; 
+    failureFormatter       : HttpFailureFormatter; 
+    systemLogger           : SystemLogger;
+    tokenEngine            : TokenCryptographerEngine;
+    consumerEngine         : ConsumerFinderEngine;
+    throttlerEngine        : RequestThrottler;
+    lifecycleGovernor      : ServerLifecycleGovernor;
+    displayDebugDetails    : boolean; 
+  }) {
+    this.application            = express();
+    this.listeningPort          = configuration.port;
+    this.failureFormatter       = configuration.failureFormatter;
+    this.systemLogger           = configuration.systemLogger;
+    this.tokenEngine            = configuration.tokenEngine;
+    this.consumerEngine         = configuration.consumerEngine;
+    this.throttlerEngine        = configuration.throttlerEngine;
+    this.lifecycleGovernor      = configuration.lifecycleGovernor;
+    this.displayDebugDetails    = configuration.displayDebugDetails;
+    this.application.use(express.json());
+  }
+
+  public register(
+    method      : 'get' | 'post' | 'put' | 'delete', 
+    resourcePath: string, 
+    handler     : HttpTrafficHandler,
+    schema?     : unknown
+  ): void {
+      this.application[method](resourcePath, async (
+        incomingRequest : ExpressEngine.Request, 
+        outgoingResponse: ExpressEngine.Response
+    ): Promise<void> => {      
+      
+      // MESTRE LIFE-CYCLE: Incrementa atômica e preventivamente o contador de conexões na RAM do servidor
+      try {
+        this.lifecycleGovernor.incrementActiveRequests();
+      } catch (terminationError: unknown) {
+        // Se o container estiver em processo de morte, rejeita a nova conexão imediatamente com 503
+        outgoingResponse.status(503).json({ status: 'fail', code: 'SERVER_TERMINATING', message: 'Servidor em processo de encerramento.' });
+        return;
+      }
+
+      const uniqueTraceId     = crypto.randomUUID();
+      const clientMetadata    = this.extractClientMetadata(incomingRequest);
+      
+      const contextualLogger  = this.systemLogger.withContext(uniqueTraceId, {
+        clientIp     : clientMetadata.ipAddress,
+        userAgent    : clientMetadata.userAgent,
+        httpMethod   : method.toUpperCase(),
+        resourcePath
+      });
+
+      try {
+        // 1. Executa a busca perimetral utilizando o motor unificado do Consumer
+        const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
+        
+        // 🛡️ BARREIRA DE PROTEÇÃO (Type Narrowing): Prova para o TS que a partir daqui o objeto nunca é nulo
+        if (!authenticatedConsumer) {
+          throw new DomainException('API_KEY_INVALID');
+        }
+
+        // Aplica o estrangulamento de requisições alimentando os novos campos purificados do domínio
+        await this.throttlerEngine.throttle(
+          authenticatedConsumer.ownerDeveloperIdentifier, 
+          authenticatedConsumer.rateLimitTier, 
+          clientMetadata.ipAddress
+        );
+
+        contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
+        this.validateInputSchema(schema, incomingRequest.body);
+
+        // SRP FILTRO 2: Hidratação da Sessão do Usuário
+        const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
+
+        // 2. Adapta o contêiner HTTP injetando o objeto consumer higienizado e tipado para as controllers
+        const adaptedRequest: HttpTrafficRequest = {
+          body        : incomingRequest.body,
+          query       : incomingRequest.query,
+          params      : incomingRequest.params,
+          headers     : incomingRequest.headers,
+          logger      : contextualLogger,
+          session     : activeSessionPayload,
+          consumer    : authenticatedConsumer
+        };
+
+        const executionResponse = await handler(adaptedRequest);
+        
+        if (executionResponse.newToken) {
+          outgoingResponse.setHeader('X-Session-Token', executionResponse.newToken);
+        }
+
+        outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
+        outgoingResponse.status(executionResponse.statusCode).json(executionResponse.body);
+        
+      } catch (capturedError: unknown) {
+        contextualLogger.error(`Exception intercepted during HTTP processing on path: [${resourcePath}]`, capturedError);
+        const { statusCode, payload } = this.failureFormatter.format(capturedError, this.displayDebugDetails);
+        
+        outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
+        outgoingResponse.status(statusCode).json(payload);
+      } finally {
+        // MESTRE LIFE-CYCLE: Decrementa o contador obrigatoriamente na saída perimetral
+        this.lifecycleGovernor.decrementActiveRequests();
+      }
+    });
+  }
+
+  private extractClientMetadata(request: ExpressEngine.Request) {
+    const rawClientIp     = request.ip || request.headers['x-forwarded-for'] || '127.0.0.1';
+    const ipStringBase    = Array.isArray(rawClientIp) ? String(rawClientIp[0] || '127.0.0.1') : String(rawClientIp);
+    const ipAddress       = ipStringBase.split(',')[0]?.trim() || '127.0.0.1';
+    const userAgent       = request.headers['user-agent'] || 'unknown';
+    const userAgentHash   = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
+
+    return { ipAddress, userAgent, userAgentHash };
+  }
+
+  private validateInputSchema(schema: unknown, body: unknown): void {
+    if (schema && typeof schema === 'object' && 'safeParse' in schema && typeof schema.safeParse === 'function') {
+      const validationResult = (schema as any).safeParse(body);
+      if (!validationResult.success) {
+        const formattedErrors = validationResult.error.errors.map((issue: any) => `${issue.path.join('.')}: ${issue.message}`);
+        throw new ValidationException(formattedErrors);
+      }
+    }
+  }
+
+  private async hydrateUserSession(request: ExpressEngine.Request, ipAddress: string, userAgentHash: string): Promise<any> {
+    const authorizationHeader = request.headers['authorization'];
+    const anonymousPayload = {
+      actorId                : 'ANONYMOUS',
+      deviceFingerprintId    : 'unknown',
+      tokenUniqueId          : 'unknown',
+      initialIpAddress       : ipAddress,
+      clientUserAgentHash    : userAgentHash,
+      requestSequenceCounter : 0,
+      issuedAt               : new Date(),
+      expiresAt              : new Date(),
+      lastActivityAt         : new Date()
+    };
+
+    if (authorizationHeader && typeof authorizationHeader === 'string' && authorizationHeader.startsWith('Bearer ')) {
+      try {
+        const cleanToken = authorizationHeader.substring(7).trim();
+        return await this.tokenEngine.decrypt(cleanToken);
+      } catch {
+        this.systemLogger.warn('Cryptographic token signature failed validation. Degrading request state to ANONYMOUS.');
+      }
+    }
+    return anonymousPayload;
+  }
+
+  public start(): void {
+    // 🛠️ MESTRE LIFE-CYCLE: Inicializa o driver de rede fisicamente e captura a instância pura do servidor HTTP
+    const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
+      this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
+    });
+
+    // 🔌 ORQUESTRAÇÃO DE SINAIS DO OS: Escuta e vincula os gatilhos do Linux de forma enclausurada e invisível
+    process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
+    process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/httpTraffic/engine/failureFormatter.ts =====
+
+import type { HttpFailureFormatter,
+              HttpFailurePayload }  from '../../../api/errors/domainException';
+import      { DomainException }     from '../../../api/errors/domainException';
+import      { ValidationException } from './httpValidation';
+
+export class ApplicationFailureFormatter implements HttpFailureFormatter {  
+  public format(
+    rawError: unknown,
+    includeDebugDetails: boolean
+  ):{ 
+      statusCode: number; 
+      payload   : HttpFailurePayload 
+    }{
+    
+    if (rawError instanceof DomainException) {
+      return {
+        statusCode: rawError.httpStatus,
+        payload: {
+          status: 'error',
+          code: rawError.uniqueCode,
+          message: rawError.message
+
+        }
+      };    
+    }
+
+    if (rawError instanceof ValidationException) {
+      return {
+        statusCode: 422,
+        payload: {
+          status: 'fail',
+          code: 'REQUEST_VALIDATION_FAILED',
+          message: 'The data provided fails to comply with the endpoint verification contract.',
+          errors: rawError.errors
+
+        }
+      };    
+    }
+
+    const fallbackMessage = rawError instanceof Error ? rawError.message : 'Internal server error';
+    
+    return {
+      statusCode: 500,
+      payload: {
+        status: 'fail',
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Internal server error',
+        ...(includeDebugDetails && { debugMessage: fallbackMessage })
+
+      }
+    };
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/httpTraffic/engine/httpTraffic.ts =====
+
+import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
+import type { TokenSessionPayload }         from '../../security/engine/tokenSession';
+import type { ConsumerSpecificationEngine } from '../../security/consumerApi/engine/specification'; // ◄ Importação do novo motor integrado
+
+export interface HttpTrafficRequest<
+  Payload           = any, 
+  QueryParameters   = any, 
+  RouteParameters   = any, 
+  HeaderProperties  = any
+> {
+  body        : Payload;
+  query       : QueryParameters;
+  params      : RouteParameters;
+  headers     : HeaderProperties;
+  logger      : SystemLogger;
+  session     : TokenSessionPayload;
+  consumer    : ConsumerSpecificationEngine;
+}
+
+export interface HttpTrafficResponse<Payload = any> {
+  statusCode : number;
+  body       : Payload;
+  newToken?  : string;
+}
+
+export type HttpTrafficHandler = (request: HttpTrafficRequest) => Promise<HttpTrafficResponse>;
+
+export interface HttpTrafficExchangeEngine {
+  register(
+    method      : 'get' | 'post' | 'put' | 'delete', 
+    resourcePath: string, 
+    handler     : HttpTrafficHandler, 
+    schema?     : unknown
+  ): void;
+  start(): void;
+}
+
+
+===== ARQUIVO: src/infrastructure/httpTraffic/engine/httpValidation.ts =====
+
+export interface HttpTrafficSchemaValidator {
+  validate(
+    data: unknown, 
+    schema: unknown
+
+    ):{ 
+      success: boolean;
+      errors?: string[]; 
+      data?: any
+
+    };
+  }
+
+export class ValidationException extends Error {
+  public readonly errors: string[];
+
+  constructor(
+      errors: string[]
+
+    ){
+    super('HTTP Request validation failed at infrastructure border.');
+    this.name = 'ValidationException';
+    this.errors = errors;
+    Object.setPrototypeOf(this, ValidationException.prototype);
+
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/identityProviders/drivers/facebookAuthenticator.ts =====
+
+import type { FederatedAuthenticator, FederatedIdentityPayload } from '../engine/federatedAuthenticator';
+import      { DomainException }          from '../../../api/errors/domainException';
+
+
+export class FacebookAuthenticator implements FederatedAuthenticator {
+
+  public async authenticate(accessToken: string): Promise<FederatedIdentityPayload> {
+    try {
+            
+      const facebookApiResponse = await fetch(
+        `https://graph.facebook.com/v26.0/me?fields=id,name,email,first_name,last_name,picture&access_token=${accessToken}`  
+      );
+      
+      if (!facebookApiResponse.ok) {
+        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+      }
+
+      const facebookRawProfile = await facebookApiResponse.json() as any;
+
+      return {
+        externalId      : String(facebookRawProfile.id),
+        email           : String(facebookRawProfile.email || ''),
+        isEmailVerified : !!facebookRawProfile.email,
+        fullName        : String(facebookRawProfile.name),
+        avatarUrl       : String(facebookRawProfile.picture?.data?.url || 'https://facebook.com')
+      };
+
+    } catch (capturedError: unknown) {     
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+        
+      }
+      
+      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+    }
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/identityProviders/drivers/googleAuthenticator.ts =====
+
+import type { FederatedAuthenticator, FederatedIdentityPayload } from '../engine/federatedAuthenticator';
+import      { DomainException }          from '../../../api/errors/domainException';
+
+export class GoogleAuthenticator implements FederatedAuthenticator {
+
+  public async authenticate(idToken: string): Promise <FederatedIdentityPayload>{
+    try {
+      const googleApiResponse = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+
+      if (!googleApiResponse.ok) {
+        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+      }
+
+      const googleRawProfile = await googleApiResponse.json() as any;
+
+      return {
+        externalId      : String(googleRawProfile.sub),
+        email           : String(googleRawProfile.email),
+        isEmailVerified : googleRawProfile.email_verified === true || googleRawProfile.email_verified === 'true',
+        fullName        : String(googleRawProfile.name),
+        avatarUrl       : String(googleRawProfile.picture || 'https://googleusercontent.com')
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+      }
+      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+    }
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/identityProviders/drivers/linkediniAuthenticator.ts =====
+
+import type { FederatedAuthenticator,
+              FederatedIdentityPayload } from '../engine/federatedAuthenticator';
+import      { DomainException }          from '../../../api/errors/domainException';
+
+export class LinkedinAuthenticator implements FederatedAuthenticator {
+
+  public async authenticate(token: string): Promise<FederatedIdentityPayload> {
+    try {
+
+      const linkedinApiResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!linkedinApiResponse.ok) {
+        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+      }
+
+      const linkedinRawProfile = await linkedinApiResponse.json() as any;
+
+      return {
+        externalId      : String(linkedinRawProfile.sub || ''),
+        email           : String(linkedinRawProfile.email || ''),
+        isEmailVerified : linkedinRawProfile.email_verified === true || linkedinRawProfile.email_verified === 'true',
+        fullName        : String(linkedinRawProfile.name || ''),
+        avatarUrl       : String(linkedinRawProfile.picture || '')
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+      }
+      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+    }
+  }
+}
+
+===== ARQUIVO: src/infrastructure/identityProviders/engine/federatedAuthenticator.ts =====
+
+export interface FederatedIdentityPayload {
+  readonly externalId       : string;
+  readonly email            : string;
+  readonly isEmailVerified  : boolean;
+  readonly fullName         : string;
+  readonly avatarUrl        : string;
+}
+
+
+export interface FederatedAuthenticator {
+  authenticate(accessToken: string): Promise<FederatedIdentityPayload>;
+
+}
+
+
+===== ARQUIVO: src/infrastructure/identityProviders/engine/identityRepository.ts =====
+
+import type { ApiKeySessionPayload } from '../../security/engine/apiKeySession';
+
+export interface IdentityRepository {
+  findApplicationByKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
+  
+}
+
+
+===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/accessValidator.ts =====
+
+import type { ConsumerCacheStoreEngine }       from '../engine/cacheStore';
+import type { ConsumerFinderEngine }           from './finder';
+import type { ConsumerSpecificationEngine }    from '../engine/specification';
+import      { DomainException }                from '../../../../api/errors/domainException';
+
+export class ConsumerAccessValidator implements ConsumerFinderEngine {
+  private readonly cacheStore               : ConsumerCacheStoreEngine<ConsumerSpecificationEngine>;
+  private readonly databaseRepository       : ConsumerFinderEngine;
+  private readonly cacheTimeToLiveSeconds   : number;
+
+  constructor(
+    databaseRepository      : ConsumerFinderEngine,
+    cacheStore              : ConsumerCacheStoreEngine<ConsumerSpecificationEngine>,
+    cacheExpirationSeconds  = 300
+  ) {
+    this.databaseRepository     = databaseRepository;
+    this.cacheStore             = cacheStore;
+    this.cacheTimeToLiveSeconds = cacheExpirationSeconds * 1000;
+  }
+
+  public async byKey(identificationKey: string): Promise<ConsumerSpecificationEngine | null> {
+    const cachedConsumer = await this.cacheStore.read(identificationKey);
+
+    if (cachedConsumer) {
+      if (cachedConsumer.isAccessSuspended) {
+        throw new DomainException('API_KEY_SUSPENDED');
+
+      }
+      return cachedConsumer;
+
+    }
+    const databaseConsumer = await this.databaseRepository.byKey(identificationKey);
+
+    if (!databaseConsumer) {
+      throw new DomainException('API_KEY_INVALID');
+
+    }
+
+    await this.cacheStore.save(identificationKey, databaseConsumer, this.cacheTimeToLiveSeconds);
+
+    if (databaseConsumer.isAccessSuspended) {
+      throw new DomainException('API_KEY_SUSPENDED');
+
+    }
+    return databaseConsumer;
+    
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/databaseRepository.ts =====
+
+import type { ConsumerFinderEngine }        from './finder';
+import type { ConsumerSpecificationEngine } from '../engine/specification';
+import      { apiKeyConnection }            from '../drivers/apiKeyInstance'; // ◄ Aponta para a nova pasta externa de conexão
+
+export class DataBaseConsumerFinder implements ConsumerFinderEngine {
+  
+  public async byKey(identificationKey: string): Promise<ConsumerSpecificationEngine | null> {
+    const databaseRow = apiKeyConnection.query.findKeyByString(identificationKey);
+
+    if (!databaseRow) {
+      return null;
+
+    }
+
+    return {
+      identificationKey:        databaseRow.keyString,
+      ownerDeveloperIdentifier: databaseRow.developerId,
+      rateLimitTier:            databaseRow.planTier,
+      isAccessSuspended:        databaseRow.isSuspendedNumber === 1
+      
+    };
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/finder.ts =====
+
+import type { ConsumerSpecificationEngine } from '../engine/specification';
+
+export interface ConsumerFinderEngine {
+  byKey(
+    identificationKey: string
+  ): Promise<ConsumerSpecificationEngine | null>;
+}
+
+
+===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/ramCache.ts =====
+
+import type { ConsumerCacheStoreEngine }        from '../engine/cacheStore';
+import type { ConsumerSpecificationEngine }     from '../engine/specification';
+
+interface ConsumerIdentity {
+  readonly payload   : ConsumerSpecificationEngine;
+  readonly expiresAt : number;
+}
+
+export class ConsumerCacheStore implements ConsumerCacheStoreEngine<ConsumerSpecificationEngine> {
+  private readonly ramStorage = new Map<string, ConsumerIdentity>();
+
+  public async save(
+    identificationKey       : string, 
+    payload                 : ConsumerSpecificationEngine,
+    timeToLiveInMilliseconds: number
+
+  ): Promise<void> {
+    const expirationTime = Date.now() + timeToLiveInMilliseconds;
+
+    this.ramStorage.set(identificationKey, {
+      payload, 
+      expiresAt: expirationTime
+    });
+  }
+
+  public async read(identificationKey: string
+  ): Promise<ConsumerSpecificationEngine | null> {
+    const currentConsumerIdentity = this.ramStorage.get(identificationKey);
+
+    if (!currentConsumerIdentity) {
+      return null;
+
+    }
+    const isCacheExpired = Date.now() > currentConsumerIdentity.expiresAt;
+
+    if (isCacheExpired) {
+      this.ramStorage.delete(identificationKey);
+      return null;
+
+    }
+    return currentConsumerIdentity.payload;
+    
+  }
+} 
+
+
+===== ARQUIVO: src/infrastructure/security/consumerApi/drivers/apiKeyInstance.ts =====
+
+import { mockApiKeyTable, 
+        type ApiKeyRow } from '../../../../database/apiKeys/apiKeyTables';
+
+export const apiKeyConnection = {
+  query: {
+    findKeyByString: (identificationKey: string): ApiKeyRow | null => {
+
+      return mockApiKeyTable.find(row => row.keyString === identificationKey) || null;
+      
+    }
+  }
+};
+
+===== ARQUIVO: src/infrastructure/security/consumerApi/engine/cacheStore.ts =====
+
+export interface ConsumerCacheStoreEngine<StoredDataType> {
+  save(
+    identificationKey       : string, 
+    payload                 : StoredDataType, 
+    timeToLiveInMilliseconds: number
+  ): Promise<void>;
+
+  read(identificationKey: string): Promise<StoredDataType | null>;
+}
+
+
+===== ARQUIVO: src/infrastructure/security/consumerApi/engine/specification.ts =====
+
+export interface ConsumerSpecificationEngine {
+  readonly identificationKey             : string;
+  readonly ownerDeveloperIdentifier      : string;
+  readonly rateLimitTier                 : 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+  readonly isAccessSuspended             : boolean;
+}
+
+
+===== ARQUIVO: src/infrastructure/security/drivers/jwt/expressJwtAdapter.ts =====
+
+import      jwt                             from 'jsonwebtoken';
+import      crypto                          from 'crypto';
+import type { TokenCryptographerEngine,
+              TokenSessionPayload }         from '../../engine/tokenSession';
+import      { DomainException }             from '../../../../api/errors/domainException';
+
+export class ExpressJwtAdapter implements TokenCryptographerEngine {
+  private readonly secretPrivateKey     : string;
+  private readonly expirationInSeconds  : number;
+
+  constructor(configuration: { 
+    secretKey         : string; 
+    expirationSeconds : number;
+
+  }) {
+    this.secretPrivateKey     = configuration.secretKey;
+    this.expirationInSeconds  = configuration.expirationSeconds;
+
+  }
+
+  public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt'>): Promise<string> {
+    const generatedTokenId = crypto.randomUUID();
+    
+    const tokenClaims = {
+      sub : payload.actorId,
+      did : payload.deviceFingerprintId,
+      jti : generatedTokenId,
+      cip : payload.initialIpAddress,
+      uah : payload.clientUserAgentHash,
+      rcw : payload.requestSequenceCounter,
+      lca : Math.floor(payload.lastActivityAt.getTime() / 1000)
+
+    };
+
+    return jwt.sign(tokenClaims, this.secretPrivateKey, {
+      expiresIn: this.expirationInSeconds
+      
+    });
+  }
+
+  public async decrypt(token: string): Promise<TokenSessionPayload> {
+    try {
+      const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
+
+      if (!decodedClaims['sub'] || 
+          !decodedClaims['did'] || 
+          !decodedClaims['jti'] ||
+          !decodedClaims['cip'] ||
+          !decodedClaims['uah'] ||
+          decodedClaims['rcw'] === undefined ||
+          !decodedClaims['lca']
+        ) {
+        throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+
+      }
+
+      return {
+        actorId                : decodedClaims['sub'],
+        deviceFingerprintId    : decodedClaims['did'],
+        tokenUniqueId          : decodedClaims['jti'],
+        initialIpAddress       : decodedClaims['cip'],
+        clientUserAgentHash    : decodedClaims['uah'],
+        requestSequenceCounter : decodedClaims['rcw'],
+        lastActivityAt         : new Date(decodedClaims['lca'] * 1000),
+        issuedAt               : new Date((decodedClaims['iat'] ?? 0) * 1000),
+        expiresAt              : new Date((decodedClaims['exp'] ?? 0) * 1000)
+
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+
+      }
+      if (capturedError instanceof jwt.TokenExpiredError) {
+        throw new DomainException('SECURITY_TOKEN_EXPIRED');
+      }
+      throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+
+    }
+  }
+}
+
+===== ARQUIVO: src/infrastructure/security/engine/apiKeyEvaluator.ts =====
+
+import type { ApiKeyEvaluatorEngine,
+              ApiKeySessionPayload,
+              ApplicationRepository } from './apiKeySession';
+import      { DomainException }       from '../../../api/errors/domainException';
+
+interface CachedKeyEntry {
+  readonly payload   : ApiKeySessionPayload;
+  readonly expiresAt : number;
+}
+
+export class ApiKeyEvaluator implements ApiKeyEvaluatorEngine {
+  private readonly repository   : ApplicationRepository;
+  private readonly cacheTTLMs   : number;
+
+  private readonly ramCacheStore: Map<string, CachedKeyEntry>;
+
+  constructor(repository: ApplicationRepository, cacheExpirationSeconds = 300) {
+    this.repository     = repository;
+    this.cacheTTLMs     = cacheExpirationSeconds * 1000;
+    this.ramCacheStore  = new Map<string, CachedKeyEntry>();
+
+  }
+
+  public async evaluate(apiKey: string): Promise<ApiKeySessionPayload> {
+    const currentTime = Date.now();
+    const cachedEntry = this.ramCacheStore.get(apiKey);
+
+    if (cachedEntry && cachedEntry.expiresAt > currentTime) {
+      const session = cachedEntry.payload;
+
+      if (session.isSuspended) {
+        throw new DomainException('API_KEY_SUSPENDED');
+      }
+
+      return session;
+    }
+
+    const databaseRow = await this.repository.findByApiKey(apiKey);
+
+    if (!databaseRow) {
+      throw new DomainException('API_KEY_INVALID');
+    }
+
+    this.ramCacheStore.set(apiKey, {
+      payload   : databaseRow,
+      expiresAt : currentTime + this.cacheTTLMs
+    });
+
+    if (databaseRow.isSuspended) {
+      throw new DomainException('API_KEY_SUSPENDED');
+    }
+
+    return databaseRow;
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/engine/apiKeySession.ts =====
+
+export interface ApiKeySessionPayload {
+  readonly applicationId      : string;
+  readonly developerId        : string;
+  readonly rateLimitTier      : 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+  readonly isSuspended        : boolean;
+}
+
+export interface ApplicationRepository {
+  findByApiKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
+}
+
+export interface ApiKeyEvaluatorEngine {
+  evaluate(apiKey: string): Promise<ApiKeySessionPayload>;
+}
+
+
+===== ARQUIVO: src/infrastructure/security/engine/requestThrottler.ts =====
+
+import { DomainException } from '../../../api/errors/domainException';
+
+interface WindowThrottleCounter {
+  count             : number;
+  windowResetTimeMs : number;
+}
+
+export class RequestThrottler {
+  private static readonly RATE_LIMITS: Record<string, number> = {
+    'FREE'       : 10,
+    'PREMIUM'    : 100,
+    'ENTERPRISE' : 1000
+  };
+
+  private readonly windowDurationMs : number;
+  
+  private readonly appCountersStore : Map<string, WindowThrottleCounter>;
+  private readonly ipCountersStore  : Map<string, WindowThrottleCounter>;
+
+  constructor(windowDurationSeconds = 60) {
+    this.windowDurationMs = windowDurationSeconds * 1000;
+    this.appCountersStore = new Map<string, WindowThrottleCounter>();
+    this.ipCountersStore  = new Map<string, WindowThrottleCounter>();
+
+  }
+
+
+  public async throttle(applicationId: string, rateLimitTier: string, clientIp: string): Promise<void> {
+    const currentTime = Date.now();
+
+    const maxAllowedByTier = RequestThrottler.RATE_LIMITS[rateLimitTier] || RequestThrottler.RATE_LIMITS['FREE'] || 10;
+    this.evaluateStoreBarrier(this.appCountersStore, applicationId, maxAllowedByTier, currentTime);
+
+    const maxAllowedByIp = 200;
+    this.evaluateStoreBarrier(this.ipCountersStore, clientIp, maxAllowedByIp, currentTime);
+
+  }
+
+
+  private evaluateStoreBarrier(
+    store       : Map<string, WindowThrottleCounter>, 
+    trackingKey : string, 
+    maxAllowed  : number, 
+    currentTime : number
+  ): void {
+    const currentCounter = store.get(trackingKey);
+
+    if (!currentCounter || currentTime > currentCounter.windowResetTimeMs) {
+      store.set(trackingKey, {
+        count             : 1,
+        windowResetTimeMs : currentTime + this.windowDurationMs
+      });
+      return;
+    }
+
+    if (currentCounter.count >= maxAllowed) {
+      throw new DomainException('REQUEST_THROTTLED');
+    }
+
+    currentCounter.count++;
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/engine/serverLifecycleGovernor.ts =====
+
+import type { Server } from 'http';
+import type { SystemLogger } from '../../telemetry/engine/systemLogger';
+
+export class ServerLifecycleGovernor {
+  private readonly systemLogger       : SystemLogger;
+  private readonly terminationTimeoutMs: number;
+  
+  private activeRequestsCounter        : number;
+  private isTerminating                : boolean;
+
+  constructor(systemLogger: SystemLogger, terminationTimeoutSeconds = 20) {
+    this.systemLogger          = systemLogger;
+    this.terminationTimeoutMs  = terminationTimeoutSeconds * 1000;
+    this.activeRequestsCounter = 0;
+    this.isTerminating         = false;
+
+  }
+
+  public incrementActiveRequests(): void {
+    if (this.isTerminating) {
+      throw new Error('SERVER_TERMINATING_REJECTED');
+    }
+    this.activeRequestsCounter++;
+  }
+
+  public decrementActiveRequests(): void {
+    this.activeRequestsCounter--;
+    
+    if (this.isTerminating && this.activeRequestsCounter === 0) {
+      this.systemLogger.info('All pending network operations successfully drained. Closing process safely.');
+      process.exit(0);
+    }
+  }
+
+  public governTerminationSignal(signalName: 'SIGTERM' | 'SIGINT', httpServer: Server): void {
+    if (this.isTerminating) {
+      return;
+    }
+
+    this.isTerminating = true;
+    this.systemLogger.warn(`OS Termination signal [${signalName}] intercepted. ServerLifecycleGovernor initiating graceful drain sequence.`);
+
+    httpServer.close((error: unknown) => {
+      if (error) {
+        this.systemLogger.error('Exception intercepted while closing underlying HTTP network server handles.', error);
+      }
+    });
+
+    if (this.activeRequestsCounter === 0) {
+      this.systemLogger.info('Zero active operations running in RAM. Immediate graceful termination accomplished.');
+      process.exit(0);
+    }
+
+    this.systemLogger.info(`Draining [${this.activeRequestsCounter}] active long-running operations. Waiting for execution finish.`);
+
+    setTimeout(() => {
+      this.systemLogger.error(`Graceful termination window timeout of [${this.terminationTimeoutMs}ms] breached. Forcing hard kill.`);
+      process.exit(1);
+    }, this.terminationTimeoutMs).unref();
+  }
+
+  public isInTerminationState(): boolean {
+    return this.isTerminating;
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/engine/serviceResilienceGate.ts =====
+
+import { DomainException } from '../../../api/errors/domainException';
+
+type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+
+export class ServiceResilienceGate {
+  private readonly failureThreshold : number;
+  private readonly cooldownPeriodMs : number;
+
+  private currentState              : CircuitState;
+  private consecutiveFailures       : number;
+  private nextAttemptAllowedAt      : number;
+
+  constructor(failureThreshold  = 5, cooldownSeconds = 60) {
+    this.failureThreshold       = failureThreshold;
+    this.cooldownPeriodMs       = cooldownSeconds * 1000;
+    
+    this.currentState           = 'CLOSED';
+    this.consecutiveFailures    = 0;
+    this.nextAttemptAllowedAt   = 0;
+
+  }
+
+  public verifyGateHealth(): void {
+    const currentTime = Date.now();
+
+    if (this.currentState === 'OPEN' && currentTime > this.nextAttemptAllowedAt) {
+      this.currentState = 'HALF_OPEN';
+    }
+
+    if (this.currentState === 'OPEN') {
+      throw new DomainException('EXTERNAL_SERVICE_UNAVAILABLE');
+    }
+  }
+
+  public recordSuccess(): void {
+    this.consecutiveFailures = 0;
+    this.currentState        = 'CLOSED';
+  }
+
+  public recordFailure(): void {
+    this.consecutiveFailures++;
+
+    if (this.currentState === 'HALF_OPEN' || this.consecutiveFailures >= this.failureThreshold) {
+      this.currentState         = 'OPEN';
+      this.nextAttemptAllowedAt = Date.now() + this.cooldownPeriodMs;
+    }
+  }
+
+  public getActiveState(): CircuitState {
+    return this.currentState;
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/engine/tokenSession.ts =====
+
+export interface TokenSessionPayload {
+  readonly actorId                : string;
+  readonly deviceFingerprintId    : string;
+  readonly tokenUniqueId          : string;
+  readonly initialIpAddress       : string;
+  readonly clientUserAgentHash    : string;
+  readonly requestSequenceCounter : number;
+  readonly issuedAt               : Date;
+  readonly expiresAt              : Date;
+  readonly lastActivityAt         : Date;
+}
+
+export interface TokenCryptographerEngine {
+  
+  generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'>): Promise<string>;
+  decrypt(token: string): Promise<TokenSessionPayload>;
+
+}
+
+===== ARQUIVO: src/infrastructure/telemetry/drivers/systemConsoleJsonDriver.ts =====
+
+import      crypto        from 'crypto';
+import type { SystemLogger,
+              LogMetadata } from '../engine/systemLogger';
+
+export class SystemConsoleJsonDriver implements SystemLogger {
+  private readonly traceId            : string | undefined;
+  private readonly contextualMetadata : LogMetadata | undefined;
+  private readonly prettyFormat       : boolean;
+
+  constructor(
+    traceId?            : string,
+    contextualMetadata? : LogMetadata,
+    prettyFormat        = false
+  ) {
+    this.traceId            = traceId;
+    this.contextualMetadata = contextualMetadata;
+    this.prettyFormat       = prettyFormat;
+
+  }
+
+  public withContext(traceId: string, requestMetadata?: LogMetadata): SystemLogger {
+    return new SystemConsoleJsonDriver(traceId, requestMetadata, this.prettyFormat);
+
+  }
+
+  public info(message: string, metadata?: LogMetadata): void {
+    this.emit('INFO', message, undefined, metadata);
+
+  }
+
+  public warn(message: string, metadata?: LogMetadata): void {
+    this.emit('WARN', message, undefined, metadata);
+
+  }
+
+  public error(
+    message   : string,
+    rawError? : unknown,
+    metadata? : LogMetadata
+  ): void {
+    const errorDetails = rawError instanceof Error 
+      ? { name: rawError.name, message: rawError.message, stack: rawError.stack }
+      : { raw: rawError };
+
+    this.emit('ERROR', message, errorDetails, metadata);
+
+  }
+
+  public audit(
+    action   : string, 
+    actorId  : string, 
+    metadata?: LogMetadata
+  ): void {
+    const securityMetadata = { actorId, ...metadata };
+    this.emit('AUDIT', `Security Audit Event: [${action}] executed by user [${actorId}]`, undefined, securityMetadata);
+
+  }
+
+  private emit(
+    level    : 'INFO' | 'WARN' | 'ERROR' | 'AUDIT',
+    message  : string, 
+    error?   : any,
+    metadata?: LogMetadata
+  ): void {
+    let isolatedStack : string | undefined;
+    let targetError   = error;
+
+    if (this.prettyFormat && error && typeof error === 'object' && 'stack' in error) {
+      isolatedStack = error.stack;
+
+      const { stack, ...errorWithoutStack } = error;
+      targetError = errorWithoutStack;
+    }
+
+    const logOutput = {
+      timestamp : new Date().toISOString(),
+      level     : level,
+      message   : message,
+      ...(this.traceId   && { traceId: this.traceId }),
+      ...(targetError    && { error: targetError }),
+      metadata  : {
+        ...this.contextualMetadata,
+        ...metadata
+      }
+    };
+
+    if (this.prettyFormat) {
+      console.log(JSON.stringify(logOutput, null, 2));
+      
+      if (isolatedStack) {
+        console.log(`\x1b[31m[Stack Trace]:\n${isolatedStack}\x1b[0m`);
+      }
+    } else {
+      console.log(JSON.stringify({ 
+        ...logOutput,
+        ...(error && { error: targetError })
+      }));
+    }
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/telemetry/engine/systemLogger.ts =====
+
+export type LogMetadata = Record<string, any>;
+
+export interface SystemLogger {
+  withContext(traceId : string, requestMetadata?  : LogMetadata                            ): SystemLogger;
+  info      (message  : string, metadata?         : LogMetadata                            ): void;
+  warn      (message  : string, metadata?         : LogMetadata                            ): void;
+  error     (message  : string, rawError?         : unknown,      metadata?   : LogMetadata): void;
+  audit     (action   : string, actorId           : string,       metadata?   : LogMetadata): void;
+}
+
+
+===== ARQUIVO: src/server.ts =====
+
+import      { Env }                           from './config/env';
+import      { ExpressHttpDriver }             from './infrastructure/httpTraffic/drivers/expressHttpDriver';
+import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/engine/failureFormatter';
+import      { SystemConsoleJsonDriver }       from './infrastructure/telemetry/drivers/systemConsoleJsonDriver';
+import      { ExpressJwtAdapter }             from './infrastructure/security/drivers/jwt/expressJwtAdapter';
+import      { ConsumerCacheStore }            from './infrastructure/security/consumerApi/adapter/ramCache';
+import      { DataBaseConsumerFinder }        from './infrastructure/security/consumerApi/adapter/databaseRepository';
+import      { ConsumerAccessValidator }       from './infrastructure/security/consumerApi/adapter/accessValidator';
+import      { RequestThrottler }              from './infrastructure/security/engine/requestThrottler';
+import      { ServerLifecycleGovernor }       from './infrastructure/security/engine/serverLifecycleGovernor';
+import      { configureApiRoutes }            from './apiRouter';
+import type { HttpTrafficExchangeEngine }     from './infrastructure/httpTraffic/engine/httpTraffic';
+import type { SystemLogger }                  from './infrastructure/telemetry/engine/systemLogger';
+
+const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
+  undefined, 
+  undefined, 
+  Env.nodeEnv === 'development'
+);
+const coreFailureFormatter    = new ApplicationFailureFormatter();
+const securityTokenEngine     = new ExpressJwtAdapter({ secretKey: 'CHAVE_SUPER_SECRETA_BOILERPLATE', expirationSeconds: 3600 });
+const ramCacheStore           = new ConsumerCacheStore();
+const databaseRepository      = new DataBaseConsumerFinder();
+const consumerAccessEngine    = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
+const requestLimitThrottler   = new RequestThrottler(60); 
+const systemLifecycleZelador  = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
+
+const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
+  port                : Env.port,
+  failureFormatter    : coreFailureFormatter,
+  systemLogger        : systemTelemetryLogger,
+  tokenEngine         : securityTokenEngine,
+  consumerEngine      : consumerAccessEngine,
+  throttlerEngine     : requestLimitThrottler,
+  lifecycleGovernor   : systemLifecycleZelador,
+  displayDebugDetails : Env.nodeEnv === 'development'
+});
+
+systemTelemetryLogger.info(`Bootstrapping application core engine under environment: [${Env.nodeEnv}]`);
+
+configureApiRoutes(serverEngine);
+
+serverEngine.start();
+
+
+===== ARQUIVO: tsconfig.json =====
+
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "types": [], 
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "strict": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
+}
+
+do arquivo ascima o README ESTA DESATUALIZADO AGORA CONSIDERE MEU prompt
+
+Comece pela análise do arquivo anexado, considerando integralmente as regras de governança arquitetural estabelecidas.
+
+Quero compreender o propósito do arquivo, sua responsabilidade, seus imports, seus consumidores e sua relação com `consumerApi` e `apiKeyEvaluator`.
+
+Não modifique, crie, exclua ou renomeie arquivos.
+
+Não apresente a implementação ainda.
+
+Primeiro, apresente a análise fundamentada, a árvore de diretórios física que puder verificar e a proposta conceitual para a primeira etapa.
+
+Ao concluir, aguarde meu comando explícito: "Confirmar Passo".
+

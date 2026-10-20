@@ -1,6 +1,5 @@
-import type { ApiKeySessionPayload } from '../../security/engine/apiKeySession';
+import type { ConsumerSpecificationEngine } from '../../security/apiKeyTenant/engine/specification';
 
 export interface IdentityRepository {
-  findApplicationByKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
-  
+  findApplicationByKey(apiKey: string): Promise<ConsumerSpecificationEngine | null>;
 }

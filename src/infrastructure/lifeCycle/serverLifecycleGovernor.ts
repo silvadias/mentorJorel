@@ -1,5 +1,5 @@
 import type { Server } from 'http';
-import type { SystemLogger } from '../../telemetry/engine/systemLogger';
+import type { SystemLogger } from '../telemetry/engine/systemLogger';
 
 export class ServerLifecycleGovernor {
   private readonly systemLogger       : SystemLogger;

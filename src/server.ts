@@ -2,12 +2,12 @@ import      { Env }                           from './config/env';
 import      { ExpressHttpDriver }             from './infrastructure/httpTraffic/drivers/expressHttpDriver';
 import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/engine/failureFormatter';
 import      { SystemConsoleJsonDriver }       from './infrastructure/telemetry/drivers/systemConsoleJsonDriver';
-import      { ExpressJwtAdapter }             from './infrastructure/security/drivers/jwt/expressJwtAdapter';
-import      { ConsumerCacheStore }            from './infrastructure/security/consumerApi/adapter/ramCache';
-import      { DataBaseConsumerFinder }        from './infrastructure/security/consumerApi/adapter/databaseRepository';
-import      { ConsumerAccessValidator }       from './infrastructure/security/consumerApi/adapter/accessValidator';
-import      { RequestThrottler }              from './infrastructure/security/engine/requestThrottler';
-import      { ServerLifecycleGovernor }       from './infrastructure/security/engine/serverLifecycleGovernor';
+import      { ExpressJwtAdapter }             from './infrastructure/security/token/drivers/expressJwtAdapter';
+import      { ConsumerCacheStore }            from './infrastructure/security/apiKeyTenant/adapter/ramCache';
+import      { DataBaseConsumerFinder }        from './infrastructure/security/apiKeyTenant/adapter/databaseRepository';
+import      { ConsumerAccessValidator }       from './infrastructure/security/apiKeyTenant/adapter/accessValidator';
+import      { RequestThrottler }              from './infrastructure/security/throttler/requestThrottler';
+import      { ServerLifecycleGovernor }       from './infrastructure/lifeCycle/serverLifecycleGovernor';
 import      { configureApiRoutes }            from './apiRouter';
 import type { HttpTrafficExchangeEngine }     from './infrastructure/httpTraffic/engine/httpTraffic';
 import type { SystemLogger }                  from './infrastructure/telemetry/engine/systemLogger';
@@ -17,6 +17,7 @@ const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
   undefined, 
   Env.nodeEnv === 'development'
 );
+
 const coreFailureFormatter    = new ApplicationFailureFormatter();
 const securityTokenEngine     = new ExpressJwtAdapter({ secretKey: 'CHAVE_SUPER_SECRETA_BOILERPLATE', expirationSeconds: 3600 });
 const ramCacheStore           = new ConsumerCacheStore();
