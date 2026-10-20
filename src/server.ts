@@ -9,7 +9,8 @@ import      { ConsumerAccessValidator }       from './infrastructure/security/ap
 import      { RequestThrottler }              from './infrastructure/security/throttler/requestThrottler';
 import      { ServerLifecycleGovernor }       from './infrastructure/lifeCycle/serverLifecycleGovernor';
 import      { configureApiRoutes }            from './apiRouter';
-import type { HttpTrafficExchangeEngine }     from './infrastructure/httpTraffic/engine/httpTraffic';
+import type { HttpTrafficExchangeEngine,
+              HttpNetworkSecurityPolicy }     from './infrastructure/httpTraffic/engine/httpTraffic';
 import type { SystemLogger }                  from './infrastructure/telemetry/engine/systemLogger';
 
 const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
@@ -19,12 +20,32 @@ const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
 );
 
 const coreFailureFormatter    = new ApplicationFailureFormatter();
-const securityTokenEngine     = new ExpressJwtAdapter({ secretKey: 'CHAVE_SUPER_SECRETA_BOILERPLATE', expirationSeconds: 3600 });
+
+const securityTokenEngine     = new ExpressJwtAdapter({ 
+  secretKey: Env.jwtSecret, 
+  expirationSeconds: Env.jwtExpirationSec 
+});
+
 const ramCacheStore           = new ConsumerCacheStore();
 const databaseRepository      = new DataBaseConsumerFinder();
 const consumerAccessEngine    = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
 const requestLimitThrottler   = new RequestThrottler(60); 
-const systemLifecycleZelador  = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
+const lifecycleGovernor       = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
+
+// 🏢 CONFIGURAÇÃO COMPORTAMENTAL AGNÓSTICA: Diretrizes corporativas de segurança web de uso geral
+const globalNetworkSecurityPolicy: HttpNetworkSecurityPolicy = {
+  allowedOrigins:            ['*'], // Aberto para permitir requisições de qualquer frontend Multi-Tenant parceiro
+  allowedMethods:            ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders:            ['Content-Type', 'Authorization', 'X-API-Key', 'X-Session-Token'],
+  exposedHeaders:            ['X-Session-Token', 'X-Trace-Id'],
+  isFrameworkSignatureHidden: true,
+  perimeterDefenses: {
+    'X-Frame-Options':       'SAMEORIGIN',  // Mitigação contra Clickjacking
+    'X-Content-Type-Options':'nosniff',     // Bloqueia farejamento hacker de MIME-types
+    'X-XSS-Protection':      '0',           // Desativa filtros legados inseguros de browsers
+    'X-Download-Options':    'noopen'       // Protege contra injeção de arquivos HTML maliciosos
+  }
+};
 
 const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
   port                : Env.port,
@@ -33,7 +54,8 @@ const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({
   tokenEngine         : securityTokenEngine,
   consumerEngine      : consumerAccessEngine,
   throttlerEngine     : requestLimitThrottler,
-  lifecycleGovernor   : systemLifecycleZelador,
+  lifecycleGovernor   : lifecycleGovernor,
+  networkPolicy       : globalNetworkSecurityPolicy, // 🔌 Acoplamento Plug-in Puro
   displayDebugDetails : Env.nodeEnv === 'development'
 });
 

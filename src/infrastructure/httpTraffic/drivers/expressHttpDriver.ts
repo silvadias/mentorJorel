@@ -3,7 +3,8 @@ import      crypto                          from 'crypto';
 import type * as ExpressEngine              from 'express';
 import type { HttpTrafficExchangeEngine, 
               HttpTrafficHandler,
-              HttpTrafficRequest }          from '../engine/httpTraffic';
+              HttpTrafficRequest,
+              HttpNetworkSecurityPolicy }   from '../engine/httpTraffic';
 import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
 import type { TokenCryptographerEngine }    from '../../security/token/engine/tokenSession';
@@ -22,6 +23,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly consumerEngine     : ConsumerFinderEngine;
   private readonly throttlerEngine    : RequestThrottler;
   private readonly lifecycleGovernor  : ServerLifecycleGovernor;
+  private readonly networkSecurityPolicy: HttpNetworkSecurityPolicy;
   private readonly displayDebugDetails: boolean;
 
   constructor(configuration: { 
@@ -32,18 +34,46 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     consumerEngine         : ConsumerFinderEngine;
     throttlerEngine        : RequestThrottler;
     lifecycleGovernor      : ServerLifecycleGovernor;
+    networkPolicy          : HttpNetworkSecurityPolicy;
     displayDebugDetails    : boolean; 
   }) {
-    this.application            = express();
-    this.listeningPort          = configuration.port;
-    this.failureFormatter       = configuration.failureFormatter;
-    this.systemLogger           = configuration.systemLogger;
-    this.tokenEngine            = configuration.tokenEngine;
-    this.consumerEngine         = configuration.consumerEngine;
-    this.throttlerEngine        = configuration.throttlerEngine;
-    this.lifecycleGovernor      = configuration.lifecycleGovernor;
-    this.displayDebugDetails    = configuration.displayDebugDetails;
+    this.application             = express();
+    this.listeningPort           = configuration.port;
+    this.failureFormatter        = configuration.failureFormatter;
+    this.systemLogger            = configuration.systemLogger;
+    this.tokenEngine             = configuration.tokenEngine;
+    this.consumerEngine          = configuration.consumerEngine;
+    this.throttlerEngine         = configuration.throttlerEngine;
+    this.lifecycleGovernor       = configuration.lifecycleGovernor;
+    this.networkSecurityPolicy   = configuration.networkPolicy;
+    this.displayDebugDetails     = configuration.displayDebugDetails;
+    
     this.application.use(express.json());
+    this.applyGlobalNetworkPolicies();
+  }
+
+  private applyGlobalNetworkPolicies(): void {
+    this.application.use((request, response, next) => {
+      response.setHeader('Access-Control-Allow-Origin', this.networkSecurityPolicy.allowedOrigins.join(', '));
+      response.setHeader('Access-Control-Allow-Methods', this.networkSecurityPolicy.allowedMethods.join(', '));
+      response.setHeader('Access-Control-Allow-Headers', this.networkSecurityPolicy.allowedHeaders.join(', '));
+      response.setHeader('Access-Control-Expose-Headers', this.networkSecurityPolicy.exposedHeaders.join(', '));
+
+      if (this.networkSecurityPolicy.isFrameworkSignatureHidden) {
+        response.removeHeader('X-Powered-By');
+      }
+
+      for (const [defenseName, defenseValue] of Object.entries(this.networkSecurityPolicy.perimeterDefenses)) {
+        response.setHeader(defenseName, defenseValue);
+      }
+
+      if (request.method === 'OPTIONS') {
+        response.status(204).end();
+        return;
+      }
+
+      next();
+    });
   }
 
   public register(
@@ -57,7 +87,6 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         outgoingResponse: ExpressEngine.Response
     ): Promise<void> => {      
       
-      // MESTRE LIFE-CYCLE: Incrementa atômica e preventivamente o contador de conexões na RAM do servidor
       try {
         this.lifecycleGovernor.incrementActiveRequests();
       } catch (terminationError: unknown) {
@@ -76,20 +105,17 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       });
 
       try {
-        // 🛡️ BARREIRA 1: Proteção de Infraestrutura Base de Rede (IP do Cliente - Anti-DDoS Camada 7)
         await this.throttlerEngine.throttle({
           trackingKey : clientMetadata.ipAddress,
           maxAllowed  : 200
         });
 
-        // 1. Executa a busca perimetral utilizando o motor unificado do Consumer
         const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
         
         if (!authenticatedConsumer) {
           throw new DomainException('API_KEY_INVALID');
         }
 
-        // 💼 BARREIRA 2: Proteção de Contrato Comercial e Loops de Códigos de Terceiros (Tenant / Aplicação Parceira)
         const tenantQuotaMap: Record<string, number> = { FREE: 10, PREMIUM: 100, ENTERPRISE: 1000 };
         const tenantMaxAllowed = tenantQuotaMap[authenticatedConsumer.rateLimitTier] ?? 10;
 
@@ -98,10 +124,8 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           maxAllowed  : tenantMaxAllowed
         });
 
-        // SRP FILTRO 2: Hidratação Única da Sessão do Usuário (Evita redeclaração e erro de escopo)
         const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
 
-        // 👤 BARREIRA 3: Proteção Comportamental Humana (Usuário Final / Ator Isolado por Aplicação)
         await this.throttlerEngine.throttle({
           trackingKey : `user:${authenticatedConsumer.identificationKey}:${activeSessionPayload.actorId}`,
           maxAllowed  : 30
@@ -110,7 +134,6 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
         this.validateInputSchema(schema, incomingRequest.body);
 
-        // 2. Adapta o contêiner HTTP injetando o objeto consumer e session unificados para as controllers
         const adaptedRequest: HttpTrafficRequest = {
           body        : incomingRequest.body,
           query       : incomingRequest.query,
@@ -137,7 +160,6 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
         outgoingResponse.status(statusCode).json(payload);
       } finally {
-        // MESTRE LIFE-CYCLE: Decrementa o contador obrigatoriamente na saída perimetral
         this.lifecycleGovernor.decrementActiveRequests();
       }
     });

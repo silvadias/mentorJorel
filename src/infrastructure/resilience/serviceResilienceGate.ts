@@ -1,4 +1,4 @@
-import { DomainException } from '../../../api/errors/domainException';
+import { DomainException } from '../../api/errors/domainException';
 
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 

@@ -1,7 +1,7 @@
 import      jwt                             from 'jsonwebtoken';
 import      crypto                          from 'crypto';
 import type { TokenCryptographerEngine,
-              TokenSessionPayload }         from '../../token/engine/tokenSession';
+              TokenSessionPayload }         from '../engine/tokenSession';
 import      { DomainException }             from '../../../../api/errors/domainException';
 
 export class ExpressJwtAdapter implements TokenCryptographerEngine {
@@ -11,16 +11,15 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
   constructor(configuration: { 
     secretKey         : string; 
     expirationSeconds : number;
-
   }) {
     this.secretPrivateKey     = configuration.secretKey;
     this.expirationInSeconds  = configuration.expirationSeconds;
-
   }
 
-  public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt'>): Promise<string> {
+  public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'>): Promise<string> {
     const generatedTokenId = crypto.randomUUID();
     
+    // Compacta nomes longos de negócio para claims curtas de tráfego de rede (Melhor performance de banda)
     const tokenClaims = {
       sub : payload.actorId,
       did : payload.deviceFingerprintId,
@@ -28,13 +27,11 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
       cip : payload.initialIpAddress,
       uah : payload.clientUserAgentHash,
       rcw : payload.requestSequenceCounter,
-      lca : Math.floor(payload.lastActivityAt.getTime() / 1000)
-
+      lca : Math.floor(Date.now() / 1000) // Last Activity At em timestamp de segundos
     };
 
     return jwt.sign(tokenClaims, this.secretPrivateKey, {
       expiresIn: this.expirationInSeconds
-      
     });
   }
 
@@ -42,6 +39,7 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     try {
       const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
 
+      // BARREIRA DE INTEGRIDADE: Garante sintaticamente que nenhuma claim vital foi removida do passaporte digital
       if (!decodedClaims['sub'] || 
           !decodedClaims['did'] || 
           !decodedClaims['jti'] ||
@@ -51,7 +49,6 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
           !decodedClaims['lca']
         ) {
         throw new DomainException('SECURITY_TOKEN_CORRUPTED');
-
       }
 
       return {
@@ -64,19 +61,17 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
         lastActivityAt         : new Date(decodedClaims['lca'] * 1000),
         issuedAt               : new Date((decodedClaims['iat'] ?? 0) * 1000),
         expiresAt              : new Date((decodedClaims['exp'] ?? 0) * 1000)
-
       };
 
     } catch (capturedError: unknown) {
       if (capturedError instanceof DomainException) {
         throw capturedError;
-
       }
+      // TRADUÇÃO DE EXCEÇÕES: Impede que erros crus da biblioteca de terceiros vazem para as bordas do sistema
       if (capturedError instanceof jwt.TokenExpiredError) {
         throw new DomainException('SECURITY_TOKEN_EXPIRED');
       }
       throw new DomainException('SECURITY_TOKEN_CORRUPTED');
-
     }
   }
 }

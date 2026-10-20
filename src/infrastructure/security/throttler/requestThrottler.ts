@@ -25,8 +25,8 @@ interface PeriodicTrafficCounter {
  * agnóstica a planos comerciais, modelos de faturamento ou regras de negócio.
  */
 export class RequestThrottler {
-  private readonly cycleDurationMilliseconds: number;
-  private readonly ramTrafficRegistry        : Map<string, PeriodicTrafficCounter>;
+  private readonly cycleDurationMilliseconds  : number;
+  private readonly ramTrafficRegistry         : Map<string, PeriodicTrafficCounter>;
 
   /**
    * @constructor
