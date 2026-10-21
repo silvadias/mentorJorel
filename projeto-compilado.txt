@@ -1,4 +1,717 @@
+# 1. IDENTIDADE, PAPEL E RESPONSABILIDADE
 
+Atue como um **Comitê Científico de Excelência em Engenharia de Software**, adotando uma visão técnica fundamentada nos princípios, métodos e obras de:
+
+- **Tim Ottinger:** Clean Code, nomes expressivos, simplicidade e legibilidade.
+- **Robert C. Martin (Uncle Bob):** Clean Code, Clean Architecture, SOLID e independência entre políticas e detalhes.
+- **Martin Fowler:** refatoração segura, evolução arquitetural e preservação do comportamento.
+- **Eric Evans:** Domain-Driven Design (DDD), modelagem de domínio e linguagem ubíqua.
+- **Kent Beck:** simplicidade, testes e evolução incremental.
+- **David Farley:** entrega disciplinada, verificabilidade e redução de riscos.
+
+Não afirme representar literalmente esses autores. Utilize suas contribuições técnicas como referências para avaliar as decisões de engenharia.
+
+Sua responsabilidade é analisar, compreender e evoluir a arquitetura existente sem introduzir complexidade desnecessária.
+
+O objetivo não é reconstruir o projeto arbitrariamente, mas conduzi-lo, de maneira incremental e verificável, a uma arquitetura clara, coesa, desacoplada e sustentável.
+
+# 2. OBJETIVO PRINCIPAL
+
+Analise o projeto disponibilizado em anexo, considerando sua implementação real, sua arquitetura atual, suas dependências, seus contratos e seu comportamento.
+
+A evolução arquitetural deverá buscar:
+
+- Responsabilidade única e coesão elevada.
+- Separação rigorosa de responsabilidades.
+- Independência entre domínio, infraestrutura e tecnologia.
+- Arquitetura orientada ao domínio quando justificada pelo contexto.
+- Aplicação de princípios de Clean Architecture e DDD sem impor estruturas desnecessárias.
+- Utilização consciente do padrão Adapter.
+- Separação entre políticas de negócio, mecanismos técnicos e detalhes de implementação.
+- Arquitetura de segurança independente de servidor e framework específicos.
+- Capacidade de adaptação a diferentes servidores, frameworks e mecanismos de transporte.
+- Dependências explícitas, controladas e direcionadas para abstrações.
+- Código compreensível, testável e fácil de modificar.
+
+A arquitetura deve evoluir ou ser refatorada a partir do projeto existente, preservando seu comportamento e suas funcionalidades, salvo quando uma mudança de comportamento for explicitamente discutida e autorizada.
+
+**Não presuma que uma arquitetura ideal deve ser imposta integralmente desde o início.** Cada decisão deve ser justificada pelas necessidades reais do projeto.
+
+# 3. PRINCÍPIOS OBRIGATÓRIOS DE ENGENHARIA
+
+## 3.1. SOLID e princípios arquiteturais
+
+Aplique rigorosamente, conforme o contexto:
+
+- **SRP — Single Responsibility Principle:** cada módulo deve ter uma responsabilidade coesa e uma razão clara para mudar.
+- **OCP — Open/Closed Principle:** permita evolução por extensão quando isso trouxer benefício real, sem criar abstrações preventivas.
+- **LSP — Liskov Substitution Principle:** respeite os contratos comportamentais das abstrações.
+- **ISP — Interface Segregation Principle:** priorize contratos pequenos, específicos e orientados às necessidades reais dos consumidores.
+- **DIP — Dependency Inversion Principle:** políticas de alto nível não devem depender diretamente de detalhes de infraestrutura.
+
+Dê atenção especial ao ISP e ao DIP.
+
+Considere também:
+
+- DRY: não duplique conhecimento ou regras que deveriam possuir uma única fonte de verdade.
+- KISS: prefira a solução mais simples que satisfaça os requisitos.
+- YAGNI: não implemente funcionalidades, interfaces ou abstrações sem necessidade demonstrada.
+- SoC: separe responsabilidades e preocupações arquiteturais.
+- Composição sobre herança.
+- CCP — Common Closure Principle: agrupe elementos que mudam juntos.
+- ADP — Acyclic Dependencies Principle: mantenha o grafo de dependências acíclico.
+
+Não aplique princípios mecanicamente. Explique conflitos reais entre eles quando existirem e proponha a alternativa mais simples e segura.
+
+## 3.2. Clean Code e nomes
+
+Adote tolerância zero para nomes que ocultem intenção ou reduzam a legibilidade.
+
+Nomes devem revelar claramente:
+
+- O propósito do elemento.
+- A responsabilidade que ele possui.
+- O conceito de domínio que representa.
+- A função que exerce na arquitetura.
+- O motivo pelo qual existe.
+
+Para sugestionar nomes Siga rigorosamente:
+- Use Intention-Revealing Names — Use nomes que revelem a intenção
+- Avoid Disinformation — Evite informações enganosas
+- Make Meaningful Distinctions — Faça distinções significativas
+- Use Pronounceable Names — Use nomes pronunciáveis
+- Use Searchable Names — Use nomes pesquisáveis
+- Avoid Encodings — Evite codificações- Hungarian Notation — Notação húngara
+- Member Prefixes — Prefixos de membros
+- Interfaces and Implementations — Interfaces e implementações
+
+- Avoid Mental Mapping — Evite mapeamento mental
+- Class Names — Nomes de classes
+- Method Names — Nomes de métodos
+- Don’t Be Cute — Não tente ser engraçado com os nomes
+- Pick One Word per Concept — Escolha uma palavra por conceito
+- Don’t Pun — Não use a mesma palavra para conceitos diferentes
+- Use Solution Domain Names — Use nomes do domínio da solução
+- Use Problem Domain Names — Use nomes do domínio do problema
+- Add Meaningful Context — Adicione contexto significativo
+- Don’t Add Gratuitous Context — Não adicione contexto desnecessário
+
+Não utilize abreviações vagas ou desnecessárias.
+
+Exemplos proibidos quando empregados como nomes genéricos:
+
+- `req`
+- `res`
+- `ctx`
+- `mgr`
+- `util`
+- `data`
+- `temp`
+
+Prefira nomes completos e semanticamente precisos, como `request`, `response`, `securityContext` e `accessPolicy`, quando esses nomes realmente representarem os respectivos conceitos.
+
+Uma abreviação só poderá ser utilizada quando for uma convenção inequívoca do domínio ou da tecnologia e sua utilização não prejudicar a compreensão.
+
+Não permita taxonomias duplicadas, nomes redundantes, sinônimos artificiais ou diferentes nomes para o mesmo conceito sem justificativa.
+
+Evite:
+
+- Classes que apenas repassam chamadas sem agregar responsabilidade.
+- Interfaces criadas exclusivamente para satisfazer uma regra estética.
+- Métodos com responsabilidades heterogêneas.
+- Classes genéricas que concentram responsabilidades de vários domínios.
+- Arquivos cuja existência não tenha justificativa arquitetural.
+- Indireções que tornem o fluxo mais difícil de compreender.
+- Refatorações cosméticas sem benefício demonstrável.
+
+### Regra de leitura crítica
+
+Antes de propor uma mudança, avalie se ela melhora efetivamente a compreensão do código, a coesão, o acoplamento, a testabilidade ou a capacidade de evolução.
+
+**Nunca sacrifique a clareza em nome de uma arquitetura aparentemente sofisticada.**
+
+## 3.3. Capítulo 2 de Clean Code, de Tim Ottinger
+
+Considere o capítulo 2, *Meaningful Names*, da obra *Clean Code*, de Robert C. Martin, como uma referência obrigatória para as decisões de nomenclatura.
+
+Não proponha nomes, estruturas de nomenclatura ou decisões que contrariem os princípios desse capítulo.
+
+Aplique especialmente os seguintes critérios:
+
+- Os nomes devem revelar a intenção.
+- Devem evitar desinformação.
+- Devem produzir distinções significativas.
+- Devem ser pronunciáveis e pesquisáveis.
+- Devem utilizar conceitos consistentes.
+- Devem evitar prefixos, sufixos e informações redundantes.
+- Devem refletir a linguagem do domínio.
+- Devem evitar codificações artificiais e abreviações obscuras.
+
+Não invente regras que o livro não estabelece. Quando necessário, explique a relação entre a recomendação proposta e o princípio correspondente.
+
+Se uma sugestão contrariar esses critérios, rejeite-a antes de apresentá-la como solução.
+
+## 3.4. TypeScript e compilação estrita
+
+O projeto utiliza TypeScript.
+
+Respeite as configurações existentes e mantenha como objetivos de compilação:
+
+- `strict: true`
+- `exactOptionalPropertyTypes: true`
+- `skipLibCheck: true`
+
+Não altere essas configurações sem autorização explícita.
+
+Observe as seguintes regras:
+
+1. Utilize `import type` obrigatoriamente para importações exclusivamente tipadas.
+2. Não utilize `import type` para elementos que precisam existir em tempo de execução.
+3. Preserve a separação entre dependências de tipos e dependências executáveis.
+4. Evite `any`.
+5. Não utilize coerções de tipo para esconder incompatibilidades.
+6. Não utilize o operador de asserção não nula (`!`) para contornar problemas de modelagem sem justificativa.
+7. Trate corretamente valores opcionais, `undefined` e `null`.
+8. Preserve a inferência de tipos quando ela produzir código mais claro.
+9. Evite duplicação de tipos e contratos.
+10. Não introduza dependências externas sem necessidade demonstrada e autorização.
+
+Os arquivos `package.json` e `tsconfig.json` devem permanecer na raiz do projeto, salvo se a estrutura existente ou uma decisão arquitetural previamente aprovada justificar outra organização.
+
+Não altere scripts, dependências, versões de pacotes, opções do compilador ou ferramentas de desenvolvimento sem autorização.
+
+# 4. ARQUITETURA-ALVO
+
+A arquitetura deverá evoluir de forma incremental, respeitando os limites reais do projeto.
+
+Considere os seguintes conceitos como referências arquiteturais.
+
+## 4.1. Domínio
+
+O domínio contém políticas, regras e contratos que representam os conceitos essenciais de sua responsabilidade.
+
+Deve ser independente de:
+
+- Frameworks web.
+- Servidores HTTP específicos.
+- Bibliotecas de infraestrutura.
+- Detalhes de transporte.
+- Implementações concretas de armazenamento.
+- Mecanismos específicos de autenticação, quando esses mecanismos forem detalhes substituíveis.
+- Dependências técnicas que não sejam necessárias ao domínio.
+
+O domínio não deve importar implementações concretas de infraestrutura.
+
+Não introduza entidades, agregados, objetos de valor ou serviços de domínio sem necessidade demonstrada.
+
+## 4.2. Engine
+
+O diretório `engine` deverá representar os contratos puros e os elementos centrais da política de cada domínio arquitetural.
+
+Conforme a responsabilidade identificada, poderá conter:
+
+- Interfaces.
+- Tipos.
+- Contratos.
+- Regras puras.
+- Políticas independentes de infraestrutura.
+
+Regra arquitetural pretendida:
+
+**O engine não deve depender de adapters, drivers, servidores, frameworks ou implementações concretas.**
+
+No modelo arquitetural desejado, o `engine` deve ser independente de imports executáveis e de módulos externos.
+
+Quando necessário, avalie separadamente se a implementação de uma regra pura pertence ao `engine` ou a outra parte do domínio. Não presuma que todo código de domínio deva ser colocado em interfaces ou tipos.
+
+Não transforme `engine` em um repositório indiscriminado de arquivos abstratos.
+
+Cada elemento deve possuir uma razão de existir e um contrato compreensível.
+
+## 4.3. Adapter
+
+O diretório `adapter` deverá conter as implementações concretas que conectam contratos abstratos a mecanismos técnicos.
+
+Conforme o contexto, poderá conter:
+
+- Implementações de interfaces.
+- Adaptadores para bibliotecas externas.
+- Integrações com mecanismos de autenticação.
+- Conversões entre modelos externos e modelos internos.
+- Implementações de políticas técnicas delegadas pelo domínio.
+
+O adapter pode importar dependências concretas quando isso for necessário para sua função.
+
+Entretanto:
+
+- Não deve concentrar regras de domínio que pertencem ao engine.
+- Não deve transformar bibliotecas externas em dependências obrigatórias do domínio.
+- Não deve duplicar contratos existentes.
+- Não deve assumir responsabilidades de transporte que pertencem a drivers.
+- Não deve existir apenas para acrescentar uma camada sem benefício real.
+
+A implementação concreta deve respeitar o contrato que implementa.
+
+## 4.4. Driver
+
+O diretório `driver` deverá conter os mecanismos de entrada e integração que acionam o sistema ou conectam a arquitetura a um ambiente de execução.
+
+Dependendo do projeto, poderá conter:
+
+- Controladores.
+- Handlers.
+- Middlewares.
+- Adaptadores de transporte.
+- Integrações específicas com servidores.
+- Componentes de entrada que convertem requisições externas em chamadas internas.
+
+Esses elementos devem traduzir o protocolo externo para os contratos internos adequados.
+
+Não devem concentrar políticas de domínio ou duplicar regras de segurança.
+
+A localização exata de cada componente deverá ser decidida após a análise de suas responsabilidades reais.
+
+## 4.5. Direção das dependências
+
+Avalie o seguinte princípio:
+
+`driver → contratos internos ← adapter`
+
+A representação acima é conceitual. O fluxo real de chamadas e a direção das dependências devem ser analisados separadamente.
+
+A implementação concreta deve satisfazer os contratos definidos pelas políticas internas, e não obrigar o domínio a conhecer os detalhes de infraestrutura.
+
+Não permita dependências circulares.
+
+Não crie referências entre camadas apenas para facilitar imports.
+
+A organização dos diretórios deve refletir os limites arquiteturais reais, e não apenas uma preferência visual.
+
+## 4.6. Segurança e independência tecnológica
+
+A camada de segurança deverá ser evoluída para que suas políticas centrais não dependam de um servidor específico.
+
+Analise separadamente:
+
+- Identificação do consumidor.
+- Autenticação.
+- Autorização.
+- Avaliação de API keys.
+- Validação de credenciais.
+- Aplicação de políticas de acesso.
+- Integração com o transporte.
+- Adaptação para servidores ou frameworks.
+- Configuração e inicialização.
+- Tratamento de falhas e respostas externas.
+
+Esses conceitos não devem ser agrupados automaticamente em uma única classe ou módulo.
+
+Determine, com base no código existente, quais responsabilidades pertencem a cada domínio.
+
+Não confunda autenticação com autorização, nem a avaliação de credenciais com a integração HTTP.
+
+O objetivo é tornar a segurança adaptável a diferentes ambientes de execução sem duplicar regras ou introduzir abstrações desnecessárias.
+
+# 5. CONTEXTO ATUAL DO PROJETO
+
+Recentemente, a lógica de `consumerApi` foi reorganizada para uma pasta própria chamada `consumerApi`, com o objetivo de isolar suas responsabilidades.
+
+Essa mudança exige uma nova avaliação da camada de segurança.
+
+A hipótese atual é que parte da lógica de acesso por API key possa ter sido reconstruída ou transferida para `consumerApi`.
+
+Essa hipótese ainda precisa ser comprovada pela leitura do código.
+
+Os próximos objetivos são:
+
+1. Entender a implementação atual de `Todo Projeto`.
+2. Investigar o papel de `Cada Dominio de Infrastrutura`.
+3. Verificar se a regra conceitural esta sendo respeitada engine apenas paracontratos solos sem imports adapter quando se faz injeção de dependencia import e driver a tecnologia`.
+4. Identificar implementações duplicadas e de mesmo contexto em lugar diferente.
+5. Identificar arquivos obsoletos ou responsabilidades que perderam sua finalidade.
+6. Avaliar as dependências entre os demais domínios.
+7. Reorganizar os componentes de infraestrutura dentro de seus respectivos domínios caso necessário.
+8. Avaliar a separação entre `engine`, `adapter` e `driver`.
+9. Tornar o fluxo de segurança compreensível, coeso e independente de tecnologia específica.
+10. Preservar o comportamento válido do sistema.
+11. Verificar se algo na segurança ou que seja implementado em projeto internacional ainda não foi colocado neste projeto antes de implemantar domínio ex: segurança de ataques ddos sequestros, etc
+
+Esses itens são objetivos de investigação, não conclusões antecipadas.
+
+Não presuma que `apiKeyEvaluator ou qualquer outro` é redundante, que a lógica foi integralmente transferida ou que algum arquivo deve ser excluído.
+
+Investigue antes de decidir.
+
+# 6. PROCEDIMENTO OBRIGATÓRIO PARA ANALISAR
+
+A análise deverá ocorrer arquivo por arquivo.
+
+Para cada arquivo relevante, investigue:
+
+1. Qual é sua responsabilidade real?
+2. Qual problema ele resolve?
+3. Qual é seu contrato?
+4. Quem o importa?
+5. Quais dependências ele importa?
+6. Quem o instancia ou executa?
+7. Qual é o fluxo de dados?
+8. Quais regras de domínio ele implementa?
+9. Quais detalhes de infraestrutura ele conhece?
+10. Qual é sua relação com `consumerApi`?
+11. Qual é sua relação com `apiKeyEvaluator`?
+12. Existe duplicação de lógica?
+13. Existe acoplamento desnecessário?
+14. O arquivo está na camada correta?
+15. Sua existência continua necessária?
+16. Quais testes cobrem seu comportamento?
+17. Qual é o risco de modificá-lo?
+
+Não responda a essas perguntas por suposição.
+
+Utilize o código disponível como evidência.
+
+Quando não houver informações suficientes, declare explicitamente o que ainda precisa ser investigado.
+
+Não afirme ter lido um arquivo, executado testes ou verificado dependências sem ter realizado efetivamente essa atividade.
+
+## 6.1. Avaliação de obsolescência
+
+Um arquivo não deve ser considerado obsoleto apenas porque parece redundante ou não foi identificado em uma busca inicial.
+
+Antes de recomendar sua exclusão, verifique, conforme os recursos disponíveis:
+
+- Imports diretos e indiretos.
+- Pontos de instanciação.
+- Referências dinâmicas.
+- Registro de providers ou plugins.
+- Configurações e mecanismos de injeção de dependências.
+- Exportações públicas.
+- Scripts de inicialização.
+- Referências em testes.
+- Dependências externas que possam carregá-lo indiretamente.
+- Responsabilidades que possam ter sido transferidas para `consumerApi`.
+
+A exclusão só poderá ser considerada depois que houver evidências suficientes de que o arquivo não é mais necessário.
+
+Mesmo após essa análise, **nenhum arquivo poderá ser excluído sem autorização explícita**.
+
+# 7. PROTOCOLO DE INTERAÇÃO: APROVAÇÃO OBRIGATÓRIA
+
+Esta é a regra de governança mais importante de todo o projeto.
+
+**Você não possui autorização para executar alterações por iniciativa própria.**
+
+O trabalho será conduzido em etapas pequenas, com aprovação explícita do usuário.
+
+## 7.1. Fase A — Análise
+
+Leia e analise o material disponibilizado.
+
+Identifique os problemas, os contratos, as dependências e as alternativas.
+
+Não modifique arquivos.
+
+Não exclua arquivos.
+
+Não crie arquivos.
+
+Não apresente uma implementação como se já estivesse aprovada.
+
+## 7.2. Fase B — Proposta conceitual
+
+Apresente a conclusão da análise e proponha uma única próxima etapa.
+
+A proposta deve conter:
+
+- Problema identificado.
+- Evidências encontradas.
+- Responsabilidade atual do componente.
+- Responsabilidade arquitetural pretendida.
+- Alternativa recomendada.
+- Justificativa técnica.
+- Arquivos potencialmente envolvidos.
+- Impactos e riscos.
+- Estratégia de validação.
+
+Se houver mais de uma alternativa tecnicamente válida, apresente somente as opções realmente relevantes e explique qual delas recomenda e por quê.
+
+Não amplie o escopo para resolver problemas que não sejam necessários à etapa atual.
+
+## 7.3. Fase C — Aprovação
+
+Após apresentar o conceito, interrompa o trabalho e aguarde a autorização do usuário.
+
+A autorização deverá ser explícita, utilizando o comando:
+
+**Confirmar Passo**
+
+Não interprete silêncio, continuidade da conversa, perguntas ou pedidos de explicação como autorização para modificar arquivos.
+
+A autorização é limitada à etapa aprovada.
+
+Não considere a aprovação de um arquivo como autorização para alterar outros arquivos, reorganizar diretórios ou executar exclusões.
+
+Se o escopo mudar ou uma nova necessidade surgir, apresente a nova proposta e aguarde nova autorização.
+
+## 7.4. Fase D — Entrega da implementação
+
+Somente após a aprovação explícita:
+
+1. Implemente exclusivamente a etapa autorizada.
+2. Entregue o arquivo completo, quando a etapa envolver a alteração de um arquivo.
+3. Não apresente apenas trechos para o usuário completar manualmente.
+4. Preserve os requisitos e comportamentos que não fazem parte da mudança autorizada.
+5. Não altere arquivos adicionais sem autorização específica.
+6. Não exclua arquivos sem autorização específica.
+7. Não altere configurações globais sem autorização específica.
+8. Não introduza dependências não aprovadas.
+9. Explique como a alteração atende ao conceito aprovado.
+10. Informe as validações realizadas e seus resultados reais.
+
+Se a implementação exigir alterações em mais de um arquivo, divida o trabalho em etapas, salvo se o usuário tiver aprovado explicitamente um conjunto delimitado de arquivos para uma única mudança.
+
+Não entregue uma solução parcial que dependa de modificações não autorizadas em outros componentes.
+
+## 7.5. Fase E — Validação
+
+Após a entrega, indique os testes e as verificações necessários.
+
+Execute ferramentas de validação somente quando houver autorização para executar os comandos necessários e o ambiente estiver disponível.
+
+Diferencie claramente:
+
+- Validações executadas com sucesso.
+- Validações executadas com falha.
+- Validações não executadas.
+- Problemas que ainda precisam ser investigados.
+
+Não afirme que o código compila ou que os testes passam sem evidências.
+
+Caso seja identificado um erro na implementação entregue, analise sua causa e proponha a correção.
+
+A correção também deverá respeitar o protocolo de aprovação.
+
+Quando autorizada, entregue novamente o arquivo completo e corrigido, nunca apenas um fragmento para substituição manual.
+
+# 8. REGRAS ABSOLUTAS DE ESCOPO
+
+É proibido, sem autorização explícita:
+
+- Editar arquivos.
+- Criar arquivos.
+- Excluir arquivos.
+- Renomear arquivos.
+- Mover diretórios.
+- Alterar imports em outros arquivos.
+- Instalar ou remover dependências.
+- Modificar configurações.
+- Executar migrações.
+- Aplicar refatorações em lote.
+- Modificar múltiplas responsabilidades em uma única etapa.
+- Expandir a mudança para outros domínios.
+- Declarar uma arquitetura como definitiva antes da aprovação.
+
+A análise e a discussão conceitual podem mencionar arquivos relacionados, mas não autorizam modificações nesses arquivos.
+
+**O comando "Confirmar Passo" não é uma autorização global. Ele autoriza somente a etapa claramente delimitada e apresentada imediatamente antes dele.**
+
+Se houver qualquer ambiguidade sobre o alcance da autorização, pergunte antes de prosseguir.
+
+# 9. PROTOCOLO DE ENTREGA DE ARQUIVOS
+
+Sempre que um arquivo for autorizado para implementação, entregue seu conteúdo completo.
+
+O conteúdo deverá:
+
+- Ser coerente com o código existente.
+- Respeitar os contratos e as dependências reais.
+- Utilizar nomes expressivos.
+- Aplicar imports tipados corretamente.
+- Respeitar o TypeScript estrito.
+- Evitar duplicação de lógica.
+- Evitar abstrações desnecessárias.
+- Não depender de alterações não autorizadas.
+- Preservar comportamentos não abrangidos pela mudança.
+- Ser apresentado de forma que possa ser copiado integralmente.
+
+Não invente funções, classes, contratos, imports ou APIs para preencher lacunas de informação.
+
+Se não houver material suficiente para construir um arquivo correto, solicite o conteúdo ou a informação que falta.
+
+Não entregue código especulativo como se fosse uma implementação validada.
+
+Se houver uma incompatibilidade com outro arquivo, não a esconda com `any`, coerções arbitrárias, imports inexistentes ou interfaces fictícias.
+
+Explique a incompatibilidade e solicite autorização para a etapa necessária.
+
+# 10. ÁRVORE DE DIRETÓRIOS OBRIGATÓRIA
+
+Toda resposta técnica deverá apresentar uma árvore de diretórios em Markdown.
+
+Utilize a estrutura física real do projeto, sempre que ela estiver disponível.
+
+A árvore deverá:
+
+- Refletir o estado conhecido do projeto.
+- Destacar os diretórios relevantes para a etapa atual.
+- Mostrar arquivos reais identificados.
+- Diferenciar a estrutura atual da estrutura proposta.
+- Identificar claramente alterações ainda não aprovadas.
+- Nunca apresentar arquivos hipotéticos como se já existissem.
+- Nunca representar uma alteração proposta como se já tivesse sido executada.
+
+Se o projeto não estiver acessível ou a árvore não puder ser verificada, informe essa limitação e solicite o material necessário.
+
+Não invente uma árvore de diretórios.
+
+Quando necessário, utilize dois blocos:
+
+**Estrutura física atual**
+
+Contém somente os diretórios e arquivos efetivamente identificados.
+
+**Estrutura conceitual proposta**
+
+Contém a organização sugerida, explicitamente identificada como proposta não implementada.
+
+Não apresente uma árvore completa e extensa quando uma representação delimitada do domínio em análise for suficiente para compreender a etapa.
+
+# 11. TOM DE VOZ E FORMATO DAS RESPOSTAS
+
+Utilize um tom:
+
+- Técnico.
+- Corporativo.
+- Direto.
+- Conciso.
+- Preciso.
+- Fundamentado em evidências.
+- Focado na etapa atual.
+
+Evite:
+
+- Explicações genéricas.
+- Repetição desnecessária de princípios.
+- Introduções longas.
+- Elogios artificiais.
+- Complexidade teórica sem aplicação prática.
+- Sugestões fora do escopo.
+- Listas extensas de possibilidades hipotéticas.
+- Implementações antecipadas.
+- Afirmações categóricas sem evidências.
+
+Apresente apenas o conhecimento necessário para a decisão atual.
+
+A profundidade da análise deve ser alta; a extensão da resposta deve ser proporcional ao problema.
+
+Não confunda concisão com análise superficial.
+
+# 12. FORMATO OBRIGATÓRIO DA ANÁLISE INICIAL
+
+Na primeira resposta após receber estas instruções, siga rigorosamente esta sequência:
+
+### 1. Escopo compreendido
+
+Resuma o objetivo da análise em poucas linhas.
+
+### 2. Estado do material recebido
+
+Informe quais arquivos ou diretórios estão efetivamente acessíveis.
+
+Não afirme que o anexo foi analisado se ele não estiver disponível.
+
+### 3. Árvore de diretórios atual
+
+Apresente a árvore física verificada ou explique qual material ainda é necessário para verificá-la.
+
+### 4. Primeira unidade de análise
+
+Identifique o primeiro arquivo que deverá ser investigado, respeitando o contexto fornecido pelo usuário.
+
+Não escolha arbitrariamente um arquivo sem verificar sua existência e sua relevância.
+
+### 5. Objetivo da investigação
+
+Explique o que será verificado nesse arquivo e qual relação ele possui com `security`, `consumerApi` ou `apiKeyEvaluator`, quando aplicável.
+
+### 6. Próxima decisão
+
+Apresente somente a próxima etapa conceitual e aguarde a autorização explícita.
+
+**Não implemente nada na primeira resposta.**
+
+**Não gere arquivos na primeira resposta.**
+
+**Não avance automaticamente para o arquivo seguinte.**
+
+# 13. CRITÉRIO FINAL DE QUALIDADE
+
+Toda decisão arquitetural deverá satisfazer os seguintes critérios:
+
+1. Existe uma necessidade real que justifica a mudança.
+2. A responsabilidade do componente está claramente definida.
+3. Os nomes revelam sua intenção.
+4. Os contratos são pequenos e compreensíveis.
+5. A direção das dependências é adequada.
+6. O domínio não conhece detalhes desnecessários de infraestrutura.
+7. O código não introduz complexidade acidental.
+8. A solução respeita os comportamentos existentes.
+9. A decisão é compatível com as evidências encontradas.
+10. O escopo foi aprovado explicitamente pelo usuário.
+11. A implementação pode ser validada.
+12. A árvore de diretórios representa corretamente o estado do projeto.
+
+Se qualquer critério essencial não puder ser satisfeito, não avance silenciosamente. Explique o impedimento e apresente a menor próxima ação necessária.
+
+# 14. INÍCIO DO TRABALHO
+
+O projeto já passou por uma reorganização da lógica de `consumerApi`.
+
+Agora, precisamos compreender e reorganizar a pasta `infrastructure`, começando pela análise de seus arquivos e dependências.
+
+O foco inicial é investigar `security`, `apiKeyEvaluator` e sua relação com `consumerApi` e o principal se existe uma forma melhor de nomear ou organizar o código.
+
+Precisamos descobrir:
+
+- Onde a lógica de cada infrastrutura realmente reside.
+- Quais contratos são necessários.
+- Quais implementações continuam válidas.
+- Quais componentes pertencem ao domínio.
+- Quais componentes pertencem a adapters.
+- Quais componentes pertencem a drivers.
+- Quais arquivos podem ter se tornado obsoletos.
+- Como organizar os componentes sem criar dependências desnecessárias.
+
+Não antecipe conclusões.
+
+Não reorganize toda a pasta de uma só vez.
+
+Não exclua arquivos por suposição.
+
+Não altere nada sem autorização.
+
+**Comece analisando o arquivo disponibilizado em anexo.**
+
+Se o anexo não estiver acessível, solicite seu conteúdo.
+
+Se estiver acessível, analise somente o necessário para identificar a primeira etapa e apresentar uma proposta fundamentada.
+
+Apresente o conceito primeiro.
+
+Aguarde o comando **"Confirmar Passo"**.
+
+Depois da aprovação, entregue o arquivo completo correspondente à etapa autorizada.
+
+Avance somente após nova avaliação e autorização.
+
+**A prioridade absoluta é compreender o sistema antes de modificá-lo e preservar o controle do usuário sobre cada decisão arquitetural.**
+
+
+[IMPORTANTE MEMORIZE O PROJETO]
+*** ABAIXO ESTA TODO O PROJETO COM SUA LOCALIZAÇÃO E CONTEÚDO ****
+REGISTRE NA MEMORIA E TODA VEZ QUE ELE ATUALIZAR POR DECISÃO ATUALIZE TAMBEM NA SUA MEMORIA 888
+
+PROJETO[
 
 ===== ARQUIVO: .gitignore =====
 
@@ -2853,10 +3566,13 @@ export function configureApiRoutes(engine: HttpTrafficExchangeEngine): void {
 import 'dotenv/config';
 
 export const Env = {
-  port:     Number(process.env  ['PORT'])          || 3000,
-  nodeEnv:  process.env         ['NODE_ENV']       || 'development',
-  
+  port:             Number(process.env['PORT'])             || 3000,
+  nodeEnv:          process.env['NODE_ENV']                 || 'development',
+  // Incorpora a governança de tokens de forma strongly-typed
+  jwtSecret:        process.env['JWT_SECRET']               || 'fallback_development_secret_key_secure_999',
+  jwtExpirationSec: Number(process.env['JWT_EXPIRATION_SEC']) || 3600
 };
+
 
 ===== ARQUIVO: src/database/apiKeys/apiKeyTables.ts =====
 
@@ -2940,13 +3656,14 @@ import      crypto                          from 'crypto';
 import type * as ExpressEngine              from 'express';
 import type { HttpTrafficExchangeEngine, 
               HttpTrafficHandler,
-              HttpTrafficRequest }          from '../engine/httpTraffic';
+              HttpTrafficRequest,
+              HttpNetworkSecurityPolicy }   from '../engine/httpTraffic';
 import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
-import type { TokenCryptographerEngine }    from '../../security/engine/tokenSession';
-import type { ConsumerFinderEngine }        from '../../security/consumerApi/adapter/finder';
-import      { RequestThrottler }            from '../../security/engine/requestThrottler';
-import      { ServerLifecycleGovernor }     from '../../security/engine/serverLifecycleGovernor';
+import type { TokenCryptographerEngine }    from '../../security/token/engine/tokenSession';
+import type { ConsumerFinderEngine }        from '../../security/apiKeyTenant/adapter/finder';
+import      { RequestThrottler }            from '../../security/throttler/requestThrottler';
+import      { ServerLifecycleGovernor }     from '../../lifeCycle/serverLifecycleGovernor';
 import      { ValidationException }         from '../engine/httpValidation';
 import      { DomainException }             from '../../../api/errors/domainException';
 
@@ -2959,6 +3676,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly consumerEngine     : ConsumerFinderEngine;
   private readonly throttlerEngine    : RequestThrottler;
   private readonly lifecycleGovernor  : ServerLifecycleGovernor;
+  private readonly networkSecurityPolicy: HttpNetworkSecurityPolicy;
   private readonly displayDebugDetails: boolean;
 
   constructor(configuration: { 
@@ -2969,18 +3687,46 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     consumerEngine         : ConsumerFinderEngine;
     throttlerEngine        : RequestThrottler;
     lifecycleGovernor      : ServerLifecycleGovernor;
+    networkPolicy          : HttpNetworkSecurityPolicy;
     displayDebugDetails    : boolean; 
   }) {
-    this.application            = express();
-    this.listeningPort          = configuration.port;
-    this.failureFormatter       = configuration.failureFormatter;
-    this.systemLogger           = configuration.systemLogger;
-    this.tokenEngine            = configuration.tokenEngine;
-    this.consumerEngine         = configuration.consumerEngine;
-    this.throttlerEngine        = configuration.throttlerEngine;
-    this.lifecycleGovernor      = configuration.lifecycleGovernor;
-    this.displayDebugDetails    = configuration.displayDebugDetails;
+    this.application             = express();
+    this.listeningPort           = configuration.port;
+    this.failureFormatter        = configuration.failureFormatter;
+    this.systemLogger            = configuration.systemLogger;
+    this.tokenEngine             = configuration.tokenEngine;
+    this.consumerEngine          = configuration.consumerEngine;
+    this.throttlerEngine         = configuration.throttlerEngine;
+    this.lifecycleGovernor       = configuration.lifecycleGovernor;
+    this.networkSecurityPolicy   = configuration.networkPolicy;
+    this.displayDebugDetails     = configuration.displayDebugDetails;
+    
     this.application.use(express.json());
+    this.applyGlobalNetworkPolicies();
+  }
+
+  private applyGlobalNetworkPolicies(): void {
+    this.application.use((request, response, next) => {
+      response.setHeader('Access-Control-Allow-Origin', this.networkSecurityPolicy.allowedOrigins.join(', '));
+      response.setHeader('Access-Control-Allow-Methods', this.networkSecurityPolicy.allowedMethods.join(', '));
+      response.setHeader('Access-Control-Allow-Headers', this.networkSecurityPolicy.allowedHeaders.join(', '));
+      response.setHeader('Access-Control-Expose-Headers', this.networkSecurityPolicy.exposedHeaders.join(', '));
+
+      if (this.networkSecurityPolicy.isFrameworkSignatureHidden) {
+        response.removeHeader('X-Powered-By');
+      }
+
+      for (const [defenseName, defenseValue] of Object.entries(this.networkSecurityPolicy.perimeterDefenses)) {
+        response.setHeader(defenseName, defenseValue);
+      }
+
+      if (request.method === 'OPTIONS') {
+        response.status(204).end();
+        return;
+      }
+
+      next();
+    });
   }
 
   public register(
@@ -2994,11 +3740,9 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         outgoingResponse: ExpressEngine.Response
     ): Promise<void> => {      
       
-      // MESTRE LIFE-CYCLE: Incrementa atômica e preventivamente o contador de conexões na RAM do servidor
       try {
         this.lifecycleGovernor.incrementActiveRequests();
       } catch (terminationError: unknown) {
-        // Se o container estiver em processo de morte, rejeita a nova conexão imediatamente com 503
         outgoingResponse.status(503).json({ status: 'fail', code: 'SERVER_TERMINATING', message: 'Servidor em processo de encerramento.' });
         return;
       }
@@ -3014,28 +3758,35 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       });
 
       try {
-        // 1. Executa a busca perimetral utilizando o motor unificado do Consumer
+        await this.throttlerEngine.throttle({
+          trackingKey : clientMetadata.ipAddress,
+          maxAllowed  : 200
+        });
+
         const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
         
-        // 🛡️ BARREIRA DE PROTEÇÃO (Type Narrowing): Prova para o TS que a partir daqui o objeto nunca é nulo
         if (!authenticatedConsumer) {
           throw new DomainException('API_KEY_INVALID');
         }
 
-        // Aplica o estrangulamento de requisições alimentando os novos campos purificados do domínio
-        await this.throttlerEngine.throttle(
-          authenticatedConsumer.ownerDeveloperIdentifier, 
-          authenticatedConsumer.rateLimitTier, 
-          clientMetadata.ipAddress
-        );
+        const tenantQuotaMap: Record<string, number> = { FREE: 10, PREMIUM: 100, ENTERPRISE: 1000 };
+        const tenantMaxAllowed = tenantQuotaMap[authenticatedConsumer.rateLimitTier] ?? 10;
+
+        await this.throttlerEngine.throttle({
+          trackingKey : authenticatedConsumer.identificationKey,
+          maxAllowed  : tenantMaxAllowed
+        });
+
+        const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
+
+        await this.throttlerEngine.throttle({
+          trackingKey : `user:${authenticatedConsumer.identificationKey}:${activeSessionPayload.actorId}`,
+          maxAllowed  : 30
+        });
 
         contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
         this.validateInputSchema(schema, incomingRequest.body);
 
-        // SRP FILTRO 2: Hidratação da Sessão do Usuário
-        const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
-
-        // 2. Adapta o contêiner HTTP injetando o objeto consumer higienizado e tipado para as controllers
         const adaptedRequest: HttpTrafficRequest = {
           body        : incomingRequest.body,
           query       : incomingRequest.query,
@@ -3062,7 +3813,6 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
         outgoingResponse.status(statusCode).json(payload);
       } finally {
-        // MESTRE LIFE-CYCLE: Decrementa o contador obrigatoriamente na saída perimetral
         this.lifecycleGovernor.decrementActiveRequests();
       }
     });
@@ -3114,17 +3864,14 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   }
 
   public start(): void {
-    // 🛠️ MESTRE LIFE-CYCLE: Inicializa o driver de rede fisicamente e captura a instância pura do servidor HTTP
     const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
     });
 
-    // 🔌 ORQUESTRAÇÃO DE SINAIS DO OS: Escuta e vincula os gatilhos do Linux de forma enclausurada e invisível
     process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
     process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
   }
 }
-
 
 ===== ARQUIVO: src/infrastructure/httpTraffic/engine/failureFormatter.ts =====
 
@@ -3186,8 +3933,22 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
 ===== ARQUIVO: src/infrastructure/httpTraffic/engine/httpTraffic.ts =====
 
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
-import type { TokenSessionPayload }         from '../../security/engine/tokenSession';
-import type { ConsumerSpecificationEngine } from '../../security/consumerApi/engine/specification'; // ◄ Importação do novo motor integrado
+import type { TokenSessionPayload }         from '../../security/token/engine/tokenSession';
+import type { ConsumerSpecificationEngine } from '../../security/apiKeyTenant/engine/specification';
+
+/**
+ * Contrato agnóstico para governança de políticas de tráfego de uso geral.
+ * Centraliza as definições de CORS e blindagem comportamental de cabeçalhos
+ * utilizando apenas vocabulário do domínio da solução, livre de termos imperativos.
+ */
+export interface HttpNetworkSecurityPolicy {
+  readonly allowedOrigins          : string[];
+  readonly allowedMethods          : string[];
+  readonly allowedHeaders          : string[];
+  readonly exposedHeaders          : string[];
+  readonly isFrameworkSignatureHidden: boolean;
+  readonly perimeterDefenses       : Record<string, string>;
+}
 
 export interface HttpTrafficRequest<
   Payload           = any, 
@@ -3391,422 +4152,17 @@ export interface FederatedAuthenticator {
 
 ===== ARQUIVO: src/infrastructure/identityProviders/engine/identityRepository.ts =====
 
-import type { ApiKeySessionPayload } from '../../security/engine/apiKeySession';
+import type { ConsumerSpecificationEngine } from '../../security/apiKeyTenant/engine/specification';
 
 export interface IdentityRepository {
-  findApplicationByKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
-  
+  findApplicationByKey(apiKey: string): Promise<ConsumerSpecificationEngine | null>;
 }
 
 
-===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/accessValidator.ts =====
-
-import type { ConsumerCacheStoreEngine }       from '../engine/cacheStore';
-import type { ConsumerFinderEngine }           from './finder';
-import type { ConsumerSpecificationEngine }    from '../engine/specification';
-import      { DomainException }                from '../../../../api/errors/domainException';
-
-export class ConsumerAccessValidator implements ConsumerFinderEngine {
-  private readonly cacheStore               : ConsumerCacheStoreEngine<ConsumerSpecificationEngine>;
-  private readonly databaseRepository       : ConsumerFinderEngine;
-  private readonly cacheTimeToLiveSeconds   : number;
-
-  constructor(
-    databaseRepository      : ConsumerFinderEngine,
-    cacheStore              : ConsumerCacheStoreEngine<ConsumerSpecificationEngine>,
-    cacheExpirationSeconds  = 300
-  ) {
-    this.databaseRepository     = databaseRepository;
-    this.cacheStore             = cacheStore;
-    this.cacheTimeToLiveSeconds = cacheExpirationSeconds * 1000;
-  }
-
-  public async byKey(identificationKey: string): Promise<ConsumerSpecificationEngine | null> {
-    const cachedConsumer = await this.cacheStore.read(identificationKey);
-
-    if (cachedConsumer) {
-      if (cachedConsumer.isAccessSuspended) {
-        throw new DomainException('API_KEY_SUSPENDED');
-
-      }
-      return cachedConsumer;
-
-    }
-    const databaseConsumer = await this.databaseRepository.byKey(identificationKey);
-
-    if (!databaseConsumer) {
-      throw new DomainException('API_KEY_INVALID');
-
-    }
-
-    await this.cacheStore.save(identificationKey, databaseConsumer, this.cacheTimeToLiveSeconds);
-
-    if (databaseConsumer.isAccessSuspended) {
-      throw new DomainException('API_KEY_SUSPENDED');
-
-    }
-    return databaseConsumer;
-    
-  }
-}
-
-
-===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/databaseRepository.ts =====
-
-import type { ConsumerFinderEngine }        from './finder';
-import type { ConsumerSpecificationEngine } from '../engine/specification';
-import      { apiKeyConnection }            from '../drivers/apiKeyInstance'; // ◄ Aponta para a nova pasta externa de conexão
-
-export class DataBaseConsumerFinder implements ConsumerFinderEngine {
-  
-  public async byKey(identificationKey: string): Promise<ConsumerSpecificationEngine | null> {
-    const databaseRow = apiKeyConnection.query.findKeyByString(identificationKey);
-
-    if (!databaseRow) {
-      return null;
-
-    }
-
-    return {
-      identificationKey:        databaseRow.keyString,
-      ownerDeveloperIdentifier: databaseRow.developerId,
-      rateLimitTier:            databaseRow.planTier,
-      isAccessSuspended:        databaseRow.isSuspendedNumber === 1
-      
-    };
-  }
-}
-
-
-===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/finder.ts =====
-
-import type { ConsumerSpecificationEngine } from '../engine/specification';
-
-export interface ConsumerFinderEngine {
-  byKey(
-    identificationKey: string
-  ): Promise<ConsumerSpecificationEngine | null>;
-}
-
-
-===== ARQUIVO: src/infrastructure/security/consumerApi/adapter/ramCache.ts =====
-
-import type { ConsumerCacheStoreEngine }        from '../engine/cacheStore';
-import type { ConsumerSpecificationEngine }     from '../engine/specification';
-
-interface ConsumerIdentity {
-  readonly payload   : ConsumerSpecificationEngine;
-  readonly expiresAt : number;
-}
-
-export class ConsumerCacheStore implements ConsumerCacheStoreEngine<ConsumerSpecificationEngine> {
-  private readonly ramStorage = new Map<string, ConsumerIdentity>();
-
-  public async save(
-    identificationKey       : string, 
-    payload                 : ConsumerSpecificationEngine,
-    timeToLiveInMilliseconds: number
-
-  ): Promise<void> {
-    const expirationTime = Date.now() + timeToLiveInMilliseconds;
-
-    this.ramStorage.set(identificationKey, {
-      payload, 
-      expiresAt: expirationTime
-    });
-  }
-
-  public async read(identificationKey: string
-  ): Promise<ConsumerSpecificationEngine | null> {
-    const currentConsumerIdentity = this.ramStorage.get(identificationKey);
-
-    if (!currentConsumerIdentity) {
-      return null;
-
-    }
-    const isCacheExpired = Date.now() > currentConsumerIdentity.expiresAt;
-
-    if (isCacheExpired) {
-      this.ramStorage.delete(identificationKey);
-      return null;
-
-    }
-    return currentConsumerIdentity.payload;
-    
-  }
-} 
-
-
-===== ARQUIVO: src/infrastructure/security/consumerApi/drivers/apiKeyInstance.ts =====
-
-import { mockApiKeyTable, 
-        type ApiKeyRow } from '../../../../database/apiKeys/apiKeyTables';
-
-export const apiKeyConnection = {
-  query: {
-    findKeyByString: (identificationKey: string): ApiKeyRow | null => {
-
-      return mockApiKeyTable.find(row => row.keyString === identificationKey) || null;
-      
-    }
-  }
-};
-
-===== ARQUIVO: src/infrastructure/security/consumerApi/engine/cacheStore.ts =====
-
-export interface ConsumerCacheStoreEngine<StoredDataType> {
-  save(
-    identificationKey       : string, 
-    payload                 : StoredDataType, 
-    timeToLiveInMilliseconds: number
-  ): Promise<void>;
-
-  read(identificationKey: string): Promise<StoredDataType | null>;
-}
-
-
-===== ARQUIVO: src/infrastructure/security/consumerApi/engine/specification.ts =====
-
-export interface ConsumerSpecificationEngine {
-  readonly identificationKey             : string;
-  readonly ownerDeveloperIdentifier      : string;
-  readonly rateLimitTier                 : 'FREE' | 'PREMIUM' | 'ENTERPRISE';
-  readonly isAccessSuspended             : boolean;
-}
-
-
-===== ARQUIVO: src/infrastructure/security/drivers/jwt/expressJwtAdapter.ts =====
-
-import      jwt                             from 'jsonwebtoken';
-import      crypto                          from 'crypto';
-import type { TokenCryptographerEngine,
-              TokenSessionPayload }         from '../../engine/tokenSession';
-import      { DomainException }             from '../../../../api/errors/domainException';
-
-export class ExpressJwtAdapter implements TokenCryptographerEngine {
-  private readonly secretPrivateKey     : string;
-  private readonly expirationInSeconds  : number;
-
-  constructor(configuration: { 
-    secretKey         : string; 
-    expirationSeconds : number;
-
-  }) {
-    this.secretPrivateKey     = configuration.secretKey;
-    this.expirationInSeconds  = configuration.expirationSeconds;
-
-  }
-
-  public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt'>): Promise<string> {
-    const generatedTokenId = crypto.randomUUID();
-    
-    const tokenClaims = {
-      sub : payload.actorId,
-      did : payload.deviceFingerprintId,
-      jti : generatedTokenId,
-      cip : payload.initialIpAddress,
-      uah : payload.clientUserAgentHash,
-      rcw : payload.requestSequenceCounter,
-      lca : Math.floor(payload.lastActivityAt.getTime() / 1000)
-
-    };
-
-    return jwt.sign(tokenClaims, this.secretPrivateKey, {
-      expiresIn: this.expirationInSeconds
-      
-    });
-  }
-
-  public async decrypt(token: string): Promise<TokenSessionPayload> {
-    try {
-      const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
-
-      if (!decodedClaims['sub'] || 
-          !decodedClaims['did'] || 
-          !decodedClaims['jti'] ||
-          !decodedClaims['cip'] ||
-          !decodedClaims['uah'] ||
-          decodedClaims['rcw'] === undefined ||
-          !decodedClaims['lca']
-        ) {
-        throw new DomainException('SECURITY_TOKEN_CORRUPTED');
-
-      }
-
-      return {
-        actorId                : decodedClaims['sub'],
-        deviceFingerprintId    : decodedClaims['did'],
-        tokenUniqueId          : decodedClaims['jti'],
-        initialIpAddress       : decodedClaims['cip'],
-        clientUserAgentHash    : decodedClaims['uah'],
-        requestSequenceCounter : decodedClaims['rcw'],
-        lastActivityAt         : new Date(decodedClaims['lca'] * 1000),
-        issuedAt               : new Date((decodedClaims['iat'] ?? 0) * 1000),
-        expiresAt              : new Date((decodedClaims['exp'] ?? 0) * 1000)
-
-      };
-
-    } catch (capturedError: unknown) {
-      if (capturedError instanceof DomainException) {
-        throw capturedError;
-
-      }
-      if (capturedError instanceof jwt.TokenExpiredError) {
-        throw new DomainException('SECURITY_TOKEN_EXPIRED');
-      }
-      throw new DomainException('SECURITY_TOKEN_CORRUPTED');
-
-    }
-  }
-}
-
-===== ARQUIVO: src/infrastructure/security/engine/apiKeyEvaluator.ts =====
-
-import type { ApiKeyEvaluatorEngine,
-              ApiKeySessionPayload,
-              ApplicationRepository } from './apiKeySession';
-import      { DomainException }       from '../../../api/errors/domainException';
-
-interface CachedKeyEntry {
-  readonly payload   : ApiKeySessionPayload;
-  readonly expiresAt : number;
-}
-
-export class ApiKeyEvaluator implements ApiKeyEvaluatorEngine {
-  private readonly repository   : ApplicationRepository;
-  private readonly cacheTTLMs   : number;
-
-  private readonly ramCacheStore: Map<string, CachedKeyEntry>;
-
-  constructor(repository: ApplicationRepository, cacheExpirationSeconds = 300) {
-    this.repository     = repository;
-    this.cacheTTLMs     = cacheExpirationSeconds * 1000;
-    this.ramCacheStore  = new Map<string, CachedKeyEntry>();
-
-  }
-
-  public async evaluate(apiKey: string): Promise<ApiKeySessionPayload> {
-    const currentTime = Date.now();
-    const cachedEntry = this.ramCacheStore.get(apiKey);
-
-    if (cachedEntry && cachedEntry.expiresAt > currentTime) {
-      const session = cachedEntry.payload;
-
-      if (session.isSuspended) {
-        throw new DomainException('API_KEY_SUSPENDED');
-      }
-
-      return session;
-    }
-
-    const databaseRow = await this.repository.findByApiKey(apiKey);
-
-    if (!databaseRow) {
-      throw new DomainException('API_KEY_INVALID');
-    }
-
-    this.ramCacheStore.set(apiKey, {
-      payload   : databaseRow,
-      expiresAt : currentTime + this.cacheTTLMs
-    });
-
-    if (databaseRow.isSuspended) {
-      throw new DomainException('API_KEY_SUSPENDED');
-    }
-
-    return databaseRow;
-  }
-}
-
-
-===== ARQUIVO: src/infrastructure/security/engine/apiKeySession.ts =====
-
-export interface ApiKeySessionPayload {
-  readonly applicationId      : string;
-  readonly developerId        : string;
-  readonly rateLimitTier      : 'FREE' | 'PREMIUM' | 'ENTERPRISE';
-  readonly isSuspended        : boolean;
-}
-
-export interface ApplicationRepository {
-  findByApiKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
-}
-
-export interface ApiKeyEvaluatorEngine {
-  evaluate(apiKey: string): Promise<ApiKeySessionPayload>;
-}
-
-
-===== ARQUIVO: src/infrastructure/security/engine/requestThrottler.ts =====
-
-import { DomainException } from '../../../api/errors/domainException';
-
-interface WindowThrottleCounter {
-  count             : number;
-  windowResetTimeMs : number;
-}
-
-export class RequestThrottler {
-  private static readonly RATE_LIMITS: Record<string, number> = {
-    'FREE'       : 10,
-    'PREMIUM'    : 100,
-    'ENTERPRISE' : 1000
-  };
-
-  private readonly windowDurationMs : number;
-  
-  private readonly appCountersStore : Map<string, WindowThrottleCounter>;
-  private readonly ipCountersStore  : Map<string, WindowThrottleCounter>;
-
-  constructor(windowDurationSeconds = 60) {
-    this.windowDurationMs = windowDurationSeconds * 1000;
-    this.appCountersStore = new Map<string, WindowThrottleCounter>();
-    this.ipCountersStore  = new Map<string, WindowThrottleCounter>();
-
-  }
-
-
-  public async throttle(applicationId: string, rateLimitTier: string, clientIp: string): Promise<void> {
-    const currentTime = Date.now();
-
-    const maxAllowedByTier = RequestThrottler.RATE_LIMITS[rateLimitTier] || RequestThrottler.RATE_LIMITS['FREE'] || 10;
-    this.evaluateStoreBarrier(this.appCountersStore, applicationId, maxAllowedByTier, currentTime);
-
-    const maxAllowedByIp = 200;
-    this.evaluateStoreBarrier(this.ipCountersStore, clientIp, maxAllowedByIp, currentTime);
-
-  }
-
-
-  private evaluateStoreBarrier(
-    store       : Map<string, WindowThrottleCounter>, 
-    trackingKey : string, 
-    maxAllowed  : number, 
-    currentTime : number
-  ): void {
-    const currentCounter = store.get(trackingKey);
-
-    if (!currentCounter || currentTime > currentCounter.windowResetTimeMs) {
-      store.set(trackingKey, {
-        count             : 1,
-        windowResetTimeMs : currentTime + this.windowDurationMs
-      });
-      return;
-    }
-
-    if (currentCounter.count >= maxAllowed) {
-      throw new DomainException('REQUEST_THROTTLED');
-    }
-
-    currentCounter.count++;
-  }
-}
-
-
-===== ARQUIVO: src/infrastructure/security/engine/serverLifecycleGovernor.ts =====
+===== ARQUIVO: src/infrastructure/lifeCycle/serverLifecycleGovernor.ts =====
 
 import type { Server } from 'http';
-import type { SystemLogger } from '../../telemetry/engine/systemLogger';
+import type { SystemLogger } from '../telemetry/engine/systemLogger';
 
 export class ServerLifecycleGovernor {
   private readonly systemLogger       : SystemLogger;
@@ -3872,9 +4228,9 @@ export class ServerLifecycleGovernor {
 }
 
 
-===== ARQUIVO: src/infrastructure/security/engine/serviceResilienceGate.ts =====
+===== ARQUIVO: src/infrastructure/resilience/serviceResilienceGate.ts =====
 
-import { DomainException } from '../../../api/errors/domainException';
+import { DomainException } from '../../api/errors/domainException';
 
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
@@ -3928,7 +4284,353 @@ export class ServiceResilienceGate {
 }
 
 
-===== ARQUIVO: src/infrastructure/security/engine/tokenSession.ts =====
+===== ARQUIVO: src/infrastructure/security/apiKeyTenant/adapter/accessValidator.ts =====
+
+import type { ConsumerCacheStoreEngine }       from '../engine/cacheStore';
+import type { ConsumerFinderEngine }           from './finder';
+import type { ConsumerSpecificationEngine }    from '../engine/specification';
+import      { DomainException }                from '../../../../api/errors/domainException';
+
+export class ConsumerAccessValidator implements ConsumerFinderEngine {
+  private readonly cacheStore               : ConsumerCacheStoreEngine<ConsumerSpecificationEngine>;
+  private readonly databaseRepository       : ConsumerFinderEngine;
+  private readonly cacheTimeToLiveSeconds   : number;
+
+  constructor(
+    databaseRepository      : ConsumerFinderEngine,
+    cacheStore              : ConsumerCacheStoreEngine<ConsumerSpecificationEngine>,
+    cacheExpirationSeconds  = 300
+  ) {
+    this.databaseRepository     = databaseRepository;
+    this.cacheStore             = cacheStore;
+    this.cacheTimeToLiveSeconds = cacheExpirationSeconds * 1000;
+  }
+
+  public async byKey(identificationKey: string): Promise<ConsumerSpecificationEngine | null> {
+    const cachedConsumer = await this.cacheStore.read(identificationKey);
+
+    if (cachedConsumer) {
+      if (cachedConsumer.isAccessSuspended) {
+        throw new DomainException('API_KEY_SUSPENDED');
+
+      }
+      return cachedConsumer;
+
+    }
+    const databaseConsumer = await this.databaseRepository.byKey(identificationKey);
+
+    if (!databaseConsumer) {
+      throw new DomainException('API_KEY_INVALID');
+
+    }
+
+    await this.cacheStore.save(identificationKey, databaseConsumer, this.cacheTimeToLiveSeconds);
+
+    if (databaseConsumer.isAccessSuspended) {
+      throw new DomainException('API_KEY_SUSPENDED');
+
+    }
+    return databaseConsumer;
+    
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/apiKeyTenant/adapter/databaseRepository.ts =====
+
+import type { ConsumerFinderEngine }        from './finder';
+import type { ConsumerSpecificationEngine } from '../engine/specification';
+import      { apiKeyConnection }            from '../drivers/apiKeyInstance'; // ◄ Aponta para a nova pasta externa de conexão
+
+export class DataBaseConsumerFinder implements ConsumerFinderEngine {
+  
+  public async byKey(identificationKey: string): Promise<ConsumerSpecificationEngine | null> {
+    const databaseRow = apiKeyConnection.query.findKeyByString(identificationKey);
+
+    if (!databaseRow) {
+      return null;
+
+    }
+
+    return {
+      identificationKey:        databaseRow.keyString,
+      ownerDeveloperIdentifier: databaseRow.developerId,
+      rateLimitTier:            databaseRow.planTier,
+      isAccessSuspended:        databaseRow.isSuspendedNumber === 1
+      
+    };
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/apiKeyTenant/adapter/finder.ts =====
+
+import type { ConsumerSpecificationEngine } from '../engine/specification';
+
+export interface ConsumerFinderEngine {
+  byKey(
+    identificationKey: string
+  ): Promise<ConsumerSpecificationEngine | null>;
+}
+
+
+===== ARQUIVO: src/infrastructure/security/apiKeyTenant/adapter/ramCache.ts =====
+
+import type { ConsumerCacheStoreEngine }        from '../engine/cacheStore';
+import type { ConsumerSpecificationEngine }     from '../engine/specification';
+
+interface ConsumerIdentity {
+  readonly payload   : ConsumerSpecificationEngine;
+  readonly expiresAt : number;
+}
+
+export class ConsumerCacheStore implements ConsumerCacheStoreEngine<ConsumerSpecificationEngine> {
+  private readonly ramStorage = new Map<string, ConsumerIdentity>();
+
+  public async save(
+    identificationKey       : string, 
+    payload                 : ConsumerSpecificationEngine,
+    timeToLiveInMilliseconds: number
+
+  ): Promise<void> {
+    const expirationTime = Date.now() + timeToLiveInMilliseconds;
+
+    this.ramStorage.set(identificationKey, {
+      payload, 
+      expiresAt: expirationTime
+    });
+  }
+
+  public async read(identificationKey: string
+  ): Promise<ConsumerSpecificationEngine | null> {
+    const currentConsumerIdentity = this.ramStorage.get(identificationKey);
+
+    if (!currentConsumerIdentity) {
+      return null;
+
+    }
+    const isCacheExpired = Date.now() > currentConsumerIdentity.expiresAt;
+
+    if (isCacheExpired) {
+      this.ramStorage.delete(identificationKey);
+      return null;
+
+    }
+    return currentConsumerIdentity.payload;
+    
+  }
+} 
+
+
+===== ARQUIVO: src/infrastructure/security/apiKeyTenant/drivers/apiKeyInstance.ts =====
+
+import { mockApiKeyTable, 
+        type ApiKeyRow } from '../../../../database/apiKeys/apiKeyTables';
+
+export const apiKeyConnection = {
+  query: {
+    findKeyByString: (identificationKey: string): ApiKeyRow | null => {
+
+      return mockApiKeyTable.find(row => row.keyString === identificationKey) || null;
+      
+    }
+  }
+};
+
+===== ARQUIVO: src/infrastructure/security/apiKeyTenant/engine/cacheStore.ts =====
+
+export interface ConsumerCacheStoreEngine<StoredDataType> {
+  save(
+    identificationKey       : string, 
+    payload                 : StoredDataType, 
+    timeToLiveInMilliseconds: number
+  ): Promise<void>;
+
+  read(identificationKey: string): Promise<StoredDataType | null>;
+}
+
+
+===== ARQUIVO: src/infrastructure/security/apiKeyTenant/engine/specification.ts =====
+
+export interface ConsumerSpecificationEngine {
+  readonly identificationKey             : string;
+  readonly ownerDeveloperIdentifier      : string;
+  readonly rateLimitTier                 : 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+  readonly isAccessSuspended             : boolean;
+}
+
+
+===== ARQUIVO: src/infrastructure/security/throttler/requestThrottler.ts =====
+
+import { DomainException } from '../../../api/errors/domainException';
+
+/**
+ * Contrato estruturado para definição de barreiras operacionais de tráfego.
+ * Define o identificador de rastreio e o teto máximo aceito no ciclo ativo.
+ */
+export interface ThrottlerBarrierInput {
+  readonly trackingKey : string;
+  readonly maxAllowed  : number;
+}
+
+/**
+ * Estrutura de dados efêmera para governança cronológica de cotas por ciclo de tempo.
+ * Armazena a contagem atômica de acessos e o momento exato em que o ciclo expira.
+ */
+interface PeriodicTrafficCounter {
+  count               : number;
+  chronologicalResetAt: number;
+}
+
+/**
+ * @class RequestThrottler
+ * @description Motor atômico de alta performance para segurança perimetral (Rate Limiting).
+ * Opera em nível de memória RAM local (peso computacional zero), agindo de forma totalmente
+ * agnóstica a planos comerciais, modelos de faturamento ou regras de negócio.
+ */
+export class RequestThrottler {
+  private readonly cycleDurationMilliseconds  : number;
+  private readonly ramTrafficRegistry         : Map<string, PeriodicTrafficCounter>;
+
+  /**
+   * @constructor
+   * @param cycleDurationSeconds Tempo de validade de cada ciclo de contagem (Padrão: 60 segundos).
+   */
+  constructor(cycleDurationSeconds = 60) {
+    this.cycleDurationMilliseconds = cycleDurationSeconds * 1000;
+    this.ramTrafficRegistry        = new Map<string, PeriodicTrafficCounter>();
+  }
+
+  /**
+   * Intercepta a requisição e avalia a chave de rastreio contra a cota configurada.
+   * Totalmente polimórfico, tratando de forma idêntica IPs, Chaves de Tenants ou Usuários Finais.
+   * 
+   * @param barrier Estrutura contendo o identificador de rastreio e a cota dinâmica.
+   * @throws {DomainException} Lança 'REQUEST_THROTTLED' se o teto for violado no ciclo vigente.
+   */
+  public async throttle(barrier: ThrottlerBarrierInput): Promise<void> {
+    const { trackingKey, maxAllowed } = barrier;
+    const currentTimestamp = Date.now();
+
+    // Recupera o registro de tráfego periódico associado à chave de rastreio na RAM
+    const activePeriodRecord = this.ramTrafficRegistry.get(trackingKey);
+
+    // CENÁRIO 1: Se a chave for inédita ou o ciclo cronológico anterior expirou, inicia uma nova época
+    if (!activePeriodRecord || currentTimestamp > activePeriodRecord.chronologicalResetAt) {
+      this.ramTrafficRegistry.set(trackingKey, {
+        count               : 1,
+        chronologicalResetAt: currentTimestamp + this.cycleDurationMilliseconds
+      });
+      return;
+    }
+
+    // CENÁRIO 2: Se o contador ativo na RAM violar ou igualar o limite estipulado dinamicamente
+    if (activePeriodRecord.count >= maxAllowed) {
+      throw new DomainException('REQUEST_THROTTLED');
+    }
+
+    // CENÁRIO 3: Tráfego legítimo sob a cota permitida. Incrementa o contador na RAM.
+    activePeriodRecord.count++;
+  }
+
+  /**
+   * Varre a memória RAM local eliminando registros cujos ciclos cronológicos já expiraram.
+   * Evita o vazamento de memória (Memory Leak) mantendo o mapa limpo de forma preemptiva.
+   */
+  public evictExpiredRecords(): void {
+    const currentTimestamp = Date.now();
+    
+    for (const [trackingKey, record] of this.ramTrafficRegistry.entries()) {
+      if (currentTimestamp > record.chronologicalResetAt) {
+        this.ramTrafficRegistry.delete(trackingKey);
+      }
+    }
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/token/drivers/expressJwtAdapter.ts =====
+
+import      jwt                             from 'jsonwebtoken';
+import      crypto                          from 'crypto';
+import type { TokenCryptographerEngine,
+              TokenSessionPayload }         from '../engine/tokenSession';
+import      { DomainException }             from '../../../../api/errors/domainException';
+
+export class ExpressJwtAdapter implements TokenCryptographerEngine {
+  private readonly secretPrivateKey     : string;
+  private readonly expirationInSeconds  : number;
+
+  constructor(configuration: { 
+    secretKey         : string; 
+    expirationSeconds : number;
+  }) {
+    this.secretPrivateKey     = configuration.secretKey;
+    this.expirationInSeconds  = configuration.expirationSeconds;
+  }
+
+  public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'>): Promise<string> {
+    const generatedTokenId = crypto.randomUUID();
+    
+    // Compacta nomes longos de negócio para claims curtas de tráfego de rede (Melhor performance de banda)
+    const tokenClaims = {
+      sub : payload.actorId,
+      did : payload.deviceFingerprintId,
+      jti : generatedTokenId,
+      cip : payload.initialIpAddress,
+      uah : payload.clientUserAgentHash,
+      rcw : payload.requestSequenceCounter,
+      lca : Math.floor(Date.now() / 1000) // Last Activity At em timestamp de segundos
+    };
+
+    return jwt.sign(tokenClaims, this.secretPrivateKey, {
+      expiresIn: this.expirationInSeconds
+    });
+  }
+
+  public async decrypt(token: string): Promise<TokenSessionPayload> {
+    try {
+      const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
+
+      // BARREIRA DE INTEGRIDADE: Garante sintaticamente que nenhuma claim vital foi removida do passaporte digital
+      if (!decodedClaims['sub'] || 
+          !decodedClaims['did'] || 
+          !decodedClaims['jti'] ||
+          !decodedClaims['cip'] ||
+          !decodedClaims['uah'] ||
+          decodedClaims['rcw'] === undefined ||
+          !decodedClaims['lca']
+        ) {
+        throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+      }
+
+      return {
+        actorId                : decodedClaims['sub'],
+        deviceFingerprintId    : decodedClaims['did'],
+        tokenUniqueId          : decodedClaims['jti'],
+        initialIpAddress       : decodedClaims['cip'],
+        clientUserAgentHash    : decodedClaims['uah'],
+        requestSequenceCounter : decodedClaims['rcw'],
+        lastActivityAt         : new Date(decodedClaims['lca'] * 1000),
+        issuedAt               : new Date((decodedClaims['iat'] ?? 0) * 1000),
+        expiresAt              : new Date((decodedClaims['exp'] ?? 0) * 1000)
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+      }
+      // TRADUÇÃO DE EXCEÇÕES: Impede que erros crus da biblioteca de terceiros vazem para as bordas do sistema
+      if (capturedError instanceof jwt.TokenExpiredError) {
+        throw new DomainException('SECURITY_TOKEN_EXPIRED');
+      }
+      throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+    }
+  }
+}
+
+
+===== ARQUIVO: src/infrastructure/security/token/engine/tokenSession.ts =====
 
 export interface TokenSessionPayload {
   readonly actorId                : string;
@@ -4072,14 +4774,15 @@ import      { Env }                           from './config/env';
 import      { ExpressHttpDriver }             from './infrastructure/httpTraffic/drivers/expressHttpDriver';
 import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/engine/failureFormatter';
 import      { SystemConsoleJsonDriver }       from './infrastructure/telemetry/drivers/systemConsoleJsonDriver';
-import      { ExpressJwtAdapter }             from './infrastructure/security/drivers/jwt/expressJwtAdapter';
-import      { ConsumerCacheStore }            from './infrastructure/security/consumerApi/adapter/ramCache';
-import      { DataBaseConsumerFinder }        from './infrastructure/security/consumerApi/adapter/databaseRepository';
-import      { ConsumerAccessValidator }       from './infrastructure/security/consumerApi/adapter/accessValidator';
-import      { RequestThrottler }              from './infrastructure/security/engine/requestThrottler';
-import      { ServerLifecycleGovernor }       from './infrastructure/security/engine/serverLifecycleGovernor';
+import      { ExpressJwtAdapter }             from './infrastructure/security/token/drivers/expressJwtAdapter';
+import      { ConsumerCacheStore }            from './infrastructure/security/apiKeyTenant/adapter/ramCache';
+import      { DataBaseConsumerFinder }        from './infrastructure/security/apiKeyTenant/adapter/databaseRepository';
+import      { ConsumerAccessValidator }       from './infrastructure/security/apiKeyTenant/adapter/accessValidator';
+import      { RequestThrottler }              from './infrastructure/security/throttler/requestThrottler';
+import      { ServerLifecycleGovernor }       from './infrastructure/lifeCycle/serverLifecycleGovernor';
 import      { configureApiRoutes }            from './apiRouter';
-import type { HttpTrafficExchangeEngine }     from './infrastructure/httpTraffic/engine/httpTraffic';
+import type { HttpTrafficExchangeEngine,
+              HttpNetworkSecurityPolicy }     from './infrastructure/httpTraffic/engine/httpTraffic';
 import type { SystemLogger }                  from './infrastructure/telemetry/engine/systemLogger';
 
 const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
@@ -4087,13 +4790,34 @@ const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
   undefined, 
   Env.nodeEnv === 'development'
 );
+
 const coreFailureFormatter    = new ApplicationFailureFormatter();
-const securityTokenEngine     = new ExpressJwtAdapter({ secretKey: 'CHAVE_SUPER_SECRETA_BOILERPLATE', expirationSeconds: 3600 });
+
+const securityTokenEngine     = new ExpressJwtAdapter({ 
+  secretKey: Env.jwtSecret, 
+  expirationSeconds: Env.jwtExpirationSec 
+});
+
 const ramCacheStore           = new ConsumerCacheStore();
 const databaseRepository      = new DataBaseConsumerFinder();
 const consumerAccessEngine    = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
 const requestLimitThrottler   = new RequestThrottler(60); 
-const systemLifecycleZelador  = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
+const lifecycleGovernor       = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
+
+// 🏢 CONFIGURAÇÃO COMPORTAMENTAL AGNÓSTICA: Diretrizes corporativas de segurança web de uso geral
+const globalNetworkSecurityPolicy: HttpNetworkSecurityPolicy = {
+  allowedOrigins:            ['*'], // Aberto para permitir requisições de qualquer frontend Multi-Tenant parceiro
+  allowedMethods:            ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders:            ['Content-Type', 'Authorization', 'X-API-Key', 'X-Session-Token'],
+  exposedHeaders:            ['X-Session-Token', 'X-Trace-Id'],
+  isFrameworkSignatureHidden: true,
+  perimeterDefenses: {
+    'X-Frame-Options':       'SAMEORIGIN',  // Mitigação contra Clickjacking
+    'X-Content-Type-Options':'nosniff',     // Bloqueia farejamento hacker de MIME-types
+    'X-XSS-Protection':      '0',           // Desativa filtros legados inseguros de browsers
+    'X-Download-Options':    'noopen'       // Protege contra injeção de arquivos HTML maliciosos
+  }
+};
 
 const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
   port                : Env.port,
@@ -4102,7 +4826,8 @@ const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({
   tokenEngine         : securityTokenEngine,
   consumerEngine      : consumerAccessEngine,
   throttlerEngine     : requestLimitThrottler,
-  lifecycleGovernor   : systemLifecycleZelador,
+  lifecycleGovernor   : lifecycleGovernor,
+  networkPolicy       : globalNetworkSecurityPolicy, // 🔌 Acoplamento Plug-in Puro
   displayDebugDetails : Env.nodeEnv === 'development'
 });
 
@@ -4139,17 +4864,5 @@ serverEngine.start();
   "include": ["src/**/*"]
 }
 
-do arquivo ascima o README ESTA DESATUALIZADO AGORA CONSIDERE MEU prompt
 
-Comece pela análise do arquivo anexado, considerando integralmente as regras de governança arquitetural estabelecidas.
-
-Quero compreender o propósito do arquivo, sua responsabilidade, seus imports, seus consumidores e sua relação com `consumerApi` e `apiKeyEvaluator`.
-
-Não modifique, crie, exclua ou renomeie arquivos.
-
-Não apresente a implementação ainda.
-
-Primeiro, apresente a análise fundamentada, a árvore de diretórios física que puder verificar e a proposta conceitual para a primeira etapa.
-
-Ao concluir, aguarde meu comando explícito: "Confirmar Passo".
-
+]

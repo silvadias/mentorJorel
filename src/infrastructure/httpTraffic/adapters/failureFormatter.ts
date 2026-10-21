@@ -1,16 +1,21 @@
 import type { HttpFailureFormatter,
               HttpFailurePayload }  from '../../../api/errors/domainException';
 import      { DomainException }     from '../../../api/errors/domainException';
-import      { ValidationException } from './httpValidation';
+import      { ValidationException } from '../engine/httpValidation';
 
+/**
+ * @class ApplicationFailureFormatter
+ * @description Adaptador concreto encarregado de interceptar as exceções do ecossistema
+ * e traduzi-las para o formato de payload padronizado de transporte da aplicação.
+ */
 export class ApplicationFailureFormatter implements HttpFailureFormatter {  
   public format(
     rawError: unknown,
     includeDebugDetails: boolean
-  ):{ 
-      statusCode: number; 
-      payload   : HttpFailurePayload 
-    }{
+  ): { 
+    statusCode: number; 
+    payload   : HttpFailurePayload 
+  } {
     
     if (rawError instanceof DomainException) {
       return {
@@ -19,7 +24,6 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
           status: 'error',
           code: rawError.uniqueCode,
           message: rawError.message
-
         }
       };    
     }
@@ -32,7 +36,6 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
           code: 'REQUEST_VALIDATION_FAILED',
           message: 'The data provided fails to comply with the endpoint verification contract.',
           errors: rawError.errors
-
         }
       };    
     }
@@ -46,7 +49,6 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Internal server error',
         ...(includeDebugDetails && { debugMessage: fallbackMessage })
-
       }
     };
   }

@@ -1,6 +1,6 @@
 import      { Env }                           from './config/env';
 import      { ExpressHttpDriver }             from './infrastructure/httpTraffic/drivers/expressHttpDriver';
-import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/engine/failureFormatter';
+import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/adapters/failureFormatter';
 import      { SystemConsoleJsonDriver }       from './infrastructure/telemetry/drivers/systemConsoleJsonDriver';
 import      { ExpressJwtAdapter }             from './infrastructure/security/token/drivers/expressJwtAdapter';
 import      { ConsumerCacheStore }            from './infrastructure/security/apiKeyTenant/adapter/ramCache';
