@@ -29,16 +29,15 @@ export class ConsumerCacheStore implements ConsumerCacheStoreEngine<ConsumerSpec
 
     if (!currentConsumerIdentity) {
       return null;
-
     }
+
     const isCacheExpired = Date.now() > currentConsumerIdentity.expiresAt;
 
     if (isCacheExpired) {
       this.ramStorage.delete(identificationKey);
       return null;
-
     }
-    return currentConsumerIdentity.payload;
-    
+
+    return currentConsumerIdentity.payload;    
   }
 } 

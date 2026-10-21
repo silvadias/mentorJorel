@@ -1,4 +1,3 @@
-import      crypto        from 'crypto';
 import type { SystemLogger,
               LogMetadata } from '../engine/systemLogger';
 
@@ -20,17 +19,14 @@ export class SystemConsoleJsonDriver implements SystemLogger {
 
   public withContext(traceId: string, requestMetadata?: LogMetadata): SystemLogger {
     return new SystemConsoleJsonDriver(traceId, requestMetadata, this.prettyFormat);
-
   }
 
   public info(message: string, metadata?: LogMetadata): void {
     this.emit('INFO', message, undefined, metadata);
-
   }
 
   public warn(message: string, metadata?: LogMetadata): void {
     this.emit('WARN', message, undefined, metadata);
-
   }
 
   public error(
@@ -43,7 +39,6 @@ export class SystemConsoleJsonDriver implements SystemLogger {
       : { raw: rawError };
 
     this.emit('ERROR', message, errorDetails, metadata);
-
   }
 
   public audit(
@@ -53,7 +48,6 @@ export class SystemConsoleJsonDriver implements SystemLogger {
   ): void {
     const securityMetadata = { actorId, ...metadata };
     this.emit('AUDIT', `Security Audit Event: [${action}] executed by user [${actorId}]`, undefined, securityMetadata);
-
   }
 
   private emit(
@@ -65,7 +59,11 @@ export class SystemConsoleJsonDriver implements SystemLogger {
     let isolatedStack : string | undefined;
     let targetError   = error;
 
-    if (this.prettyFormat && error && typeof error === 'object' && 'stack' in error) {
+    if (this.prettyFormat && 
+        error && 
+        typeof error === 'object' && 
+        'stack' in error
+      ) {
       isolatedStack = error.stack;
 
       const { stack, ...errorWithoutStack } = error;

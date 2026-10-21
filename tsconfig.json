@@ -19,5 +19,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "src/infrastructure/lifeCycle/serverLifecycleGovernor.ts"]
 }

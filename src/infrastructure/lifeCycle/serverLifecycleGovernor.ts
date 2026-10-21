@@ -1,19 +1,20 @@
-import type { Server } from 'http';
 import type { SystemLogger } from '../telemetry/engine/systemLogger';
 
+export interface NetworkTrafficDrainer {
+  close(callback: (error: unknown) => void): void;
+}
+
 export class ServerLifecycleGovernor {
-  private readonly systemLogger       : SystemLogger;
-  private readonly terminationTimeoutMs: number;
-  
-  private activeRequestsCounter        : number;
-  private isTerminating                : boolean;
+  private readonly systemLogger         : SystemLogger;
+  private readonly terminationTimeoutMs : number;  
+  private activeRequestsCounter         : number;
+  private isTerminating                 : boolean;
 
   constructor(systemLogger: SystemLogger, terminationTimeoutSeconds = 20) {
     this.systemLogger          = systemLogger;
     this.terminationTimeoutMs  = terminationTimeoutSeconds * 1000;
     this.activeRequestsCounter = 0;
     this.isTerminating         = false;
-
   }
 
   public incrementActiveRequests(): void {
@@ -32,7 +33,7 @@ export class ServerLifecycleGovernor {
     }
   }
 
-  public governTerminationSignal(signalName: 'SIGTERM' | 'SIGINT', httpServer: Server): void {
+  public governTerminationSignal(signalName: 'SIGTERM' | 'SIGINT', networkDrainer: NetworkTrafficDrainer): void {
     if (this.isTerminating) {
       return;
     }
@@ -40,7 +41,7 @@ export class ServerLifecycleGovernor {
     this.isTerminating = true;
     this.systemLogger.warn(`OS Termination signal [${signalName}] intercepted. ServerLifecycleGovernor initiating graceful drain sequence.`);
 
-    httpServer.close((error: unknown) => {
+    networkDrainer.close((error: unknown) => {
       if (error) {
         this.systemLogger.error('Exception intercepted while closing underlying HTTP network server handles.', error);
       }

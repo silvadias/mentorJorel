@@ -18,35 +18,29 @@ const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
   undefined, 
   Env.nodeEnv === 'development'
 );
-
 const coreFailureFormatter    = new ApplicationFailureFormatter();
-
 const securityTokenEngine     = new ExpressJwtAdapter({ 
   secretKey: Env.jwtSecret, 
   expirationSeconds: Env.jwtExpirationSec 
 });
-
-const ramCacheStore           = new ConsumerCacheStore();
-const databaseRepository      = new DataBaseConsumerFinder();
-const consumerAccessEngine    = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
-const requestLimitThrottler   = new RequestThrottler(60); 
-const lifecycleGovernor       = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
-
-// 🏢 CONFIGURAÇÃO COMPORTAMENTAL AGNÓSTICA: Diretrizes corporativas de segurança web de uso geral
-const globalNetworkSecurityPolicy: HttpNetworkSecurityPolicy = {
-  allowedOrigins:            ['*'], // Aberto para permitir requisições de qualquer frontend Multi-Tenant parceiro
+const ramCacheStore                                           = new ConsumerCacheStore();
+const databaseRepository                                      = new DataBaseConsumerFinder();
+const consumerAccessEngine                                    = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
+const requestLimitThrottler                                   = new RequestThrottler(60); 
+const lifecycleGovernor                                       = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
+const globalNetworkSecurityPolicy: HttpNetworkSecurityPolicy  = {
+  allowedOrigins:            ['*'],
   allowedMethods:            ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders:            ['Content-Type', 'Authorization', 'X-API-Key', 'X-Session-Token'],
   exposedHeaders:            ['X-Session-Token', 'X-Trace-Id'],
   isFrameworkSignatureHidden: true,
   perimeterDefenses: {
-    'X-Frame-Options':       'SAMEORIGIN',  // Mitigação contra Clickjacking
-    'X-Content-Type-Options':'nosniff',     // Bloqueia farejamento hacker de MIME-types
-    'X-XSS-Protection':      '0',           // Desativa filtros legados inseguros de browsers
-    'X-Download-Options':    'noopen'       // Protege contra injeção de arquivos HTML maliciosos
+    'X-Frame-Options'       : 'SAMEORIGIN',
+    'X-Content-Type-Options': 'nosniff',
+    'X-XSS-Protection'      : '0',
+    'X-Download-Options'    : 'noopen'
   }
 };
-
 const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
   port                : Env.port,
   failureFormatter    : coreFailureFormatter,
@@ -55,7 +49,7 @@ const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({
   consumerEngine      : consumerAccessEngine,
   throttlerEngine     : requestLimitThrottler,
   lifecycleGovernor   : lifecycleGovernor,
-  networkPolicy       : globalNetworkSecurityPolicy, // 🔌 Acoplamento Plug-in Puro
+  networkPolicy       : globalNetworkSecurityPolicy,
   displayDebugDetails : Env.nodeEnv === 'development'
 });
 

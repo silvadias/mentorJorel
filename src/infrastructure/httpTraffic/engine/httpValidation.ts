@@ -1,12 +1,12 @@
 export interface HttpTrafficSchemaValidator {
   validate(
-    data: unknown, 
+    data  : unknown, 
     schema: unknown
 
     ):{ 
-      success: boolean;
-      errors?: string[]; 
-      data?: any
+      success : boolean;
+      errors? : string[]; 
+      data?   : any
 
     };
   }
@@ -19,7 +19,7 @@ export class ValidationException extends Error {
 
     ){
     super('HTTP Request validation failed at infrastructure border.');
-    this.name = 'ValidationException';
+    this.name   = 'ValidationException';
     this.errors = errors;
     Object.setPrototypeOf(this, ValidationException.prototype);
 

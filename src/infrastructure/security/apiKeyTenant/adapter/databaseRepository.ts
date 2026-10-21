@@ -9,7 +9,6 @@ export class DataBaseConsumerFinder implements ConsumerFinderEngine {
 
     if (!databaseRow) {
       return null;
-
     }
 
     return {

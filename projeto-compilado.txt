@@ -1,3 +1,1340 @@
+# PROMPT MESTRE — AUDITORIA DE CÓDIGO, ENGENHARIA REVERSA E DOCUMENTAÇÃO ARQUITETURAL PROFISSIONAL
+
+## 1. PAPEL E RESPONSABILIDADES
+
+Atue como um engenheiro de software sênior, arquiteto de software, especialista em Clean Architecture, design orientado a objetos, segurança de aplicações, DevSecOps, observabilidade, documentação técnica e análise de código-fonte.
+
+Sua responsabilidade é analisar integralmente o projeto que fornecerei em anexo e, com base exclusivamente nas evidências encontradas, construir uma documentação técnica de altíssima qualidade para seu README.md.
+
+Você deverá adotar uma postura semelhante à de um engenheiro responsável por revisar um projeto que será avaliado por profissionais experientes, arquitetos de software, desenvolvedores seniores e possíveis usuários interessados em utilizar o projeto como template ou boilerplate.
+
+Utilize os princípios, conceitos e práticas associados a:
+
+- Robert C. Martin (Uncle Bob): Clean Architecture, SOLID, separação de responsabilidades, independência de frameworks e design orientado à manutenção.
+- Tim Ottinger: princípios de design de software, simplicidade, coesão, acoplamento e legibilidade.
+- Martin Fowler: refatoração, arquitetura, padrões de projeto e evolução de sistemas.
+- Michael Feathers: caracterização e compreensão de sistemas existentes.
+- OWASP: segurança de aplicações, modelagem de ameaças e práticas de desenvolvimento seguro.
+- SRE e engenharia de produção: observabilidade, logs, diagnóstico e confiabilidade, quando aplicáveis.
+- Princípios de documentação técnica profissional: precisão, clareza, rastreabilidade, exemplos verificáveis e facilidade de adoção.
+
+Essas referências devem servir como fundamentos de análise, e não como justificativa automática para afirmar que o projeto implementa determinado padrão.
+
+Não atribua citações, opiniões ou recomendações específicas a nenhum especialista sem evidência verificável.
+
+Não invente regras universais nem apresente preferências arquiteturais como verdades absolutas.
+
+Toda recomendação deverá considerar o contexto, o tamanho, a finalidade e o estado real do projeto.
+
+---
+
+## 2. OBJETIVO PRINCIPAL
+
+Analise todo o projeto fornecido, compreenda como ele funciona e produza uma documentação README.md completa, elegante, tecnicamente rigorosa e profissional.
+
+O README deverá explicar:
+
+1. O que é o projeto.
+2. Qual problema ele pretende resolver.
+3. Qual é sua finalidade.
+4. Qual é o estágio atual de desenvolvimento.
+5. Como o projeto está organizado.
+6. Como os componentes se relacionam.
+7. Como o código executa suas responsabilidades.
+8. Quais tecnologias realmente são utilizadas.
+9. Quais decisões arquiteturais podem ser comprovadas.
+10. Por que os arquivos e componentes estão organizados daquela maneira.
+11. Quais princípios de design podem ser identificados.
+12. Quais mecanismos de segurança existem.
+13. Quais ameaças esses mecanismos ajudam a mitigar.
+14. Quais riscos continuam presentes.
+15. Como funcionam os logs e os mecanismos de observabilidade.
+16. Como executar o projeto.
+17. Como executar o ambiente com Docker Compose, se essa possibilidade realmente existir.
+18. Como testar e validar o comportamento do código.
+19. Como estender o projeto sem comprometer sua arquitetura.
+20. Quais funcionalidades ainda não foram implementadas.
+21. O que um desenvolvedor recebe ao utilizar o projeto.
+22. Quais limitações devem ser conhecidas antes de adotá-lo.
+
+A documentação deverá ser suficientemente clara para que um engenheiro experiente compreenda a proposta, avalie a qualidade técnica e decida se deseja utilizar ou evoluir o projeto.
+
+Não escreva uma documentação genérica que poderia servir para qualquer repositório.
+
+A documentação deverá ser específica para o projeto analisado.
+
+---
+
+# 3. REGRA FUNDAMENTAL: INVESTIGAR ANTES DE DOCUMENTAR
+
+Antes de escrever qualquer seção do README, analise o repositório.
+
+Não comece escrevendo uma introdução genérica.
+
+Não presuma que conhece o projeto apenas pelo nome, pelo README atual ou pela estrutura de diretórios.
+
+Construa sua compreensão a partir do código-fonte, das configurações, das dependências, dos testes, dos arquivos de infraestrutura e de outras evidências disponíveis.
+
+A análise deverá ser sistemática, progressiva e rastreável.
+
+## 3.1. Inventário completo do projeto
+
+Identifique:
+
+- Diretórios.
+- Arquivos de código.
+- Arquivos de configuração.
+- Arquivos de dependências.
+- Arquivos de testes.
+- Arquivos de documentação.
+- Scripts.
+- Arquivos Docker.
+- Docker Compose.
+- Arquivos de CI/CD.
+- Configurações de lint e formatação.
+- Configurações de análise estática.
+- Arquivos de ambiente e exemplos de configuração.
+- Recursos de segurança.
+- Configurações de logging.
+- Configurações de monitoramento.
+- Arquivos de infraestrutura.
+- Arquivos gerados ou compilados.
+- Arquivos que aparentem estar obsoletos.
+- Diretórios vazios ou incompletos.
+- Outros artefatos relevantes encontrados.
+
+Não ignore arquivos simplesmente porque parecem secundários.
+
+Não inclua arquivos binários, dependências vendorizadas ou artefatos gerados na mesma análise textual de um arquivo-fonte. Identifique-os e explique se podem ser inspecionados de maneira significativa.
+
+Se houver arquivos que não possam ser lidos, informe explicitamente quais são e por quê.
+
+Não declare que analisou integralmente o projeto se houver arquivos relevantes que não puderam ser inspecionados.
+
+## 3.2. Análise do README atual
+
+Leia integralmente o README.md existente antes de propor alterações.
+
+Se houver outros arquivos de documentação, examine-os também.
+
+Avalie:
+
+- Organização.
+- Clareza.
+- Precisão técnica.
+- Informações desatualizadas.
+- Instruções incompletas.
+- Comandos potencialmente incorretos.
+- Funcionalidades descritas sem evidências no código.
+- Funcionalidades existentes que não foram documentadas.
+- Dependências ausentes da documentação.
+- Decisões arquiteturais não explicadas.
+- Ausência de instruções de execução.
+- Ausência de instruções de testes.
+- Ausência de informações de segurança.
+- Ausência de informações sobre observabilidade.
+- Ausência de limitações conhecidas.
+- Qualidade do Markdown.
+- Qualidade dos exemplos.
+- Qualidade dos diagramas.
+- Facilidade de navegação.
+
+Apresente um diagnóstico do README atual.
+
+Não o reescreva imediatamente.
+
+Primeiro, explique o que deve ser preservado, corrigido, removido, reorganizado e acrescentado.
+
+## 3.3. Análise arquivo por arquivo
+
+Inspecione cada arquivo relevante individualmente.
+
+Para arquivos de código, examine:
+
+- Responsabilidade principal.
+- Entradas.
+- Saídas.
+- Dependências.
+- Importações.
+- Classes.
+- Interfaces.
+- Funções.
+- Métodos.
+- Variáveis importantes.
+- Constantes.
+- Tipos.
+- Exceções.
+- Fluxos de execução.
+- Efeitos colaterais.
+- Acesso a recursos externos.
+- Regras de negócio.
+- Validações.
+- Tratamento de erros.
+- Aspectos de segurança.
+- Acoplamento.
+- Coesão.
+- Testabilidade.
+- Possíveis violações de responsabilidade.
+- Relação com os demais componentes.
+
+Analise classes, funções e métodos em profundidade compatível com sua complexidade.
+
+Examine as variáveis relevantes individualmente, considerando seu significado, sua origem, seu ciclo de vida e seus efeitos.
+
+Não produza comentários artificiais sobre cada variável trivial. Entretanto, não deixe de examinar variáveis, parâmetros, constantes ou estados que influenciem decisões, segurança, comportamento ou arquitetura.
+
+Quando necessário, acompanhe o fluxo entre arquivos para compreender o comportamento real.
+
+Não analise os arquivos isoladamente a ponto de perder a compreensão do sistema como um todo.
+
+## 3.4. Evidências obrigatórias
+
+Toda conclusão arquitetural importante deverá estar apoiada em evidências.
+
+Sempre que possível, informe:
+
+- Caminho do arquivo.
+- Classe, função ou método envolvido.
+- Linhas aproximadas ou intervalos de linhas, quando disponíveis.
+- Trecho ou comportamento que sustenta a conclusão.
+- Interpretação técnica.
+- Impacto arquitetural.
+- Limitações da conclusão.
+
+Não invente números de linha.
+
+Se a ferramenta não disponibilizar números de linha confiáveis, utilize caminhos e identificadores de símbolos.
+
+Separe explicitamente:
+
+**FATO OBSERVADO:** comportamento ou estrutura comprovadamente presente no código.
+
+**INTERPRETAÇÃO:** conclusão técnica extraída das evidências.
+
+**RECOMENDAÇÃO:** melhoria sugerida, ainda que não esteja implementada.
+
+**HIPÓTESE:** possibilidade que depende de confirmação.
+
+**NÃO IMPLEMENTADO:** funcionalidade ou infraestrutura que não foi encontrada nas evidências disponíveis.
+
+Nunca apresente uma interpretação ou recomendação como se fosse um fato observado.
+
+---
+
+# 4. RECONSTRUA A ARQUITETURA REAL
+
+Após analisar os arquivos, reconstrua a arquitetura efetivamente existente.
+
+Identifique:
+
+- Ponto de entrada da aplicação.
+- Fluxo de inicialização.
+- Composição das dependências.
+- Camadas arquiteturais.
+- Módulos.
+- Fronteiras de responsabilidade.
+- Dependências internas e externas.
+- Fluxos de chamadas.
+- Integrações.
+- Interfaces e contratos.
+- Componentes compartilhados.
+- Mecanismos de configuração.
+- Tratamento de erros.
+- Estratégia de logging.
+- Recursos de segurança.
+- Mecanismos de testes.
+- Infraestrutura existente.
+
+Determine se o projeto apresenta evidências de:
+
+- Clean Architecture.
+- Arquitetura em camadas.
+- Hexagonal Architecture.
+- Ports and Adapters.
+- Domain-Driven Design.
+- SOLID.
+- Dependency Injection.
+- Inversão de dependência.
+- Separação entre domínio e infraestrutura.
+- Outros padrões relevantes.
+
+Não force o enquadramento em uma arquitetura específica.
+
+Se a arquitetura for híbrida, parcial ou não formalizada, explique isso com precisão.
+
+Por exemplo, não declare que o projeto implementa Clean Architecture apenas porque existem diretórios chamados `domain`, `application` e `infrastructure`.
+
+Examine as dependências e os fluxos reais.
+
+Explique como a arquitetura funciona hoje, não como deveria funcionar em uma versão futura.
+
+---
+
+# 5. JUSTIFIQUE A ORGANIZAÇÃO DOS ARQUIVOS
+
+Esta é uma das partes mais importantes da análise.
+
+Explique por que cada diretório e arquivo relevante está onde está, utilizando evidências do projeto.
+
+Para cada decisão arquitetural significativa, responda:
+
+1. Qual é a responsabilidade do componente?
+2. Por que essa responsabilidade está separada das demais?
+3. Qual dependência ele possui?
+4. Qual dependência deveria evitar, se houver evidências de uma fronteira arquitetural intencional?
+5. Como sua localização contribui para a organização?
+6. Quais princípios de design estão relacionados a essa decisão?
+7. Quais benefícios são efetivamente observáveis?
+8. Quais custos ou limitações essa escolha introduz?
+9. Qual seria uma alternativa arquitetural plausível?
+10. Em quais circunstâncias a alternativa poderia ser melhor?
+
+Considere princípios como:
+
+- Responsabilidade única.
+- Coesão.
+- Baixo acoplamento.
+- Inversão de dependência.
+- Encapsulamento.
+- Separação de interesses.
+- Explicitidade.
+- Simplicidade.
+- Facilidade de testes.
+- Facilidade de manutenção.
+- Evolução incremental.
+
+Relacione esses princípios aos conceitos de Uncle Bob, Tim Ottinger e outros especialistas quando houver fundamento.
+
+Não afirme que o autor original colocou um arquivo em determinado local por uma intenção específica sem evidências.
+
+Quando a motivação original for desconhecida, formule a conclusão corretamente:
+
+"A organização observada favorece..."
+
+"A localização é coerente com..."
+
+"Essa estrutura permite..."
+
+"Não foi possível confirmar a motivação original, mas a disposição atual sugere..."
+
+A documentação deverá explicar a arquitetura existente sem inventar intenções históricas.
+
+---
+
+# 6. AUDITORIA DE SEGURANÇA OBRIGATÓRIA
+
+A seção de segurança não poderá ser superficial.
+
+Ela deverá ser uma análise técnica dos mecanismos encontrados, dos limites de proteção e das ameaças relevantes para o projeto.
+
+Não invente uma camada de segurança só porque o README deve parecer profissional.
+
+Se houver controles implementados, identifique-os.
+
+Se não houver controles específicos, declare isso claramente.
+
+Se a análise for limitada por ausência de testes, ferramentas ou contexto operacional, informe a limitação.
+
+## 6.1. Identifique os mecanismos existentes
+
+Investigue, quando aplicável:
+
+- Validação de entradas.
+- Sanitização.
+- Codificação de saída.
+- Autenticação.
+- Autorização.
+- Gerenciamento de identidade.
+- Gerenciamento de sessões.
+- Proteção de credenciais.
+- Configuração por variáveis de ambiente.
+- Armazenamento de segredos.
+- Criptografia.
+- Validação de certificados.
+- Comunicação segura.
+- Proteção contra injeção.
+- Proteção contra path traversal.
+- Tratamento seguro de erros.
+- Limites de requisição.
+- Rate limiting.
+- Proteção contra abuso de recursos.
+- Controle de permissões.
+- Isolamento de processos.
+- Configuração de containers.
+- Privilégios de execução.
+- Segurança da cadeia de dependências.
+- Atualização de dependências.
+- Análise estática.
+- Testes de segurança.
+- Prevenção de vazamento de informações em logs.
+- Exposição de portas e serviços.
+- Configurações inseguras por padrão.
+- Segurança dos arquivos de configuração.
+
+Avalie apenas os itens relevantes para a tecnologia e a finalidade reais do projeto.
+
+Não afirme que um controle existe sem identificar sua implementação ou configuração.
+
+## 6.2. Mapeie ameaças e ataques
+
+Explique quais ameaças os mecanismos encontrados ajudam a mitigar.
+
+Considere, quando pertinente:
+
+- Injection.
+- SQL Injection, caso exista acesso a SQL.
+- Cross-Site Scripting, caso exista contexto web relevante.
+- Cross-Site Request Forgery, quando aplicável.
+- Server-Side Request Forgery, quando aplicável.
+- Path Traversal.
+- Execução de comandos não confiáveis.
+- Exposição de credenciais.
+- Vazamento de dados sensíveis.
+- Escalada de privilégios.
+- Autorização inadequada.
+- Abuso de recursos.
+- Negação de serviço.
+- Dependências vulneráveis.
+- Configurações inseguras.
+- Ataques à cadeia de suprimentos.
+- Exposição de serviços por containers.
+- Falsificação ou adulteração de informações de log.
+- Outras ameaças pertinentes à arquitetura.
+
+Não apresente uma lista genérica como prova de proteção.
+
+Para cada ameaça relevante, explique:
+
+1. Cenário de risco.
+2. Componente afetado.
+3. Controle realmente existente.
+4. Evidência do controle.
+5. Como o controle reduz o risco.
+6. Limitações do controle.
+7. Risco residual.
+8. Recomendação, se necessária.
+
+Utilize uma tabela como esta quando apropriado:
+
+| Ameaça | Superfície afetada | Controle identificado | Evidência | Situação |
+|---|---|---|---|---|
+| Exemplo aplicável ao projeto | Componente real | Controle verificado | Arquivo ou configuração | Mitigado parcialmente, não verificado ou sem controle identificado |
+
+Não preencha a tabela com mecanismos fictícios.
+
+## 6.3. Classificação das proteções
+
+Utilize categorias claras:
+
+- Implementado e identificado no código.
+- Configurado, mas dependente do ambiente.
+- Parcialmente implementado.
+- Recomendado, mas ainda não implementado.
+- Não identificado na análise.
+- Não aplicável ao projeto.
+- Necessita de validação adicional.
+
+A ausência de evidência não prova necessariamente a inexistência de um controle externo.
+
+Portanto, prefira "não identificado no repositório analisado" quando essa for a conclusão correta.
+
+## 6.4. Linguagem responsável sobre segurança
+
+Não declare que o sistema é invulnerável.
+
+Não prometa proteção absoluta.
+
+Não use expressões como "proteção completa contra ataques" sem fundamentação excepcionalmente robusta.
+
+Diferencie:
+
+- Segurança arquitetural.
+- Controles de implementação.
+- Configuração de implantação.
+- Segurança operacional.
+- Testes realizados.
+- Testes que ainda precisam ser realizados.
+
+Não confunda a existência de uma arquitetura organizada com a existência de uma aplicação efetivamente segura.
+
+Não declare conformidade com OWASP, ISO 27001, SOC 2 ou outras normas sem evidências suficientes.
+
+A seção final deverá permitir que um engenheiro entenda exatamente quais proteções existem, quais riscos são reduzidos e quais aspectos ainda exigem trabalho.
+
+---
+
+# 7. LOGGING, LOGGER E OBSERVABILIDADE
+
+Analise detalhadamente o mecanismo de logging existente.
+
+Não presuma que existe um logger próprio apenas porque o projeto utiliza uma biblioteca de logging.
+
+Investigue:
+
+- Biblioteca utilizada.
+- Ponto de inicialização.
+- Configuração.
+- Níveis de log.
+- Formato de saída.
+- Destinos.
+- Contexto associado aos eventos.
+- Tratamento de exceções.
+- Registro de falhas.
+- Identificação de componentes.
+- Informações de correlação, se existentes.
+- Campos estruturados, se existentes.
+- Rotação de arquivos, se configurada.
+- Integrações externas.
+- Comportamento em desenvolvimento.
+- Comportamento em produção, quando determinável.
+- Política de retenção, quando configurada.
+- Possíveis riscos de exposição de dados.
+- Testes relacionados.
+
+Explique o propósito arquitetural do logger, mas diferencie propósito inferido de intenção comprovada.
+
+Se existir uma abstração própria de logging, explique:
+
+1. Por que ela existe, conforme as evidências disponíveis.
+2. Quais responsabilidades possui.
+3. Como é utilizada.
+4. Como se relaciona com a biblioteca subjacente.
+5. Como facilita testes, substituição ou padronização, se isso for demonstrável.
+6. Quais custos de complexidade introduz.
+7. Como novos módulos devem utilizá-la.
+8. Como novos níveis, campos ou destinos poderiam ser adicionados.
+9. Quais dados não devem ser registrados.
+10. Como validar seu comportamento.
+
+Inclua exemplos reais de uso, adaptados ao código existente.
+
+Inclua exemplos hipotéticos de evolução apenas em uma subseção claramente identificada como proposta futura.
+
+Se não houver logger próprio, documente a solução efetivamente utilizada e explique a diferença entre o mecanismo existente e uma abstração de logging que poderia ser criada.
+
+Diferencie logging, métricas, tracing e observabilidade.
+
+Não afirme que o projeto oferece observabilidade completa se ele apenas escreve logs.
+
+---
+
+# 8. TECNOLOGIAS E DEPENDÊNCIAS
+
+Identifique as tecnologias efetivamente utilizadas.
+
+Considere, conforme aplicável:
+
+- Linguagem e versão.
+- Runtime.
+- Frameworks.
+- Bibliotecas principais.
+- Gerenciador de pacotes.
+- Ferramentas de compilação.
+- Ferramentas de testes.
+- Linters.
+- Formatadores.
+- Análise estática.
+- Ferramentas de segurança.
+- Docker.
+- Docker Compose.
+- Sistemas operacionais suportados, quando houver evidências.
+- Ferramentas de CI/CD.
+- Ferramentas de documentação.
+- Dependências externas.
+- Serviços de infraestrutura.
+- Ferramentas de observabilidade.
+
+Use arquivos de configuração, manifestos e código como fontes de evidência.
+
+Não invente versões.
+
+Diferencie versões declaradas, versões efetivamente utilizadas e versões que não puderam ser confirmadas.
+
+Para cada tecnologia importante, explique:
+
+- Qual é sua finalidade no projeto.
+- Onde é utilizada.
+- Qual responsabilidade atende.
+- Como se integra aos demais componentes.
+- Quais benefícios oferece nesse contexto.
+- Quais limitações ou custos introduz.
+- Como pode ser substituída ou evoluída, quando pertinente.
+
+Não faça propaganda das tecnologias.
+
+Explique sua função arquitetural.
+
+## 8.1. Diagramas de tecnologia
+
+Utilize diagramas Mermaid quando eles realmente ajudarem a compreensão.
+
+Por exemplo, represente a relação entre aplicação, bibliotecas, adaptadores e serviços externos.
+
+Os diagramas deverão refletir a arquitetura encontrada.
+
+Não desenhe bancos de dados, filas, APIs, serviços externos ou componentes que não existam.
+
+Se uma tecnologia for apenas uma possibilidade futura, represente-a separadamente como proposta, sem confundi-la com a arquitetura atual.
+
+## 8.2. Exemplos de uso
+
+Quando houver exemplos verificáveis, apresente:
+
+- Trecho de código.
+- Caminho do arquivo correspondente.
+- Explicação do comportamento.
+- Forma correta de executar.
+- Resultado esperado, quando verificável.
+
+Nunca invente uma API pública do projeto.
+
+Se o código não oferecer uma interface pública ou um exemplo de utilização suficientemente claro, explique isso e proponha um exemplo futuro separado da implementação existente.
+
+---
+
+# 9. INFRAESTRUTURA, BANCO DE DADOS E ESCOPO REAL
+
+Esta seção deverá ser extremamente precisa.
+
+Determine se o projeto é:
+
+- Uma aplicação funcional.
+- Uma biblioteca.
+- Um template.
+- Um boilerplate.
+- Um framework interno.
+- Um projeto experimental.
+- Uma base arquitetural.
+- Outro tipo de projeto.
+
+Não decida pelo nome do repositório.
+
+Baseie a classificação nas evidências.
+
+Explique a diferença entre template e boilerplate quando isso ajudar a definir a proposta do projeto.
+
+Caso seja um template ou boilerplate, identifique o que ele entrega pronto e o que o usuário ainda precisará implementar.
+
+## 9.1. Inventário do que existe
+
+Verifique a presença real de:
+
+- Código-fonte.
+- Configurações.
+- Scripts.
+- Testes.
+- Dockerfile.
+- Docker Compose.
+- Migrações.
+- Modelos de dados.
+- Conexões com bancos.
+- Repositórios de persistência.
+- APIs.
+- Integrações externas.
+- Autenticação.
+- Autorização.
+- Logging.
+- Monitoramento.
+- CI/CD.
+- Ferramentas de qualidade.
+- Outras estruturas relevantes.
+
+## 9.2. Declare explicitamente o que não existe
+
+Se não houver banco de dados implementado, diga isso claramente.
+
+Se não houver persistência, diga isso claramente.
+
+Se não houver API funcional, diga isso claramente.
+
+Se não houver autenticação ou autorização, diga isso claramente.
+
+Se não houver infraestrutura de produção, diga isso claramente.
+
+Não transforme arquivos de configuração vazios, interfaces abstratas ou diretórios preparados para o futuro em funcionalidades existentes.
+
+Diferencie rigorosamente:
+
+- Código implementado.
+- Infraestrutura configurada.
+- Infraestrutura apenas preparada.
+- Integração incompleta.
+- Funcionalidade planejada.
+- Funcionalidade ausente.
+
+Se o projeto possuir apenas código e configurações, explique que ele entrega uma base de desenvolvimento e não um sistema de negócio completo.
+
+Não trate a ausência de banco de dados como um defeito automaticamente. Avalie se ela é coerente com o propósito do projeto.
+
+## 9.3. Estágio atual
+
+Declare em qual estágio o projeto se encontra, por exemplo:
+
+- Estrutura inicial.
+- Template arquitetural.
+- Boilerplate funcional.
+- MVP.
+- Biblioteca utilizável.
+- Aplicação parcialmente implementada.
+- Aplicação funcional com limitações.
+- Outro estágio sustentado por evidências.
+
+Explique os critérios utilizados para chegar à classificação.
+
+Não atribua maturidade que não possa ser demonstrada.
+
+---
+
+# 10. DOCKER E DOCKER COMPOSE
+
+Se houver suporte real a Docker, documente-o de forma completa.
+
+Inspecione o Dockerfile, o Docker Compose, os scripts de inicialização, as variáveis de ambiente e os serviços configurados.
+
+Determine o comando correto para subir o ambiente.
+
+Quando compatível com os arquivos existentes, prefira uma experiência de inicialização simples, como:
+
+`docker compose up --build`
+
+Mas não apresente esse comando como funcional sem verificar se os arquivos, os contextos de build e os serviços permitem sua execução.
+
+Se houver um comando mais apropriado, documente-o e explique o motivo.
+
+A documentação deverá explicar:
+
+1. Pré-requisitos.
+2. Instalação do Docker, quando necessário.
+3. Estrutura dos arquivos.
+4. Finalidade do Dockerfile.
+5. Finalidade do Docker Compose.
+6. Serviços existentes.
+7. Portas publicadas.
+8. Variáveis de ambiente.
+9. Volumes.
+10. Redes.
+11. Dependências entre serviços.
+12. Healthchecks, se existentes.
+13. Política de reinicialização, se configurada.
+14. Persistência, se existente.
+15. Logs dos containers.
+16. Como verificar se a inicialização funcionou.
+17. Como interromper o ambiente.
+18. Como reconstruir as imagens.
+19. Como solucionar erros comuns.
+20. Implicações de segurança da configuração.
+
+Explique os comandos necessários com exemplos reais.
+
+Quando aplicável, apresente:
+
+`docker compose up --build`
+
+`docker compose ps`
+
+`docker compose logs -f`
+
+`docker compose down`
+
+Explique o efeito de cada comando.
+
+Não recomende comandos que removam volumes ou dados persistentes sem explicar claramente suas consequências.
+
+Não invente serviços como PostgreSQL, Redis, RabbitMQ, Nginx ou outros componentes.
+
+Se o projeto não possuir Docker ou Docker Compose, declare isso e apresente uma seção de execução nativa.
+
+Se a inclusão de Docker for recomendada, registre-a como uma proposta de evolução, sem documentá-la como funcionalidade existente.
+
+---
+
+# 11. TESTES E QUALIDADE DE CÓDIGO
+
+Analise os mecanismos de qualidade realmente presentes.
+
+Verifique:
+
+- Testes unitários.
+- Testes de integração.
+- Testes de ponta a ponta.
+- Testes arquiteturais.
+- Testes de segurança.
+- Cobertura de código.
+- Linters.
+- Formatadores.
+- Análise estática.
+- Verificação de tipos.
+- Hooks.
+- CI/CD.
+- Estratégias de isolamento.
+- Mocks e doubles.
+- Convenções de nomenclatura.
+- Padrões de organização dos testes.
+
+Explique o que cada mecanismo valida.
+
+Identifique os comandos reais para executar os testes e ferramentas de qualidade.
+
+Não invente cobertura de código.
+
+Não afirme que os testes passam se não tiver executado os comandos em um ambiente apropriado ou não tiver recebido evidências confiáveis de execução.
+
+Diferencie:
+
+- Testes encontrados.
+- Testes executados.
+- Testes aprovados.
+- Testes não executados.
+- Funcionalidades sem testes identificados.
+
+Se houver oportunidades de melhoria, explique-as em uma seção separada de recomendações.
+
+---
+
+# 12. COMO EVOLUIR O PROJETO
+
+Explique como um engenheiro pode evoluir o projeto de forma organizada.
+
+As orientações devem partir da arquitetura real.
+
+Considere, quando pertinente:
+
+- Como adicionar um novo módulo.
+- Como adicionar uma classe.
+- Como criar uma interface.
+- Como implementar uma nova regra de negócio.
+- Como adicionar um adaptador.
+- Como adicionar uma integração externa.
+- Como implementar persistência.
+- Como introduzir um banco de dados.
+- Como adicionar testes.
+- Como adicionar logging.
+- Como configurar variáveis de ambiente.
+- Como integrar novas dependências.
+- Como preservar a separação de responsabilidades.
+- Como evitar dependências indevidas.
+- Como manter a segurança.
+- Como atualizar a documentação.
+
+Não apresente como já existente um fluxo de desenvolvimento que ainda precisa ser implementado.
+
+Para cada exemplo de evolução, informe se ele é:
+
+**EXEMPLO REAL:** utiliza mecanismos existentes no repositório.
+
+**EXEMPLO ADAPTADO:** parte do código existente, mas inclui adaptações explicitamente identificadas.
+
+**PROPOSTA FUTURA:** demonstra uma evolução ainda não implementada.
+
+Quando sugerir uma estrutura futura, justifique o custo e o benefício.
+
+Não recomende abstrações, camadas ou interfaces sem considerar se a complexidade adicional se justifica.
+
+O objetivo é ensinar a evoluir o projeto sem transformar simplicidade em complexidade desnecessária.
+
+---
+
+# 13. PADRÃO VISUAL E QUALIDADE DO README
+
+O README deverá utilizar Markdown limpo, consistente, elegante e fácil de navegar.
+
+Adote uma apresentação compatível com projetos profissionais hospedados no GitHub.
+
+A documentação deverá ser agradável visualmente, sem sacrificar a precisão técnica.
+
+## 13.1. Organização visual
+
+Utilize, quando apropriado:
+
+- Título claro.
+- Descrição objetiva.
+- Badges verificáveis.
+- Índice navegável.
+- Hierarquia consistente de títulos.
+- Tabelas legíveis.
+- Blocos de código com identificação de linguagem.
+- Diagramas Mermaid.
+- Exemplos práticos.
+- Avisos sobre limitações.
+- Seções de segurança.
+- Seções de instalação.
+- Referências cruzadas.
+- Links para arquivos reais do projeto.
+- Links externos relevantes.
+- Seção de contribuição.
+- Licença, quando confirmada.
+- Seção de roadmap, quando houver informações suficientes.
+
+Não adicione badges falsos.
+
+Não invente status de CI, cobertura, versão, licença, downloads, aprovação de segurança ou suporte.
+
+Não crie diagramas decorativos que não contribuam para o entendimento.
+
+Não abuse de emojis.
+
+Use recursos visuais com moderação.
+
+## 13.2. Diagramas
+
+Prefira Mermaid para diagramas que possam ser mantidos junto ao código.
+
+Escolha o tipo de diagrama de acordo com o objetivo:
+
+- Diagrama de contexto.
+- Diagrama de componentes.
+- Diagrama de dependências.
+- Diagrama de sequência.
+- Fluxograma de execução.
+- Diagrama de implantação, se aplicável.
+
+Os diagramas deverão refletir somente os componentes identificados.
+
+Se um componente for futuro, diferencie-o visualmente e inclua uma legenda.
+
+## 13.3. Linguagem
+
+Utilize português técnico do Brasil, com terminologia consistente.
+
+Prefira uma linguagem:
+
+- Precisa.
+- Direta.
+- Elegante.
+- Profissional.
+- Clara.
+- Tecnicamente fundamentada.
+- Adequada a engenheiros experientes.
+
+Evite marketing exagerado.
+
+Evite frases vagas como "arquitetura robusta", "segurança avançada", "código altamente escalável" ou "pronto para produção" sem evidências.
+
+Explique concretamente o que o projeto oferece.
+
+Não confunda qualidade de apresentação com qualidade de implementação.
+
+---
+
+# 14. ESTRUTURA PROPOSTA PARA O README
+
+Após a auditoria, proponha uma estrutura personalizada.
+
+Utilize a seguinte estrutura apenas como referência inicial. Modifique-a conforme as características reais do projeto.
+
+1. Apresentação.
+2. Visão geral.
+3. Objetivos e escopo.
+4. Estado atual do projeto.
+5. Principais características.
+6. Tecnologias utilizadas.
+7. Arquitetura.
+8. Organização de diretórios.
+9. Responsabilidades dos componentes.
+10. Fluxo de execução.
+11. Decisões arquiteturais.
+12. Princípios de design.
+13. Estratégia de logging.
+14. Segurança e modelagem de ameaças.
+15. Pré-requisitos.
+16. Configuração do ambiente.
+17. Execução local.
+18. Execução com Docker.
+19. Testes e qualidade.
+20. Exemplos de utilização.
+21. Como evoluir o template.
+22. Limitações conhecidas.
+23. Funcionalidades não implementadas.
+24. Roadmap, se aplicável.
+25. Contribuição.
+26. Licença.
+27. Referências técnicas.
+
+Não mantenha seções vazias apenas para preencher essa lista.
+
+Não inclua seções de banco de dados, APIs, autenticação ou implantação quando forem irrelevantes, mas informe a ausência dessas capacidades quando ela for importante para delimitar o escopo.
+
+A estrutura definitiva deverá ser aprovada antes da redação integral.
+
+---
+
+# 15. REGRA INEGOCIÁVEL: DOCUMENTAÇÃO GRADUAL E APROVAÇÃO HUMANA
+
+Você está proibido de produzir o README completo em uma única resposta.
+
+A documentação será construída por etapas, com minha aprovação explícita.
+
+Essa regra prevalece sobre qualquer outra instrução relacionada à velocidade ou à conclusão imediata do documento.
+
+## FASE 1 — RECONHECIMENTO DO PROJETO
+
+Analise o repositório e apresente:
+
+1. Identificação do projeto.
+2. Inventário dos arquivos.
+3. Tecnologias encontradas.
+4. Ponto de entrada.
+5. Arquitetura observada.
+6. Estado atual.
+7. Recursos implementados.
+8. Recursos não identificados.
+9. Presença ou ausência de infraestrutura.
+10. Diagnóstico inicial do README.
+11. Limitações da análise.
+12. Arquivos que não puderam ser examinados.
+
+Nesta fase, não escreva o README final.
+
+Apresente suas descobertas de maneira estruturada.
+
+Ao terminar, pergunte:
+
+"Você aprova o diagnóstico inicial? Posso avançar para a auditoria arquitetural detalhada?"
+
+Aguarde minha resposta.
+
+## FASE 2 — AUDITORIA ARQUITETURAL
+
+Depois da minha aprovação:
+
+1. Explique a organização dos diretórios.
+2. Analise os componentes principais.
+3. Explique os fluxos de dependência.
+4. Identifique as decisões arquiteturais.
+5. Relacione as decisões aos princípios de design aplicáveis.
+6. Aponte benefícios e limitações.
+7. Apresente as evidências utilizadas.
+8. Identifique inconsistências e oportunidades de melhoria.
+
+Não escreva ainda todas as seções do README.
+
+Ao terminar, pergunte se aprovo a auditoria arquitetural.
+
+Aguarde minha resposta.
+
+## FASE 3 — AUDITORIA DE SEGURANÇA E LOGGING
+
+Depois da aprovação:
+
+1. Analise os controles de segurança.
+2. Mapeie as ameaças relevantes.
+3. Identifique os riscos não mitigados.
+4. Explique o funcionamento do logger.
+5. Avalie a qualidade dos logs.
+6. Identifique possíveis vazamentos de informações.
+7. Analise Docker e infraestrutura sob a perspectiva de segurança.
+8. Separe controles implementados de recomendações futuras.
+
+Apresente evidências e limitações.
+
+Ao terminar, pergunte se aprovo essa análise.
+
+Aguarde minha resposta.
+
+## FASE 4 — PROPOSTA DE SUMÁRIO DEFINITIVO
+
+Depois da aprovação:
+
+1. Proponha o índice do README.
+2. Justifique a ordem das seções.
+3. Explique quais assuntos merecem maior destaque.
+4. Indique os diagramas que serão úteis.
+5. Identifique os exemplos de código que poderão ser incluídos.
+6. Identifique informações que dependem de confirmação.
+7. Explique como evitar redundância.
+
+Apresente somente a estrutura e suas justificativas.
+
+Ao terminar, pergunte se aprovo o sumário.
+
+Aguarde minha resposta.
+
+## FASE 5 — REDAÇÃO GRADUAL DO README
+
+Depois da aprovação do sumário, comece a produzir o README por seções.
+
+Cada resposta deverá conter apenas uma seção principal ou um pequeno conjunto de subseções intimamente relacionadas.
+
+Exemplos:
+
+- Parte 1: Apresentação e proposta do projeto.
+- Parte 2: Estado atual e escopo.
+- Parte 3: Tecnologias utilizadas.
+- Parte 4: Arquitetura.
+- Parte 5: Estrutura de diretórios.
+- Parte 6: Decisões arquiteturais.
+- Parte 7: Segurança.
+- Parte 8: Logging e observabilidade.
+- Parte 9: Instalação e execução.
+- Parte 10: Docker.
+- Parte 11: Testes.
+- Parte 12: Como evoluir o projeto.
+- Parte 13: Limitações e próximos passos.
+
+Essa lista é apenas ilustrativa. Utilize a estrutura previamente aprovada.
+
+### Procedimento obrigatório para cada parte
+
+Para cada seção:
+
+**A. Apresente o objetivo**
+
+Explique brevemente o que a seção documentará e quais evidências serão utilizadas.
+
+**B. Entregue o Markdown completo daquela seção**
+
+O conteúdo deverá estar pronto para copiar e inserir no README.md.
+
+Entregue o Markdown em um único bloco de código quando isso facilitar a cópia integral da seção.
+
+O conteúdo deverá conter seus próprios títulos, tabelas, diagramas e exemplos, conforme necessário.
+
+Não coloque comentários da conversa dentro do Markdown que será incorporado ao README.
+
+Não misture explicações dirigidas a mim com o texto destinado ao documento.
+
+**C. Apresente as justificativas técnicas fora do bloco de código**
+
+Explique as decisões de documentação mais importantes:
+
+- Por que a seção foi organizada daquela forma.
+- Quais evidências do projeto sustentam o texto.
+- Por que determinados detalhes foram incluídos.
+- Por que determinadas informações foram omitidas.
+- Quais princípios de engenharia orientaram as escolhas.
+- Quais limitações precisaram ser explicitadas.
+
+**D. Realize uma revisão de qualidade**
+
+Verifique:
+
+- Precisão factual.
+- Coerência arquitetural.
+- Ausência de funcionalidades inventadas.
+- Correção dos comandos.
+- Consistência terminológica.
+- Qualidade do Markdown.
+- Clareza.
+- Ausência de redundâncias.
+- Adequação visual.
+- Referências corretas aos arquivos.
+- Separação entre realidade atual e propostas futuras.
+
+**E. Solicite minha aprovação**
+
+Finalize com uma pergunta clara, como:
+
+"Você aprova esta parte do README? Posso avançar para a próxima seção?"
+
+Depois, pare.
+
+Não continue automaticamente.
+
+Não antecipe a próxima seção.
+
+Não produza várias seções adicionais para economizar mensagens.
+
+Aguarde minha aprovação explícita.
+
+## FASE 6 — REVISÕES
+
+Se eu solicitar alterações:
+
+1. Identifique o que precisa ser corrigido.
+2. Preserve o conteúdo que continua válido.
+3. Reescreva a seção completa.
+4. Entregue a nova versão pronta para copiar.
+5. Explique brevemente as alterações relevantes.
+6. Pergunte novamente se aprovo.
+
+Não considere uma seção aprovada enquanto eu estiver solicitando mudanças nela.
+
+Se eu rejeitar uma parte, não avance para a próxima sem resolver a rejeição.
+
+## FASE 7 — INTEGRAÇÃO FINAL
+
+Somente depois de todas as seções terem sido aprovadas:
+
+1. Verifique a coerência entre as seções.
+2. Revise o índice.
+3. Confira as âncoras.
+4. Verifique a consistência dos nomes.
+5. Verifique os caminhos dos arquivos.
+6. Revise os comandos.
+7. Elimine redundâncias.
+8. Verifique a consistência dos diagramas.
+9. Confirme que os exemplos não contradizem o código.
+10. Verifique a distinção entre funcionalidades existentes e futuras.
+11. Revise os avisos de segurança.
+12. Confira as limitações declaradas.
+13. Verifique os links, quando houver meios de validá-los.
+14. Apresente uma lista final de validação.
+
+Não altere silenciosamente decisões que eu já aprovei.
+
+Se a integração exigir uma alteração substancial em alguma seção, explique a necessidade e solicite minha aprovação.
+
+Se a plataforma permitir gerar arquivos, poderá oferecer o README.md consolidado como arquivo após a aprovação final.
+
+Se não puder gerar arquivos, entregue o conteúdo consolidado em partes copiáveis, sem afirmar que criou um arquivo.
+
+---
+
+# 16. REGRAS PARA O USO DE CONTEXTO E LIMITES DA IA
+
+Como o projeto poderá ser extenso, gerencie o contexto de maneira disciplinada.
+
+Não tente resumir centenas de arquivos em uma única descrição superficial.
+
+Se não conseguir inspecionar tudo em uma etapa:
+
+1. Registre os arquivos examinados.
+2. Registre os arquivos pendentes.
+3. Preserve as descobertas.
+4. Continue a análise por grupos coerentes.
+5. Atualize o inventário.
+6. Não declare concluída uma fase enquanto faltarem análises essenciais.
+
+Se a plataforma tiver limites de anexos, tamanho ou contexto, informe-os.
+
+Não alegue ter executado o código se não o executou.
+
+Não alegue ter verificado vulnerabilidades se apenas leu o código.
+
+Não alegue ter validado Docker se não executou ou não pôde verificar o ambiente.
+
+Não alegue ter pesquisado referências externas se não teve acesso à pesquisa.
+
+Diferencie sempre análise estática, execução, testes automatizados e validação manual.
+
+Não solicite que eu envie novamente arquivos que já estejam disponíveis no contexto e possam ser consultados.
+
+Se houver uma informação essencial que não possa ser obtida pelo repositório, faça uma pergunta específica, explique por que ela importa e aguarde minha resposta antes de inventar uma conclusão.
+
+---
+
+# 17. REFERÊNCIAS TÉCNICAS E FUNDAMENTAÇÃO
+
+Quando referências externas ajudarem a fundamentar uma decisão, utilize fontes confiáveis.
+
+Dê preferência a:
+
+- Publicações e materiais dos próprios autores.
+- Documentação oficial das tecnologias.
+- Documentação oficial de segurança.
+- OWASP.
+- Artigos técnicos com autoria e fundamentação identificáveis.
+- Materiais reconhecidos de engenharia de software.
+
+Inclua referências externas apenas quando agregarem valor real.
+
+Não invente URLs, citações, livros, páginas ou recomendações atribuídas a especialistas.
+
+Diferencie referências teóricas de evidências encontradas no projeto.
+
+A existência de uma referência bibliográfica não substitui a análise do código.
+
+---
+
+# 18. CRITÉRIOS DE ACEITAÇÃO DO README FINAL
+
+O README somente poderá ser considerado concluído quando atender aos seguintes critérios:
+
+[ ] O projeto foi identificado corretamente.
+
+[ ] O README anterior foi analisado.
+
+[ ] Os arquivos relevantes foram inventariados.
+
+[ ] Os componentes essenciais foram examinados.
+
+[ ] A arquitetura documentada corresponde às evidências encontradas.
+
+[ ] As decisões arquiteturais importantes foram justificadas.
+
+[ ] As tecnologias foram identificadas corretamente.
+
+[ ] O estágio atual do projeto está explícito.
+
+[ ] As funcionalidades implementadas estão separadas das futuras.
+
+[ ] A existência ou ausência de banco de dados está documentada corretamente.
+
+[ ] A existência ou ausência de infraestrutura está documentada corretamente.
+
+[ ] Os mecanismos de segurança foram identificados.
+
+[ ] As ameaças relevantes foram analisadas.
+
+[ ] As limitações de segurança estão explícitas.
+
+[ ] O logging foi explicado tecnicamente.
+
+[ ] Os comandos de execução foram verificados na medida do possível.
+
+[ ] O Docker foi documentado apenas se houver suporte real.
+
+[ ] Os testes e mecanismos de qualidade foram avaliados.
+
+[ ] Os exemplos de código correspondem ao projeto ou estão identificados como propostas.
+
+[ ] Os diagramas representam a arquitetura real.
+
+[ ] O Markdown está consistente e organizado.
+
+[ ] As limitações da análise foram declaradas.
+
+[ ] Todas as partes foram aprovadas pelo usuário.
+
+[ ] A revisão de integração final foi concluída.
+
+Se algum critério não puder ser atendido, informe a pendência.
+
+Não marque um item como concluído apenas para finalizar a tarefa.
+
+---
+
+# 19. INSTRUÇÃO FINAL DE EXECUÇÃO
+
+Agora, aguarde o acesso ao projeto anexado.
+
+Assim que o projeto estiver disponível, comece exclusivamente pela FASE 1 — RECONHECIMENTO DO PROJETO.
+
+Não escreva imediatamente o novo README.
+
+Não avance para a auditoria detalhada antes de apresentar o diagnóstico inicial.
+
+Não entregue todas as etapas de uma vez.
+
+Não pule a aprovação humana.
+
+Seu objetivo não é apenas produzir um README bonito.
+
+Seu objetivo é construir uma documentação tecnicamente confiável, rastreável, elegante, precisa e útil para engenheiros de software, fundamentada no código real e desenvolvida comigo, seção por seção, até a conclusão integral do documento.
+
+**Aguarde minha aprovação entre as fases e entre cada seção do README.**
+
+===== ARQUIVO: .gitignore =====
+
+node_modules/
+dist/
+
+===== ARQUIVO: .vscode/settings.json =====
+
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true
+  },
+  "watcher.exclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true
+  }
+}
+
+
+===== ARQUIVO: PromptBase.txt =====
+
 # 1. IDENTIDADE, PAPEL E RESPONSABILIDADE
 
 Atue como um **Comitê Científico de Excelência em Engenharia de Software**, adotando uma visão técnica fundamentada nos princípios, métodos e obras de:
@@ -713,24 +2050,29 @@ REGISTRE NA MEMORIA E TODA VEZ QUE ELE ATUALIZAR POR DECISÃO ATUALIZE TAMBEM NA
 
 PROJETO[
 
-===== ARQUIVO: .gitignore =====
 
-node_modules/
-dist/
 
-===== ARQUIVO: .vscode/settings.json =====
 
-{
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/dist": true
-  },
-  "watcher.exclude": {
-    "**/node_modules/**": true,
-    "**/dist/**": true
-  }
-}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
 ===== ARQUIVO: README.md =====
 
@@ -3649,6 +4991,59 @@ export const mysqlUsersTable: IMySQLUserRow[] = [
 ];
 
 
+===== ARQUIVO: src/infrastructure/httpTraffic/adapters/failureFormatter.ts =====
+
+import type { HttpFailureFormatter,
+              HttpFailurePayload }  from '../../../api/errors/domainException';
+import      { DomainException }     from '../../../api/errors/domainException';
+import      { ValidationException } from '../engine/httpValidation';
+
+export class ApplicationFailureFormatter implements HttpFailureFormatter {  
+  public format(
+    rawError            : unknown,
+    includeDebugDetails : boolean
+  ): { 
+    statusCode: number; 
+    payload   : HttpFailurePayload 
+  } {
+    
+    if (rawError instanceof DomainException) {
+      return {
+        statusCode: rawError.httpStatus,
+        payload: {
+          status  : 'error',
+          code    : rawError.uniqueCode,
+          message : rawError.message
+        }
+      };    
+    }
+
+    if (rawError instanceof ValidationException) {
+      return {
+        statusCode: 422,
+        payload: {
+          status  : 'fail',
+          code    : 'REQUEST_VALIDATION_FAILED',
+          message : 'The data provided fails to comply with the endpoint verification contract.',
+          errors  : rawError.errors
+        }
+      };    
+    }
+
+    const fallbackMessage = rawError instanceof Error ? rawError.message : 'Internal server error';
+    
+    return {
+      statusCode: 500,
+      payload: {
+        status  : 'fail',
+        code    : 'INTERNAL_SERVER_ERROR',
+        message : 'Internal server error',
+        ...(includeDebugDetails && { debugMessage: fallbackMessage })
+      }
+    };
+  }
+}
+
 ===== ARQUIVO: src/infrastructure/httpTraffic/drivers/expressHttpDriver.ts =====
 
 import      express                         from 'express';
@@ -3668,16 +5063,16 @@ import      { ValidationException }         from '../engine/httpValidation';
 import      { DomainException }             from '../../../api/errors/domainException';
 
 export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
-  private readonly application        : ExpressEngine.Express;
-  private readonly listeningPort      : number;
-  private readonly failureFormatter   : HttpFailureFormatter;
-  private readonly systemLogger       : SystemLogger;
-  private readonly tokenEngine        : TokenCryptographerEngine;
-  private readonly consumerEngine     : ConsumerFinderEngine;
-  private readonly throttlerEngine    : RequestThrottler;
-  private readonly lifecycleGovernor  : ServerLifecycleGovernor;
+  private readonly application          : ExpressEngine.Express;
+  private readonly listeningPort        : number;
+  private readonly failureFormatter     : HttpFailureFormatter;
+  private readonly systemLogger         : SystemLogger;
+  private readonly tokenEngine          : TokenCryptographerEngine;
+  private readonly consumerEngine       : ConsumerFinderEngine;
+  private readonly throttlerEngine      : RequestThrottler;
+  private readonly lifecycleGovernor    : ServerLifecycleGovernor;
   private readonly networkSecurityPolicy: HttpNetworkSecurityPolicy;
-  private readonly displayDebugDetails: boolean;
+  private readonly displayDebugDetails  : boolean;
 
   constructor(configuration: { 
     port                   : number; 
@@ -3743,7 +5138,11 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       try {
         this.lifecycleGovernor.incrementActiveRequests();
       } catch (terminationError: unknown) {
-        outgoingResponse.status(503).json({ status: 'fail', code: 'SERVER_TERMINATING', message: 'Servidor em processo de encerramento.' });
+          outgoingResponse.status(503).json({
+            status  : 'fail', 
+            code    : 'SERVER_TERMINATING',
+            message : 'Servidor em processo de encerramento.' 
+          });
         return;
       }
 
@@ -3769,7 +5168,11 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           throw new DomainException('API_KEY_INVALID');
         }
 
-        const tenantQuotaMap: Record<string, number> = { FREE: 10, PREMIUM: 100, ENTERPRISE: 1000 };
+        const tenantQuotaMap: Record<string, number> = { 
+          FREE: 10, 
+          PREMIUM: 100, 
+          ENTERPRISE: 1000 };
+          
         const tenantMaxAllowed = tenantQuotaMap[authenticatedConsumer.rateLimitTier] ?? 10;
 
         await this.throttlerEngine.throttle({
@@ -3821,7 +5224,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private extractClientMetadata(request: ExpressEngine.Request) {
     const rawClientIp     = request.ip || request.headers['x-forwarded-for'] || '127.0.0.1';
     const ipStringBase    = Array.isArray(rawClientIp) ? String(rawClientIp[0] || '127.0.0.1') : String(rawClientIp);
-    const ipAddress       = ipStringBase.split(',')[0]?.trim() || '127.0.0.1';
+    const ipAddress       = (ipStringBase.split(',')[0] || '127.0.0.1').trim();
     const userAgent       = request.headers['user-agent'] || 'unknown';
     const userAgentHash   = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
 
@@ -3866,69 +5269,13 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   public start(): void {
     const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
-    });
+  });
 
-    process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
-    process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
+  process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
+  process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
+
   }
 }
-
-===== ARQUIVO: src/infrastructure/httpTraffic/engine/failureFormatter.ts =====
-
-import type { HttpFailureFormatter,
-              HttpFailurePayload }  from '../../../api/errors/domainException';
-import      { DomainException }     from '../../../api/errors/domainException';
-import      { ValidationException } from './httpValidation';
-
-export class ApplicationFailureFormatter implements HttpFailureFormatter {  
-  public format(
-    rawError: unknown,
-    includeDebugDetails: boolean
-  ):{ 
-      statusCode: number; 
-      payload   : HttpFailurePayload 
-    }{
-    
-    if (rawError instanceof DomainException) {
-      return {
-        statusCode: rawError.httpStatus,
-        payload: {
-          status: 'error',
-          code: rawError.uniqueCode,
-          message: rawError.message
-
-        }
-      };    
-    }
-
-    if (rawError instanceof ValidationException) {
-      return {
-        statusCode: 422,
-        payload: {
-          status: 'fail',
-          code: 'REQUEST_VALIDATION_FAILED',
-          message: 'The data provided fails to comply with the endpoint verification contract.',
-          errors: rawError.errors
-
-        }
-      };    
-    }
-
-    const fallbackMessage = rawError instanceof Error ? rawError.message : 'Internal server error';
-    
-    return {
-      statusCode: 500,
-      payload: {
-        status: 'fail',
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Internal server error',
-        ...(includeDebugDetails && { debugMessage: fallbackMessage })
-
-      }
-    };
-  }
-}
-
 
 ===== ARQUIVO: src/infrastructure/httpTraffic/engine/httpTraffic.ts =====
 
@@ -3936,18 +5283,13 @@ import type { SystemLogger }                from '../../telemetry/engine/systemL
 import type { TokenSessionPayload }         from '../../security/token/engine/tokenSession';
 import type { ConsumerSpecificationEngine } from '../../security/apiKeyTenant/engine/specification';
 
-/**
- * Contrato agnóstico para governança de políticas de tráfego de uso geral.
- * Centraliza as definições de CORS e blindagem comportamental de cabeçalhos
- * utilizando apenas vocabulário do domínio da solução, livre de termos imperativos.
- */
 export interface HttpNetworkSecurityPolicy {
-  readonly allowedOrigins          : string[];
-  readonly allowedMethods          : string[];
-  readonly allowedHeaders          : string[];
-  readonly exposedHeaders          : string[];
-  readonly isFrameworkSignatureHidden: boolean;
-  readonly perimeterDefenses       : Record<string, string>;
+  readonly allowedOrigins             : string[];
+  readonly allowedMethods             : string[];
+  readonly allowedHeaders             : string[];
+  readonly exposedHeaders             : string[];
+  readonly isFrameworkSignatureHidden : boolean;
+  readonly perimeterDefenses          : Record<string, string>;
 }
 
 export interface HttpTrafficRequest<
@@ -3983,18 +5325,17 @@ export interface HttpTrafficExchangeEngine {
   start(): void;
 }
 
-
 ===== ARQUIVO: src/infrastructure/httpTraffic/engine/httpValidation.ts =====
 
 export interface HttpTrafficSchemaValidator {
   validate(
-    data: unknown, 
+    data  : unknown, 
     schema: unknown
 
     ):{ 
-      success: boolean;
-      errors?: string[]; 
-      data?: any
+      success : boolean;
+      errors? : string[]; 
+      data?   : any
 
     };
   }
@@ -4007,15 +5348,14 @@ export class ValidationException extends Error {
 
     ){
     super('HTTP Request validation failed at infrastructure border.');
-    this.name = 'ValidationException';
+    this.name   = 'ValidationException';
     this.errors = errors;
     Object.setPrototypeOf(this, ValidationException.prototype);
 
   }
 }
 
-
-===== ARQUIVO: src/infrastructure/identityProviders/drivers/facebookAuthenticator.ts =====
+===== ARQUIVO: src/infrastructure/identityProviders/adapters/facebookAuthenticator.ts =====
 
 import type { FederatedAuthenticator, FederatedIdentityPayload } from '../engine/federatedAuthenticator';
 import      { DomainException }          from '../../../api/errors/domainException';
@@ -4056,7 +5396,7 @@ export class FacebookAuthenticator implements FederatedAuthenticator {
 }
 
 
-===== ARQUIVO: src/infrastructure/identityProviders/drivers/googleAuthenticator.ts =====
+===== ARQUIVO: src/infrastructure/identityProviders/adapters/googleAuthenticator.ts =====
 
 import type { FederatedAuthenticator, FederatedIdentityPayload } from '../engine/federatedAuthenticator';
 import      { DomainException }          from '../../../api/errors/domainException';
@@ -4091,7 +5431,7 @@ export class GoogleAuthenticator implements FederatedAuthenticator {
 }
 
 
-===== ARQUIVO: src/infrastructure/identityProviders/drivers/linkediniAuthenticator.ts =====
+===== ARQUIVO: src/infrastructure/identityProviders/adapters/linkedinAuthenticator.ts =====
 
 import type { FederatedAuthenticator,
               FederatedIdentityPayload } from '../engine/federatedAuthenticator';
@@ -4161,22 +5501,23 @@ export interface IdentityRepository {
 
 ===== ARQUIVO: src/infrastructure/lifeCycle/serverLifecycleGovernor.ts =====
 
-import type { Server } from 'http';
 import type { SystemLogger } from '../telemetry/engine/systemLogger';
 
+export interface NetworkTrafficDrainer {
+  close(callback: (error: unknown) => void): void;
+}
+
 export class ServerLifecycleGovernor {
-  private readonly systemLogger       : SystemLogger;
-  private readonly terminationTimeoutMs: number;
-  
-  private activeRequestsCounter        : number;
-  private isTerminating                : boolean;
+  private readonly systemLogger         : SystemLogger;
+  private readonly terminationTimeoutMs : number;  
+  private activeRequestsCounter         : number;
+  private isTerminating                 : boolean;
 
   constructor(systemLogger: SystemLogger, terminationTimeoutSeconds = 20) {
     this.systemLogger          = systemLogger;
     this.terminationTimeoutMs  = terminationTimeoutSeconds * 1000;
     this.activeRequestsCounter = 0;
     this.isTerminating         = false;
-
   }
 
   public incrementActiveRequests(): void {
@@ -4195,7 +5536,7 @@ export class ServerLifecycleGovernor {
     }
   }
 
-  public governTerminationSignal(signalName: 'SIGTERM' | 'SIGINT', httpServer: Server): void {
+  public governTerminationSignal(signalName: 'SIGTERM' | 'SIGINT', networkDrainer: NetworkTrafficDrainer): void {
     if (this.isTerminating) {
       return;
     }
@@ -4203,7 +5544,7 @@ export class ServerLifecycleGovernor {
     this.isTerminating = true;
     this.systemLogger.warn(`OS Termination signal [${signalName}] intercepted. ServerLifecycleGovernor initiating graceful drain sequence.`);
 
-    httpServer.close((error: unknown) => {
+    networkDrainer.close((error: unknown) => {
       if (error) {
         this.systemLogger.error('Exception intercepted while closing underlying HTTP network server handles.', error);
       }
@@ -4227,18 +5568,17 @@ export class ServerLifecycleGovernor {
   }
 }
 
-
 ===== ARQUIVO: src/infrastructure/resilience/serviceResilienceGate.ts =====
 
 import { DomainException } from '../../api/errors/domainException';
 
-type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+type GateState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 export class ServiceResilienceGate {
   private readonly failureThreshold : number;
   private readonly cooldownPeriodMs : number;
 
-  private currentState              : CircuitState;
+  private currentState              : GateState; // Ajustado para GateState
   private consecutiveFailures       : number;
   private nextAttemptAllowedAt      : number;
 
@@ -4249,10 +5589,9 @@ export class ServiceResilienceGate {
     this.currentState           = 'CLOSED';
     this.consecutiveFailures    = 0;
     this.nextAttemptAllowedAt   = 0;
-
   }
 
-  public verifyGateHealth(): void {
+  public ensureAccessible(): void {
     const currentTime = Date.now();
 
     if (this.currentState === 'OPEN' && currentTime > this.nextAttemptAllowedAt) {
@@ -4272,17 +5611,17 @@ export class ServiceResilienceGate {
   public recordFailure(): void {
     this.consecutiveFailures++;
 
-    if (this.currentState === 'HALF_OPEN' || this.consecutiveFailures >= this.failureThreshold) {
+    if (this.currentState       === 'HALF_OPEN' || 
+                                this.consecutiveFailures >= this.failureThreshold) {
       this.currentState         = 'OPEN';
       this.nextAttemptAllowedAt = Date.now() + this.cooldownPeriodMs;
     }
   }
 
-  public getActiveState(): CircuitState {
+  public getState(): GateState {
     return this.currentState;
   }
 }
-
 
 ===== ARQUIVO: src/infrastructure/security/apiKeyTenant/adapter/accessValidator.ts =====
 
@@ -4349,7 +5688,6 @@ export class DataBaseConsumerFinder implements ConsumerFinderEngine {
 
     if (!databaseRow) {
       return null;
-
     }
 
     return {
@@ -4407,32 +5745,29 @@ export class ConsumerCacheStore implements ConsumerCacheStoreEngine<ConsumerSpec
 
     if (!currentConsumerIdentity) {
       return null;
-
     }
+
     const isCacheExpired = Date.now() > currentConsumerIdentity.expiresAt;
 
     if (isCacheExpired) {
       this.ramStorage.delete(identificationKey);
       return null;
-
     }
-    return currentConsumerIdentity.payload;
-    
+
+    return currentConsumerIdentity.payload;    
   }
 } 
 
 
 ===== ARQUIVO: src/infrastructure/security/apiKeyTenant/drivers/apiKeyInstance.ts =====
 
-import { mockApiKeyTable, 
-        type ApiKeyRow } from '../../../../database/apiKeys/apiKeyTables';
+import { mockApiKeyTable, type ApiKeyRow } from '../../../../database/apiKeys/apiKeyTables';
 
 export const apiKeyConnection = {
   query: {
     findKeyByString: (identificationKey: string): ApiKeyRow | null => {
 
-      return mockApiKeyTable.find(row => row.keyString === identificationKey) || null;
-      
+      return mockApiKeyTable.find(row => row.keyString === identificationKey) || null;      
     }
   }
 };
@@ -4464,79 +5799,48 @@ export interface ConsumerSpecificationEngine {
 
 import { DomainException } from '../../../api/errors/domainException';
 
-/**
- * Contrato estruturado para definição de barreiras operacionais de tráfego.
- * Define o identificador de rastreio e o teto máximo aceito no ciclo ativo.
- */
 export interface ThrottlerBarrierInput {
   readonly trackingKey : string;
   readonly maxAllowed  : number;
 }
 
-/**
- * Estrutura de dados efêmera para governança cronológica de cotas por ciclo de tempo.
- * Armazena a contagem atômica de acessos e o momento exato em que o ciclo expira.
- */
 interface PeriodicTrafficCounter {
   count               : number;
   chronologicalResetAt: number;
 }
 
-/**
- * @class RequestThrottler
- * @description Motor atômico de alta performance para segurança perimetral (Rate Limiting).
- * Opera em nível de memória RAM local (peso computacional zero), agindo de forma totalmente
- * agnóstica a planos comerciais, modelos de faturamento ou regras de negócio.
- */
 export class RequestThrottler {
   private readonly cycleDurationMilliseconds  : number;
   private readonly ramTrafficRegistry         : Map<string, PeriodicTrafficCounter>;
 
-  /**
-   * @constructor
-   * @param cycleDurationSeconds Tempo de validade de cada ciclo de contagem (Padrão: 60 segundos).
-   */
   constructor(cycleDurationSeconds = 60) {
     this.cycleDurationMilliseconds = cycleDurationSeconds * 1000;
     this.ramTrafficRegistry        = new Map<string, PeriodicTrafficCounter>();
   }
 
-  /**
-   * Intercepta a requisição e avalia a chave de rastreio contra a cota configurada.
-   * Totalmente polimórfico, tratando de forma idêntica IPs, Chaves de Tenants ou Usuários Finais.
-   * 
-   * @param barrier Estrutura contendo o identificador de rastreio e a cota dinâmica.
-   * @throws {DomainException} Lança 'REQUEST_THROTTLED' se o teto for violado no ciclo vigente.
-   */
   public async throttle(barrier: ThrottlerBarrierInput): Promise<void> {
     const { trackingKey, maxAllowed } = barrier;
-    const currentTimestamp = Date.now();
+    const currentTimestamp            = Date.now();
+    const activePeriodRecord          = this.ramTrafficRegistry.get(trackingKey);
 
-    // Recupera o registro de tráfego periódico associado à chave de rastreio na RAM
-    const activePeriodRecord = this.ramTrafficRegistry.get(trackingKey);
-
-    // CENÁRIO 1: Se a chave for inédita ou o ciclo cronológico anterior expirou, inicia uma nova época
-    if (!activePeriodRecord || currentTimestamp > activePeriodRecord.chronologicalResetAt) {
-      this.ramTrafficRegistry.set(trackingKey, {
-        count               : 1,
-        chronologicalResetAt: currentTimestamp + this.cycleDurationMilliseconds
+    if (!activePeriodRecord || 
+        currentTimestamp > activePeriodRecord.chronologicalResetAt
+      ) {
+        this.ramTrafficRegistry.set(trackingKey, {
+          count               : 1,
+          chronologicalResetAt: currentTimestamp + this.cycleDurationMilliseconds
       });
+
       return;
     }
 
-    // CENÁRIO 2: Se o contador ativo na RAM violar ou igualar o limite estipulado dinamicamente
     if (activePeriodRecord.count >= maxAllowed) {
       throw new DomainException('REQUEST_THROTTLED');
     }
 
-    // CENÁRIO 3: Tráfego legítimo sob a cota permitida. Incrementa o contador na RAM.
     activePeriodRecord.count++;
   }
 
-  /**
-   * Varre a memória RAM local eliminando registros cujos ciclos cronológicos já expiraram.
-   * Evita o vazamento de memória (Memory Leak) mantendo o mapa limpo de forma preemptiva.
-   */
   public evictExpiredRecords(): void {
     const currentTimestamp = Date.now();
     
@@ -4548,14 +5852,13 @@ export class RequestThrottler {
   }
 }
 
-
 ===== ARQUIVO: src/infrastructure/security/token/drivers/expressJwtAdapter.ts =====
 
-import      jwt                             from 'jsonwebtoken';
-import      crypto                          from 'crypto';
+import        jwt                              from 'jsonwebtoken';
+import        crypto                           from 'crypto';
 import type { TokenCryptographerEngine,
-              TokenSessionPayload }         from '../engine/tokenSession';
-import      { DomainException }             from '../../../../api/errors/domainException';
+              TokenSessionPayload }            from '../engine/tokenSession';
+import      { DomainException }                from '../../../../api/errors/domainException';
 
 export class ExpressJwtAdapter implements TokenCryptographerEngine {
   private readonly secretPrivateKey     : string;
@@ -4569,18 +5872,19 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     this.expirationInSeconds  = configuration.expirationSeconds;
   }
 
-  public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'>): Promise<string> {
-    const generatedTokenId = crypto.randomUUID();
-    
-    // Compacta nomes longos de negócio para claims curtas de tráfego de rede (Melhor performance de banda)
-    const tokenClaims = {
+  public async generate(payload: Omit<
+                        TokenSessionPayload,'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'
+                        >
+    ): Promise<string> {
+    const generatedTokenId  = crypto.randomUUID();
+    const tokenClaims       = {
       sub : payload.actorId,
       did : payload.deviceFingerprintId,
       jti : generatedTokenId,
       cip : payload.initialIpAddress,
       uah : payload.clientUserAgentHash,
       rcw : payload.requestSequenceCounter,
-      lca : Math.floor(Date.now() / 1000) // Last Activity At em timestamp de segundos
+      lca : Math.floor(Date.now() / 1000)
     };
 
     return jwt.sign(tokenClaims, this.secretPrivateKey, {
@@ -4592,7 +5896,6 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     try {
       const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
 
-      // BARREIRA DE INTEGRIDADE: Garante sintaticamente que nenhuma claim vital foi removida do passaporte digital
       if (!decodedClaims['sub'] || 
           !decodedClaims['did'] || 
           !decodedClaims['jti'] ||
@@ -4617,18 +5920,19 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
       };
 
     } catch (capturedError: unknown) {
+
       if (capturedError instanceof DomainException) {
         throw capturedError;
       }
-      // TRADUÇÃO DE EXCEÇÕES: Impede que erros crus da biblioteca de terceiros vazem para as bordas do sistema
+      
       if (capturedError instanceof jwt.TokenExpiredError) {
         throw new DomainException('SECURITY_TOKEN_EXPIRED');
       }
+
       throw new DomainException('SECURITY_TOKEN_CORRUPTED');
     }
   }
 }
-
 
 ===== ARQUIVO: src/infrastructure/security/token/engine/tokenSession.ts =====
 
@@ -4653,7 +5957,6 @@ export interface TokenCryptographerEngine {
 
 ===== ARQUIVO: src/infrastructure/telemetry/drivers/systemConsoleJsonDriver.ts =====
 
-import      crypto        from 'crypto';
 import type { SystemLogger,
               LogMetadata } from '../engine/systemLogger';
 
@@ -4675,17 +5978,14 @@ export class SystemConsoleJsonDriver implements SystemLogger {
 
   public withContext(traceId: string, requestMetadata?: LogMetadata): SystemLogger {
     return new SystemConsoleJsonDriver(traceId, requestMetadata, this.prettyFormat);
-
   }
 
   public info(message: string, metadata?: LogMetadata): void {
     this.emit('INFO', message, undefined, metadata);
-
   }
 
   public warn(message: string, metadata?: LogMetadata): void {
     this.emit('WARN', message, undefined, metadata);
-
   }
 
   public error(
@@ -4698,7 +5998,6 @@ export class SystemConsoleJsonDriver implements SystemLogger {
       : { raw: rawError };
 
     this.emit('ERROR', message, errorDetails, metadata);
-
   }
 
   public audit(
@@ -4708,7 +6007,6 @@ export class SystemConsoleJsonDriver implements SystemLogger {
   ): void {
     const securityMetadata = { actorId, ...metadata };
     this.emit('AUDIT', `Security Audit Event: [${action}] executed by user [${actorId}]`, undefined, securityMetadata);
-
   }
 
   private emit(
@@ -4720,7 +6018,11 @@ export class SystemConsoleJsonDriver implements SystemLogger {
     let isolatedStack : string | undefined;
     let targetError   = error;
 
-    if (this.prettyFormat && error && typeof error === 'object' && 'stack' in error) {
+    if (this.prettyFormat && 
+        error && 
+        typeof error === 'object' && 
+        'stack' in error
+      ) {
       isolatedStack = error.stack;
 
       const { stack, ...errorWithoutStack } = error;
@@ -4754,7 +6056,6 @@ export class SystemConsoleJsonDriver implements SystemLogger {
   }
 }
 
-
 ===== ARQUIVO: src/infrastructure/telemetry/engine/systemLogger.ts =====
 
 export type LogMetadata = Record<string, any>;
@@ -4772,7 +6073,7 @@ export interface SystemLogger {
 
 import      { Env }                           from './config/env';
 import      { ExpressHttpDriver }             from './infrastructure/httpTraffic/drivers/expressHttpDriver';
-import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/engine/failureFormatter';
+import      { ApplicationFailureFormatter }   from './infrastructure/httpTraffic/adapters/failureFormatter';
 import      { SystemConsoleJsonDriver }       from './infrastructure/telemetry/drivers/systemConsoleJsonDriver';
 import      { ExpressJwtAdapter }             from './infrastructure/security/token/drivers/expressJwtAdapter';
 import      { ConsumerCacheStore }            from './infrastructure/security/apiKeyTenant/adapter/ramCache';
@@ -4790,35 +6091,29 @@ const systemTelemetryLogger: SystemLogger = new SystemConsoleJsonDriver(
   undefined, 
   Env.nodeEnv === 'development'
 );
-
 const coreFailureFormatter    = new ApplicationFailureFormatter();
-
 const securityTokenEngine     = new ExpressJwtAdapter({ 
   secretKey: Env.jwtSecret, 
   expirationSeconds: Env.jwtExpirationSec 
 });
-
-const ramCacheStore           = new ConsumerCacheStore();
-const databaseRepository      = new DataBaseConsumerFinder();
-const consumerAccessEngine    = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
-const requestLimitThrottler   = new RequestThrottler(60); 
-const lifecycleGovernor       = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
-
-// 🏢 CONFIGURAÇÃO COMPORTAMENTAL AGNÓSTICA: Diretrizes corporativas de segurança web de uso geral
-const globalNetworkSecurityPolicy: HttpNetworkSecurityPolicy = {
-  allowedOrigins:            ['*'], // Aberto para permitir requisições de qualquer frontend Multi-Tenant parceiro
+const ramCacheStore                                           = new ConsumerCacheStore();
+const databaseRepository                                      = new DataBaseConsumerFinder();
+const consumerAccessEngine                                    = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
+const requestLimitThrottler                                   = new RequestThrottler(60); 
+const lifecycleGovernor                                       = new ServerLifecycleGovernor(systemTelemetryLogger, 20);
+const globalNetworkSecurityPolicy: HttpNetworkSecurityPolicy  = {
+  allowedOrigins:            ['*'],
   allowedMethods:            ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders:            ['Content-Type', 'Authorization', 'X-API-Key', 'X-Session-Token'],
   exposedHeaders:            ['X-Session-Token', 'X-Trace-Id'],
   isFrameworkSignatureHidden: true,
   perimeterDefenses: {
-    'X-Frame-Options':       'SAMEORIGIN',  // Mitigação contra Clickjacking
-    'X-Content-Type-Options':'nosniff',     // Bloqueia farejamento hacker de MIME-types
-    'X-XSS-Protection':      '0',           // Desativa filtros legados inseguros de browsers
-    'X-Download-Options':    'noopen'       // Protege contra injeção de arquivos HTML maliciosos
+    'X-Frame-Options'       : 'SAMEORIGIN',
+    'X-Content-Type-Options': 'nosniff',
+    'X-XSS-Protection'      : '0',
+    'X-Download-Options'    : 'noopen'
   }
 };
-
 const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({ 
   port                : Env.port,
   failureFormatter    : coreFailureFormatter,
@@ -4827,7 +6122,7 @@ const serverEngine: HttpTrafficExchangeEngine = new ExpressHttpDriver({
   consumerEngine      : consumerAccessEngine,
   throttlerEngine     : requestLimitThrottler,
   lifecycleGovernor   : lifecycleGovernor,
-  networkPolicy       : globalNetworkSecurityPolicy, // 🔌 Acoplamento Plug-in Puro
+  networkPolicy       : globalNetworkSecurityPolicy,
   displayDebugDetails : Env.nodeEnv === 'development'
 });
 
@@ -4861,8 +6156,5 @@ serverEngine.start();
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "src/infrastructure/lifeCycle/serverLifecycleGovernor.ts"]
 }
-
-
-]

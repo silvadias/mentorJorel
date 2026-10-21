@@ -1,8 +1,8 @@
-import      jwt                             from 'jsonwebtoken';
-import      crypto                          from 'crypto';
+import        jwt                              from 'jsonwebtoken';
+import        crypto                           from 'crypto';
 import type { TokenCryptographerEngine,
-              TokenSessionPayload }         from '../engine/tokenSession';
-import      { DomainException }             from '../../../../api/errors/domainException';
+              TokenSessionPayload }            from '../engine/tokenSession';
+import      { DomainException }                from '../../../../api/errors/domainException';
 
 export class ExpressJwtAdapter implements TokenCryptographerEngine {
   private readonly secretPrivateKey     : string;
@@ -16,18 +16,19 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     this.expirationInSeconds  = configuration.expirationSeconds;
   }
 
-  public async generate(payload: Omit<TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'>): Promise<string> {
-    const generatedTokenId = crypto.randomUUID();
-    
-    // Compacta nomes longos de negócio para claims curtas de tráfego de rede (Melhor performance de banda)
-    const tokenClaims = {
+  public async generate(payload: Omit<
+                        TokenSessionPayload,'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'
+                        >
+    ): Promise<string> {
+    const generatedTokenId  = crypto.randomUUID();
+    const tokenClaims       = {
       sub : payload.actorId,
       did : payload.deviceFingerprintId,
       jti : generatedTokenId,
       cip : payload.initialIpAddress,
       uah : payload.clientUserAgentHash,
       rcw : payload.requestSequenceCounter,
-      lca : Math.floor(Date.now() / 1000) // Last Activity At em timestamp de segundos
+      lca : Math.floor(Date.now() / 1000)
     };
 
     return jwt.sign(tokenClaims, this.secretPrivateKey, {
@@ -39,7 +40,6 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     try {
       const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
 
-      // BARREIRA DE INTEGRIDADE: Garante sintaticamente que nenhuma claim vital foi removida do passaporte digital
       if (!decodedClaims['sub'] || 
           !decodedClaims['did'] || 
           !decodedClaims['jti'] ||
@@ -64,13 +64,15 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
       };
 
     } catch (capturedError: unknown) {
+
       if (capturedError instanceof DomainException) {
         throw capturedError;
       }
-      // TRADUÇÃO DE EXCEÇÕES: Impede que erros crus da biblioteca de terceiros vazem para as bordas do sistema
+      
       if (capturedError instanceof jwt.TokenExpiredError) {
         throw new DomainException('SECURITY_TOKEN_EXPIRED');
       }
+
       throw new DomainException('SECURITY_TOKEN_CORRUPTED');
     }
   }

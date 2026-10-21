@@ -15,16 +15,16 @@ import      { ValidationException }         from '../engine/httpValidation';
 import      { DomainException }             from '../../../api/errors/domainException';
 
 export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
-  private readonly application        : ExpressEngine.Express;
-  private readonly listeningPort      : number;
-  private readonly failureFormatter   : HttpFailureFormatter;
-  private readonly systemLogger       : SystemLogger;
-  private readonly tokenEngine        : TokenCryptographerEngine;
-  private readonly consumerEngine     : ConsumerFinderEngine;
-  private readonly throttlerEngine    : RequestThrottler;
-  private readonly lifecycleGovernor  : ServerLifecycleGovernor;
+  private readonly application          : ExpressEngine.Express;
+  private readonly listeningPort        : number;
+  private readonly failureFormatter     : HttpFailureFormatter;
+  private readonly systemLogger         : SystemLogger;
+  private readonly tokenEngine          : TokenCryptographerEngine;
+  private readonly consumerEngine       : ConsumerFinderEngine;
+  private readonly throttlerEngine      : RequestThrottler;
+  private readonly lifecycleGovernor    : ServerLifecycleGovernor;
   private readonly networkSecurityPolicy: HttpNetworkSecurityPolicy;
-  private readonly displayDebugDetails: boolean;
+  private readonly displayDebugDetails  : boolean;
 
   constructor(configuration: { 
     port                   : number; 
@@ -90,7 +90,11 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       try {
         this.lifecycleGovernor.incrementActiveRequests();
       } catch (terminationError: unknown) {
-        outgoingResponse.status(503).json({ status: 'fail', code: 'SERVER_TERMINATING', message: 'Servidor em processo de encerramento.' });
+          outgoingResponse.status(503).json({
+            status  : 'fail', 
+            code    : 'SERVER_TERMINATING',
+            message : 'Servidor em processo de encerramento.' 
+          });
         return;
       }
 
@@ -116,7 +120,11 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           throw new DomainException('API_KEY_INVALID');
         }
 
-        const tenantQuotaMap: Record<string, number> = { FREE: 10, PREMIUM: 100, ENTERPRISE: 1000 };
+        const tenantQuotaMap: Record<string, number> = { 
+          FREE: 10, 
+          PREMIUM: 100, 
+          ENTERPRISE: 1000 };
+          
         const tenantMaxAllowed = tenantQuotaMap[authenticatedConsumer.rateLimitTier] ?? 10;
 
         await this.throttlerEngine.throttle({
@@ -168,7 +176,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private extractClientMetadata(request: ExpressEngine.Request) {
     const rawClientIp     = request.ip || request.headers['x-forwarded-for'] || '127.0.0.1';
     const ipStringBase    = Array.isArray(rawClientIp) ? String(rawClientIp[0] || '127.0.0.1') : String(rawClientIp);
-    const ipAddress       = ipStringBase.split(',')[0]?.trim() || '127.0.0.1';
+    const ipAddress       = (ipStringBase.split(',')[0] || '127.0.0.1').trim();
     const userAgent       = request.headers['user-agent'] || 'unknown';
     const userAgentHash   = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
 
@@ -213,9 +221,10 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   public start(): void {
     const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);
-    });
+  });
 
-    process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
-    process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
+  process.on('SIGTERM', () => this.lifecycleGovernor.governTerminationSignal('SIGTERM', activeHttpServerInstance));
+  process.on('SIGINT',  () => this.lifecycleGovernor.governTerminationSignal('SIGINT',  activeHttpServerInstance));
+
   }
 }

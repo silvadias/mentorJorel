@@ -1,12 +1,12 @@
 import { DomainException } from '../../api/errors/domainException';
 
-type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+type GateState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 export class ServiceResilienceGate {
   private readonly failureThreshold : number;
   private readonly cooldownPeriodMs : number;
 
-  private currentState              : CircuitState;
+  private currentState              : GateState; // Ajustado para GateState
   private consecutiveFailures       : number;
   private nextAttemptAllowedAt      : number;
 
@@ -17,10 +17,9 @@ export class ServiceResilienceGate {
     this.currentState           = 'CLOSED';
     this.consecutiveFailures    = 0;
     this.nextAttemptAllowedAt   = 0;
-
   }
 
-  public verifyGateHealth(): void {
+  public ensureAccessible(): void {
     const currentTime = Date.now();
 
     if (this.currentState === 'OPEN' && currentTime > this.nextAttemptAllowedAt) {
@@ -40,13 +39,14 @@ export class ServiceResilienceGate {
   public recordFailure(): void {
     this.consecutiveFailures++;
 
-    if (this.currentState === 'HALF_OPEN' || this.consecutiveFailures >= this.failureThreshold) {
+    if (this.currentState       === 'HALF_OPEN' || 
+                                this.consecutiveFailures >= this.failureThreshold) {
       this.currentState         = 'OPEN';
       this.nextAttemptAllowedAt = Date.now() + this.cooldownPeriodMs;
     }
   }
 
-  public getActiveState(): CircuitState {
+  public getState(): GateState {
     return this.currentState;
   }
 }

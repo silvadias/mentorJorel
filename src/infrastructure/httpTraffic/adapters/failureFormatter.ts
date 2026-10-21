@@ -3,15 +3,10 @@ import type { HttpFailureFormatter,
 import      { DomainException }     from '../../../api/errors/domainException';
 import      { ValidationException } from '../engine/httpValidation';
 
-/**
- * @class ApplicationFailureFormatter
- * @description Adaptador concreto encarregado de interceptar as exceções do ecossistema
- * e traduzi-las para o formato de payload padronizado de transporte da aplicação.
- */
 export class ApplicationFailureFormatter implements HttpFailureFormatter {  
   public format(
-    rawError: unknown,
-    includeDebugDetails: boolean
+    rawError            : unknown,
+    includeDebugDetails : boolean
   ): { 
     statusCode: number; 
     payload   : HttpFailurePayload 
@@ -21,9 +16,9 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
       return {
         statusCode: rawError.httpStatus,
         payload: {
-          status: 'error',
-          code: rawError.uniqueCode,
-          message: rawError.message
+          status  : 'error',
+          code    : rawError.uniqueCode,
+          message : rawError.message
         }
       };    
     }
@@ -32,10 +27,10 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
       return {
         statusCode: 422,
         payload: {
-          status: 'fail',
-          code: 'REQUEST_VALIDATION_FAILED',
-          message: 'The data provided fails to comply with the endpoint verification contract.',
-          errors: rawError.errors
+          status  : 'fail',
+          code    : 'REQUEST_VALIDATION_FAILED',
+          message : 'The data provided fails to comply with the endpoint verification contract.',
+          errors  : rawError.errors
         }
       };    
     }
@@ -45,9 +40,9 @@ export class ApplicationFailureFormatter implements HttpFailureFormatter {
     return {
       statusCode: 500,
       payload: {
-        status: 'fail',
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Internal server error',
+        status  : 'fail',
+        code    : 'INTERNAL_SERVER_ERROR',
+        message : 'Internal server error',
         ...(includeDebugDetails && { debugMessage: fallbackMessage })
       }
     };
