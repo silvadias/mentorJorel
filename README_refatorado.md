@@ -483,7 +483,7 @@ O esqueleto possui um pipeline de defesa em profundidade e gerenciamento de proc
 
 ### 📑 1. Regulador Dinâmico de Cliques (`RequestThrottler`)
 *   **Propósito:** Proteger os recursos computacionais do servidor e mitigar abusos de faturamento causados por scripts robôs em loops infinitos, aplicando limites estritos baseados no plano contratado da aplicação parceira (Multi-Tenant) [Farley].
-*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/requestThrottler.ts`. Opera de forma nativa e agnóstica através do algoritmo de **Janela Deslizante Simplificada (*Fixed Window Rate Limiting*)** recorrendo a estruturas de `Map` da memória RAM do processo Node.js [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/requestThrottler.ts`. Opera de forma nativa e agnóstica através do algoritmo de **Janela Deslizante Simplificada (*Fixed Window Rate Limiting*)** recorrendo a estruturas de `Map` da memória RAM do processo de requisição HTTP [Farley].
 *   **Variáveis e Janelas Internas:**
     *   `RATE_LIMITS` : Dicionário imutável strongly-typed mapeando as cotas (`FREE: 10`, `PREMIUM: 100`, `ENTERPRISE: 1000` cliques a cada 60 segundos).
     *   `appCountersStore` : Tabela efêmera em RAM que armazena a contagem ativa indexada por `applicationId`.
