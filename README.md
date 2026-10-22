@@ -1,646 +1,444 @@
-# TypeScript API Boilerplate — Hexagonal Pluggable Adapter Engine
+# TypeScript API Architecture Boilerplate — Agnóstico, Hexagonal & Camaleônico
 
-Este projeto é um boilerplate arquitetural de alta maturidade para APIs TypeScript, orientado a **portabilidade**, **isolamento de infraestrutura**, **observabilidade estruturada**, **segurança perimetral** e **resiliência**.
+Este projeto é um **esqueleto arquitetural plugável de alta maturidade** construído em JavaScript fortemente tipado via TypeScript. Ele foi projetado sob os preceitos rigorosos de isolamento de políticas e inversão de dependências (Clean Architecture / Ports & Adapters), operando com **acoplamento zero** em relação a frameworks web ou servidores de execução específicos.
 
-A arquitetura combina **Clean Architecture (Ports & Adapters)** com **Feature-by-Package**, mantendo o núcleo da aplicação independente de frameworks de transporte, bibliotecas criptográficas e implementações específicas de logging. Tecnologias externas ficam concentradas em `drivers/`, enquanto os contratos estáveis do sistema permanecem em `engine/`.
+A engenharia do ecossistema foca em entregar imunidade computacional contra alterações tecnológicas de borda, garantindo **portabilidade absoluta**, **observabilidade contextual estruturada**, **segurança perimetral multi-tenant** e **resiliência in-memory** com impacto zero de hardware. O Express e o Node.js presentes no repositório atuam estritamente como um **driver substituível** (um detalhe de infraestrutura), comprovando que o core das políticas centrais pode ser extraído e acoplado a qualquer outro runtime (como Next.js, Bun ou Cloudflare Workers) sem sofrer modificações.
 
-## Arquitetura
+---
 
-A estrutura segue o princípio da **Inversão de Dependências (DIP)**: o domínio define contratos; os adaptadores implementam esses contratos.
+## 🏛️ Racional Arquitetural: Princípio de Acoplamento Zero
+
+A arquitetura do boilerplate rejeita de forma ativa a infiltração de dependências ou assinaturas de terceiros no núcleo do software. O ecossistema é inteiramente estruturado com base na **Inversão de Dependências (DIP)**: o domínio define os contratos puros de negócio; a infraestrutura periférica adapta-se a esses contratos através de barramentos de tradução de dialetos.
+
+```text
+[Cliente Externo] ──► [Borda Física: Express] ──► [Adaptador de Tradução] ──► [Contratos Puros: Engine]
+                                                                                      │
+                                                                                      ▼
+                                                                             [Casos de Uso Soberanos]
+```
+
+### 🧬 Segregação de Fronteiras
+
+* **Camada Soberana de Domínio (`src/api/`):** Opera imune a frameworks de rede. Ela trabalha exclusivamente com modelos, tipos e dicionários locais de tratamento centralizado de exceções (`DomainException`). Nenhuma classe ou função interna importa ou conhece assinaturas vindas de bibliotecas externas.
+* **Camada de Contratos de Borda e Abstrações (`engine/`):** Localizada nas subpastas da infraestrutura, dita as regras e o formato com o qual os agentes de tecnologia externos devem interagir com a aplicação.
+* **Camada de Periferias e Motores (`drivers/` ou `adapters/`):** Contém as implementações técnicas intercambiáveis. O dialeto compacto exigido por protocolos e SDKs externos (como o formato JWT ou o roteamento do Express) fica encapsulado aqui. É o único ponto autorizado a conhecer as dependências físicas da infraestrutura.
+
+Essa separação garante o princípio **Open/Closed (OCP)** de Robert C. Martin: o ecossistema permanece fechado para modificações estruturais perigosas no core e totalmente aberto a extensões. Se a especificação de um transporte de rede mudar, altera-se apenas o arquivo de borda periférico, mantendo o restante do software imune a efeitos colaterais.
+
+
+## 📂 Topografia do Ecossistema: Organização de Diretórios
+
+A estrutura física do repositório reflete de forma ativa a separação entre políticas abstratas e mecanismos de detalhe. Abaixo está documentado o mapa real de arquivos presentes no projeto e suas respectivas fronteiras arquiteturais.
 
 ```text
 src/
-├── api/                       # CAMADA DE DOMÍNIO - APENAS NEGÓCIO  (Agnóstico)
-│   └── errors/                # Barramento Centralizado de Exceções de Domínio
-│       ├── domain/            # Dicionários literais de mensagens e chaves
-│       │   └── security.ts
-│       ├── catalog.ts         # Ponto Único de Verdade: ErrorCatalog e ErrorCode
-│       └── domainException.ts # Exceção de negócio soberana
-├── config/                    # Parâmetros globais e configuração strongly-typed
-│   └── env.ts                 # Tipagem estrita das variáveis de ambiente
-└── infrastructure/            # PERIFERIAS E ADAPTADORES (Ports & Adapters)
-    ├── telemetry/             # Observabilidade e não-repúdio
-    │   ├── engine/            # Contratos de abstração (Ports)
-    │   │   └── systemLogger.ts
-    │   └── drivers/            # Implementações substituíveis (Adapters)
-    │       └── systemConsoleJsonDriver.ts
-    ├── httpTraffic/            # Tráfego de rede e protocolo HTTP
-    │   ├── engine/            # Contratos de transporte
-    │   │   ├── httpTraffic.ts
-    │   │   └── httpValidation.ts
-    │   └── drivers/            # Motores tecnológicos
-    │       └── nodeExpress/
-    │           └── expressHttpDriver.ts
-    └── security/              # Segurança, sessão e criptografia
-        ├── engine/            # Contratos de sessão
-        │   └── tokenSession.ts
-        └── drivers/            # Implementações criptográficas
-            └── jwt/
-                └── expressJwtAdapter.ts
-├── apiRouter.ts               # Orquestrador agnóstico de rotas
-└── server.ts                  # Composition Root e bootstrap
+├── api/                             # CAMADA DE DOMÍNIO (Políticas de Negócio)
+│   ├── errors/                      # Barramento Centralizado de Exceções Agnósticas
+│   │   ├── domain/                  # Dicionários de Mensagens por Subdomínio
+│   │   │   ├── accessIdentification.ts
+│   │   │   ├── apiKey.ts
+│   │   │   ├── home.ts
+│   │   │   ├── identity.ts
+│   │   │   ├── serviceResilience.ts
+│   │   │   ├── throttler.ts
+│   │   │   └── token.ts
+│   │   ├── catalog.ts               # Verdade Única: ErrorCatalog e ErrorCode
+│   │   └── domainException.ts       # Exceção de Domínio Soberana e Formatadores
+│   ├── home/                        # Subdomínio de Testes Estruturais e Diagnóstico
+│   │   ├── controller.ts
+│   │   └── routes.ts
+│   ├── identity/                    # Subdomínio de Acesso Progressivo
+│   │   └── ports/                   # Casos de Uso Purificados e Isolados
+│   │       ├── associateExternalIdentity.ts
+│   │       └── registerAnonymousActor.ts
+│   └── users/                       # Subdomínio de Entidades Locais
+│       ├── controller.ts
+│       ├── model.ts
+│       └── routes.ts
+├── config/                          # Parâmetros Globais Strongly-Typed
+│   └── env.ts                       # Tipagem Estrita de Variáveis de Ambiente
+├── database/                        # CAMADA DE DADOS SIMULADA (Mocks em RAM)
+│   ├── apiKeys/
+│   │   └── apiKeyTables.ts          # Linhas de Tabela e Chaves de Teste (Tenants)
+│   └── mysql/
+│       ├── instance.ts              # Conexões e Consultas Simuladas Linhas por Linha
+│       └── tables.ts                # Mock de Registros de Usuários
+├── infrastructure/                  # PERIFERIAS E ADAPTADORES (Mecanismos Técnicos)
+│   ├── httpTraffic/                 # Tráfego de Rede e Validação Sintática
+│   │   ├── adapters/
+│   │   │   └── failureFormatter.ts  # Tradutor de Exceções de Domínio para Payload HTTP
+│   │   ├── drivers/
+│   │   │   └── expressHttpDriver.ts # Driver de Borda HTTP (Tecnologia Express)
+│   │   └── engine/
+│   │       ├── httpTraffic.ts       # Envelopes de Requisição e Resposta Agnósticos
+│   │       └── httpValidation.ts    # Infraestrutura e Exceções de Validação de Borda
+│   ├── identityProviders/           # Integrações de Autenticação Federativa Externa
+│   │   ├── adapters/
+│   │   │   ├── facebookAuthenticator.ts
+│   │   │   ├── googleAuthenticator.ts
+│   │   │   └── linkedinAuthenticator.ts
+│   │   └── engine/
+│   │       ├── federatedAuthenticator.ts # Contratos de Payload Federado
+│   │       └── identityRepository.ts     # Abstrações de Consulta a Aplicações
+│   ├── lifeCycle/
+│   │   └── serverLifecycleGovernor.ts    # Controlador de Encerramento Seguro (Graceful Shutdown)
+│   ├── resilience/
+│   │   └── serviceResilienceGate.ts      # Mecanismo de Disjuntor Técnico (Circuit Breaker)
+│   └── security/                    # Motores Perimetrais de Proteção Computacional
+│       ├── apiKeyTenant/            # Read-Through Cache e Validação Administrativa
+│       │   ├── adapter/
+│       │   │   ├── accessValidator.ts
+│       │   │   ├── databaseRepository.ts
+│       │   │   ├── finder.ts
+│       │   │   └── ramCache.ts
+│       │   ├── drivers/
+│       │   │   └── apiKeyInstance.ts
+│       │   └── engine/
+│       │       ├── cacheStore.ts
+│       │       └── specification.ts # Contrato Perimetral Multi-Tenant de API Key
+│       ├── throttler/
+│       │   └── requestThrottler.ts  # Regulador Atômico de Janelas Slotted na RAM
+│       └── token/                   # Hidratação e Descriptografia de Sessões JWT
+│           ├── drivers/
+│           │   └── expressJwtAdapter.ts
+│           └── engine/
+│               └── tokenSession.ts
+├── apiRouter.ts                     # Orquestrador Agnóstico de Rotas Locais
+└── server.ts                        # Composition Root e Bootstrap Geral do Ecossistema
 ```
 
-## Princípios arquiteturais
+---
 
-### Drivers e Engines
+## 🎯 Responsabilidades dos Componentes Centrais
 
-- **`drivers/`** contém os adaptadores que conhecem tecnologias específicas. O `expressHttpDriver.ts`, por exemplo, conhece o Express e concentra os detalhes da borda HTTP.
-- **`engine/`** contém os contratos e regras abstratas do ecossistema. Os drivers devem se adaptar aos contratos do sistema, e não o contrário.
+Para evitar o espalhamento de responsabilidades cruzadas, cada componente cumpre um papel único e estritamente restrito à sua fronteira lógica:
 
-Essa separação permite substituir uma tecnologia de infraestrutura sem espalhar sua dependência pelo restante da aplicação.
+### 1. Camada de Borda HTTP e Isolamento de Dialetos (`src/infrastructure/httpTraffic/`)
+O framework Express e seus detalhes físicos de tráfego são inteiramente aprisionados dentro da classe `ExpressHttpDriver`. É responsabilidade exclusiva deste componente capturar cabeçalhos brutos, interceptar chamadas e converter dados fragmentados no envelope strongly-typed do sistema (`HttpTrafficRequest`). Isso garante que os controladores e as políticas de negócio nunca recebam parâmetros primitivos de rede como as assinaturas `req` ou `res`.
 
-### Isolamento de frameworks
+### 2. Motor de Perímetro Multi-Tenant e Cache RAM (`src/infrastructure/security/apiKeyTenant/`)
+A governança e validação de acessos por parte de sistemas parceiros baseia-se na cooperação desacoplada de três sub-componentes:
+*   **`DataBaseConsumerFinder`:** Funciona como a consulta de dados de infraestrutura, convertendo as linhas crúas e numéricas do banco (`ApiKeyRow`) no formato aceito pelo ecossistema.
+*   **`ConsumerCacheStore`:** Aloca tabelas efêmeras em chips de memória RAM (`Map`) para reter as informações por 300 segundos, evitando queries físicas bombardeadas.
+*   **`ConsumerAccessValidator`:** Orquestra a lógica de *Read-Through Cache*. Se houver um *Cache Hit*, valida o status do parceiro instantaneamente; se houver um *Cache Miss*, recorre à consulta ao repositório, popula a RAM e gerencia as exceções perimetrais de bloqueio administrativo (`API_KEY_SUSPENDED`).
 
-O domínio não deve depender diretamente de assinaturas do Express ou de outros frameworks HTTP. A aplicação trabalha com estruturas próprias, como `HttpTrafficRequest` e `HttpTrafficResponse`.
+### 3. Engenharia Centralizada de Erros (`src/api/errors/`)
+O ecossistema adota uma postura de barramento de falhas de ponta a ponta. Em vez de entulhar os blocos do software com blocos `try/catch` tecnológicos, as políticas lançam a exceção soberana de negócio `DomainException` passando apenas chaves catalogadas do dicionário (`catalog.ts`). A falha viaja livremente até a portaria de rede, onde a classe `ApplicationFailureFormatter` intercepta o erro e realiza o mapeamento uniforme do status HTTP adequado (401, 403, 404, 422 ou 429).
 
-O framework é tratado como detalhe de infraestrutura.
+## 🛡️ Blindagem Perimetral: O Pipeline Sequencial de Rede (A Jornada de um Clique)
 
-### Nomes que revelam propósito
+O ecossistema implementa uma barreira de defesa em profundidade diretamente na portaria de tráfego HTTP. Essas barreiras operam de forma sequencial na memória RAM, garantindo imunidade computacional e proteção de recursos antes que qualquer parâmetro atinja as rotas internas da aplicação.
 
-O dialeto compacto exigido por protocolos e bibliotecas externas fica encapsulado nos adaptadores. O restante do sistema utiliza nomes de domínio claros e fortemente tipados, como:
+### 🛣️ Fluxo de Interceptação de Borda
 
-- `actorId`
-- `deviceFingerprintId`
-- `initialIpAddress`
-- `requestSequenceCounter`
-- `lastActivityAt`
+Sempre que um cliente externo dispara uma requisição contra o motor web Express (`ExpressHttpDriver`), o ciclo de vida do tráfego percorre obrigatoriamente as seguintes travas atômicas:
 
-Essa tradução mantém os detalhes de transporte e criptografia fora do núcleo da aplicação.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cliente as Cliente Externo
+    participant Driver as ExpressHttpDriver (Borda)
+    participant Governor as ServerLifecycleGovernor
+    participant Throttler as RequestThrottler (RAM)
+    participant Cache as ConsumerAccessValidator (RAM Cache)
+    participant Token as TokenCryptographerEngine (JWT)
 
-## Observabilidade
+    Cliente->>Driver: Requisição HTTP Bruta (Headers, Body)
+    
+    critical 🧬 1. Ciclo de Vida do Servidor
+        Driver->>Governor: incrementActiveRequests()
+        Note over Governor: Se o container estiver em shutdown,<br/>aborta imediatamente com status 503.
+    end
+    
+    critical 🛡️ 2. Proteção Anti-DDoS L7 (IP)
+        Driver->>Throttler: throttle(trackingKey: clientIp, maxAllowed: 200)
+        Note over Throttler: Valida a taxa bruta de requisições<br/>por IP na janela de 60 segundos.
+    end
+    
+    critical 🔑 3. Validação Perimetral Multi-Tenant
+        Driver->>Cache: byKey(incomingApiKey)
+        Note over Cache: Procura a chave na RAM (TTL 300s).<br/>Cache Miss? Busca no banco e popula a RAM.<br/>Se parceiro suspenso, aborta (403).
+    end
 
-A telemetria é definida pelo contrato `SystemLogger`, localizado em `src/infrastructure/telemetry/engine/systemLogger.ts`.
+    critical 📊 4. Rate-Limiting do Plano do Parceiro
+        Driver->>Throttler: throttle(trackingKey: partnerKey, maxAllowed: QuotaPlano)
+        Note over Throttler: Aplica limites estritos do plano contratado<br/>(FREE: 10 | PREMIUM: 100 | ENTERPRISE: 1000 req/min).
+    end
 
-O contrato disponibiliza operações como:
+    critical 🔐 5. Hidratação Criptográfica da Sessão
+        Driver->>Token: decrypt(AuthorizationBearerToken)
+        Note over Token: Decodifica claims JWT para TokenSessionPayload.<br/>Se token ausente ou corrompido, degrada suavemente para ANONYMOUS.
+    end
 
-- `info()`
-- `warn()`
-- `error()`
-- `audit()`
-- `withContext(traceId, requestMetadata)`
+    critical 👤 6. Isolamento por Usuário (User-Tenant Boundary)
+        Driver->>Throttler: throttle(trackingKey: user:tenant:actorId, maxAllowed: 30)
+        Note over Throttler: Protege contra loops infinitos de scripts<br/>robôs disparados por um usuário específico.
+    end
 
-O uso genérico de `console.log()` no core é evitado. Cada ciclo de requisição pode carregar um **Trace ID**, permitindo rastrear o fluxo ponta a ponta.
-
-O `systemConsoleJsonDriver.ts` adapta esse contrato para a saída física:
-
-- em produção, emite JSON de linha única, adequado para ingestão em ferramentas de observabilidade;
-- em desenvolvimento, utiliza Pretty Print para facilitar a leitura humana.
-
-## Tráfego HTTP
-
-O contrato `HttpTrafficRequest` / `HttpTrafficResponse`, definido em `src/infrastructure/httpTraffic/engine/httpTraffic.ts`, representa o transporte de forma independente do framework.
-
-O `expressHttpDriver.ts` é o adaptador responsável pela borda HTTP. Ele:
-
-1. recebe o tráfego bruto;
-2. executa as validações de entrada;
-3. hidrata o contexto da requisição;
-4. integra o mecanismo de sessão por inversão de dependência;
-5. centraliza o tratamento de falhas;
-6. disponibiliza metadados de borda para auditoria.
-
-Quando não existe uma sessão válida, o fluxo pode operar com o ator `ANONYMOUS` e metadados de borda.
-
-Também são capturados dados como IP e um hash reduzido do User-Agent para uso nos cruzamentos de auditoria definidos pelo domínio.
-
-## Segurança e sessões
-
-O contrato `TokenCryptographerEngine` e o modelo `TokenSessionPayload` ficam em `src/infrastructure/security/engine/tokenSession.ts`.
-
-A interface abstrai a tecnologia utilizada para gerar e decifrar tokens, mantendo o restante da aplicação independente da biblioteca criptográfica.
-
-O `expressJwtAdapter.ts` é o único ponto autorizado a conhecer a implementação JWT externa. Ele traduz os nomes de domínio para os campos compactos do protocolo e converte erros da biblioteca em exceções nativas da aplicação.
-
-Exemplo:
-
-```typescript
-throw new DomainException('SECURITY_TOKEN_EXPIRED');
+    Driver->>Driver: validateInputSchema(schema, body)
+    Note over Driver: Validação sintática via safeParse() antes do core.
+    
+    Driver->>Cliente: Devolve Resposta HTTP Estruturada (X-Trace-Id)
+    Driver->>Governor: decrementActiveRequests()
 ```
 
-Essa abordagem evita que exceções específicas da biblioteca vazem para o domínio.
+---
 
-## Engenharia de erros
+### 🧠 Funcionamento das Engrenagens In-Memory
 
-O tratamento de falhas segue uma abordagem centralizada.
+#### 📑 1. Regulador Dinâmico de Cliques (`RequestThrottler`)
+Localizado em `src/infrastructure/security/throttler/requestThrottler.ts`, opera através do algoritmo de **Janela Fixa (*Fixed Window Rate Limiting*)**, recorrendo a estruturas efêmeras de `Map` alocadas diretamente nos chips de memória do processo Node.js. 
 
-`src/api/errors/catalog.ts` funciona como a **Verdade Única de Erros**, reunindo o catálogo e os respectivos códigos. `domainException.ts` representa a exceção soberana do domínio.
+Quando o contador atômico associado a uma chave de rastreamento (`trackingKey`) supera o teto permitido dentro da janela ativa de 60 segundos, o barramento de segurança explode a exceção de domínio unificada do catálogo, interceptada com o status **`429 Too Many Requests` (REQUEST_THROTTLED)**. A requisição é abortada em microsegundos, poupando a CPU da aplicação de processar payloads maliciosos.
 
-Em vez de espalhar tratamento de erros específicos por controladores e casos de uso, o código lança uma exceção sem conhecer o mecanismo de transporte:
+#### 🧠 2. Mecanismo de Cache Read-Through temporizado
+Orquestrado pela classe `ConsumerAccessValidator` (`src/infrastructure/security/apiKeyTenant/adapter/accessValidator.ts`), o sistema implementa uma barreira de cache inteligente para chaves corporativas. Na primeira requisição do parceiro, ocorre um *Cache Miss* (falha de cache). O sistema recorre à persistência (`DataBaseConsumerFinder`), valida a credencial, monta um envelope temporal e grava uma cópia exata do registro na memória RAM com um tempo de expiração (*Time-To-Live*) de 5 minutos. 
+
+Pelos próximos 300 segundos, todas as requisições leem exclusivamente essa cópia na RAM (*Cache Hit*), garantindo respostas em curtíssimo tempo e blindando as camadas de dados contra bombardeios aplicacionais. Se o registro indicar que o parceiro foi banido pelo painel administrativo, o motor dispara imediatamente a exceção **`403 Forbidden` (API_KEY_SUSPENDED)**.
+
+#### 🧬 3. Hidratação e Degradação Suave de Passaportes de Identidade
+O pipeline de segurança de perímetro isola a leitura de tokens JWT de forma resiliente. Caso o cabeçalho `Authorization` esteja ausente ou forneça um token com assinatura violada ou expirada, o motor web Express não quebra o fluxo com um erro fatal de runtime. 
+
+Em vez disso, a portaria de rede realiza uma **Degradação Suave** do estado do cliente, instanciando um payload efêmero com o ator **`ANONYMOUS`** e metadados de borda purificados. Isso permite que o domínio processe a requisição de forma segura baseando-se em identificações progressivas ou assinaturas de hardware temporárias.
+
+## 📊 Estratégia de Telemetria Estruturada: O Logger Camaleônico
+
+O sistema rejeita o uso indiscriminado e destrutivo de comandos globais de console (como `console.log`), adotando uma abordagem fortemente tipada e contextualizada governada pelo contrato **`SystemLogger`** (`src/infrastructure/telemetry/engine/systemLogger.ts`). 
+
+A implementação concreta **`SystemConsoleJsonDriver`** opera de forma adaptável com base nos parâmetros de inicialização gerados na Composition Root, alterando sua assinatura visual dinamicamente de acordo com o ambiente ativo:
+
+1. **Comportamento em Produção (`Pretty Format: false`):** Emite strings lineares contínuas em formato JSON de linha única (*Single-Line JSON*). Este comportamento garante impacto computacional zero de hardware e fornece o padrão ideal para ingestão automatizada por coletores e agregadores de logs de mercado (como Splunk, Datadog, AWS CloudWatch ou ElasticSearch).
+2. **Comportamento em Desenvolvimento (`Pretty Format: true`):** Realiza a indentação estruturada do JSON para torná-lo amigável ao olho humano e isola o rastreamento físico de erros (*Stack Traces*), renderizando as falhas em vermelho no terminal por meio de códigos de escape ANSI (`\x1b[31m`).
+
+### 🧬 Rastreabilidade de Ponta a Ponta (Trace ID) e Contexto
+
+No exato milissegundo em que uma requisição HTTP cruza a borda de entrada do driver, um identificador único universal (`crypto.randomUUID()`) denominado **Trace ID** é gerado. O driver Express invoca o método `.withContext()` para criar um envelope de telemetria isolado para aquele ciclo de vida específico:
 
 ```typescript
+const uniqueTraceId = crypto.randomUUID();
+const contextualLogger = this.systemLogger.withContext(uniqueTraceId, {
+  clientIp: clientMetadata.ipAddress,
+  userAgent: clientMetadata.userAgent,
+  httpMethod: method.toUpperCase(),
+  resourcePath
+});
+```
+
+Todas as operações subsequentes acionadas dentro daquele fluxo herdam o mesmo Trace ID. O cabeçalho HTTP de resposta também é automaticamente hidrato com o campo **`X-Trace-Id`**, permitindo que clientes e equipes de SRE correlacionem uma falha na tela do usuário ao rastro exato de eventos na memória do servidor.
+
+### 🛡️ Auditoria Corporativa de Não-Repúdio
+
+Para separar logs de depuração operacional de registros de segurança críticos, o contrato disponibiliza a operação **`.audit()`**. Ela gera um log formatado de forma imutável sob a taxonomia `Security Audit Event: [action] executed by user [actorId]`, garantindo a retenção transparente de eventos de governança e tentativas de quebra de perímetro.
+
+---
+
+## 🛠️ Engenharia de Erros: O Barramento Centralizado de Exceções
+
+O boilerplate implementa um modelo de **Tratamento Seguro de Erros por Inversão de Controle**. Em vez de poluir controladores locais e casos de uso com estruturas repetitivas de manipulação de respostas de rede, o núcleo do sistema limita-se a arremessar a exceção soberana de domínio **`DomainException`**, alimentada por chaves literais localizadas no catálogo unificado de erros:
+
+```typescript
+// Exemplo real de lançamento agnóstico na camada de negócios
 throw new DomainException('SECURITY_TOKEN_CORRUPTED');
 ```
 
-A falha percorre o barramento até o adaptador de rede, onde é traduzida pelo mecanismo de formatação da aplicação para uma resposta HTTP estruturada.
-
-## Rotas e princípio Open/Closed
-
-O arquivo de rotas deve permanecer concentrado no registro dos endpoints.
-
-A segurança de perímetro e a leitura de sessão são responsabilidades da infraestrutura de tráfego e de seus mecanismos de pipeline. Dessa forma, a expansão das políticas de segurança pode ocorrer sem acoplar regras tecnológicas aos módulos de domínio.
-
-A intenção é manter os componentes existentes fechados para modificações desnecessárias e abertos à extensão por novos adaptadores e políticas.
-
-## Próximo marco técnico
-
-Com a camada de tráfego, a telemetria estruturada e a hidratação de tokens encapsuladas, o próximo passo arquitetural é a implementação da camada de **Casos de Uso (`useCases`)**.
-
-O modelo planejado trabalha com **Identificação Progressiva** e **Atores Temporários**:
-
-1. uma requisição inicialmente anônima chega como `ANONYMOUS`;
-2. o caso de uso pode cruzar IP, hash do navegador e informações de hardware;
-3. sendo identificada uma nova entidade, um ID de negócio é criado;
-4. o token passa a representar esse ator temporário;
-5. quando o usuário realiza o cadastro oficial, os dados podem atualizar a mesma entidade, preservando seu histórico de uso.
-
-Essa etapa deverá manter as mesmas regras de isolamento: casos de uso e domínio não devem conhecer detalhes de Express, JWT ou outros mecanismos tecnológicos.
-
-## Configuração e execução
-
-As variáveis de ambiente são governadas por `src/config/env.ts`.
-
-Para o desenvolvimento assistido, o comportamento de logging pode ser alternado entre `development` e `production` por meio de `NODE_ENV`, conforme a configuração do projeto.
-
-Novos módulos de domínio devem ser organizados como pacotes autocontidos dentro de `src/api/`, mantendo suas regras separadas da infraestrutura.
-
-## Convenções
-
-### Imports
-
-Para contratos usados apenas como tipos, utilize `import type`:
-
-```typescript
-import type { HttpTrafficRequest } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+```text
+ [ Camada de Negócio ] ──( Lança DomainException )──► [ Portaria HTTP (Express Driver) ]
+                                                                 │
+                                                                 ▼
+ [ Cliente Externo (JSON) ] ◄──( Retorna Status Mapeado )── [ FailureFormatter ]
 ```
 
-### Dependências
+### 🎯 O Papel do Mapeador de Fronteira (`ApplicationFailureFormatter`)
 
-- mantenha dependências tecnológicas nos respectivos `drivers/`;
-- mantenha contratos e abstrações em `engine/`;
-- evite vazamento de tipos de frameworks para o domínio;
-- prefira exceções de domínio catalogadas a códigos e mensagens espalhados;
-- preserve nomes de negócio compreensíveis no core;
-- utilize injeção de dependências para conectar o núcleo aos adaptadores.
+A exceção viaja livremente pelo barramento computacional até ser capturada pela cláusula `catch` periférica do driver de rede. O driver delega a tradução de dialetos para a classe **`ApplicationFailureFormatter`** (`src/infrastructure/httpTraffic/adapters/failureFormatter.ts`), que executa o seguinte protocolo de formatação uniforme:
 
-## 💻 Arquitetura de Fluxo (Exemplo de Escala com Acoplamento Zero)
+* **Exceções de Negócio (`DomainException`):** Captura a assinatura purificada do domínio, extrai o código corporativo (`uniqueCode`) e responde à rede com o status HTTP real de negócio previamente catalogado (ex: `401 Unauthorized`, `403 Forbidden`).
+* **Erros de Validação Sintática (`ValidationException`):** Captura inconsistências de payloads barradas no portal de entrada (`safeParse`), mapeia o status uniforme **`422 Unprocessable Entity`** e anexa o array linear de violações de campos (`errors`) na resposta.
+* **Erros Inesperados (`Error` bruto ou Falhas de Infraestrutura):** Ofusca mensagens nativas de banco de dados ou runtime para mitigar vazamentos de informações estruturais (*Information Disclosure*), mascarando a resposta sob o código genérico **`INTERNAL_SERVER_ERROR` (Status 500)**. Detalhes de depuração (`debugMessage`) são anexados opcionalmente apenas se o ambiente estiver configurado em desenvolvimento.
 
-### 🛣️ 1. A Fiação da Rota (`src/api/messages/routes.ts`)
-O arquivo de rotas possui responsabilidade única (SRP): mapear o método HTTP puro ao seu despachante, delegando a malha de validação de dados de forma declarativa e invisível.
+## 🔌 Resiliência Computacional: O Disjuntor Técnico (Circuit Breaker)
 
-```typescript
-import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/httpTraffic';
-import      { MessagesController }          from './controller';
-import      { MessageInputSchema }          from './validation';
+O boilerplate disponibiliza um mecanismo autónomo de proteção contra o efeito cascata catastrófico de lentidões ou quedas em APIs integradas de terceiros (como gateways de IA ou serviços de pagamento), encapsulado na classe **`ServiceResilienceGate`** (`src/infrastructure/resilience/serviceResilienceGate.ts`).
 
-export function initializeMessagesRoutes(engine: HttpTrafficExchangeEngine): void {
-  // A rota tem apenas a rota e o contrato sintático de entrada. Zero acoplamento com segurança.
-  engine.register(
-    'post',
-    '/messages',
-    MessagesController.dispatchSendMessage,
-    MessageInputSchema
-  );
-}
-```
+O componente opera de forma agnóstica diretamente na memória RAM, monitorando o histórico imediato de transações de rede para alternar entre três estados lógicos estritos:
 
-### 🎯 2. O Controlador Despachante (`src/api/messages/controller.ts`)
-O controlador atua estritamente como um tradutor de fronteira. Ele não executa lógicas de banco de dados, não valida e-mails e não faz cálculos temporais. Ele simplesmente captura o input limpo, lê a sessão hidratada pela rede e despacha para a Action executar o trabalho pesado.
+*   **CLOSED 🟢 (Circuito Fechado):** Estado operacional padrão. O tráfego flui normalmente para as integrações. O portão monitora em silêncio.
+*   **OPEN 🔴 (Circuito Aberto):** Se o serviço externo registrar **5 falhas consecutivas** (`failureThreshold`), o disjuntor desarma. Pelos próximos **60 segundos** (`cooldownPeriodMs`), qualquer nova chamada contra a integração é interceptada localmente na RAM e bloqueada em **0 milissegundos**, disparando imediatamente a exceção unificada **`EXTERNAL_SERVICE_UNAVAILABLE` (Status 503)**. Isso impede que requisições presas em timeouts longos entulhem a thread do servidor e esgotem a memória RAM do contêiner.
+*   **HALF_OPEN 🟡 (Circuito Entreaberto):** Passados os 60 segundos de resguardo, o portão deixa passar uma única requisição de teste para avaliar a integridade da API externa. Se a chamada falhar, o circuito retorna para `OPEN` por mais um ciclo; se obtiver sucesso, restabelece o estado `CLOSED` automaticamente.
 
-```typescript
-import type { HttpTrafficRequest,
-              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/httpTraffic';
-import      { SendMessageAction }   from './actions/sendMessageAction';
+---
 
-export class MessagesController {
-  public static async dispatchSendMessage(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
-    
-    // Inversão de Controle: Instancia a ação de negócio injetando a telemetria contextual da requisição
-    const messageUseCase = new SendMessageAction(request.logger);
+## 🧬 Controle de Ciclo de Vida do Servidor: Encerramento Seguro (Graceful Shutdown)
 
-    // Executa o Caso de Uso passando apenas os payloads purificados e a identidade isolada
-    const businessResult = await messageUseCase.execute({
-      promptText : request.body.prompt,
-      userSession: request.session
-    });
+Para garantir o esvaziamento limpo de transações e proteger dados na RAM contra corrupção em ambientes de nuvem elástica (onde contêineres Docker são destruídos e recriados dinamicamente), o sistema delega a governança de processos à classe **`ServerLifecycleGovernor`** (`src/infrastructure/lifeCycle/serverLifecycleGovernor.ts`).
 
-    // Retorna a resposta visual adaptável para o controlador devolver à rede
-    return {
-      statusCode : 200,
-      body       : {
-        status : 'success',
-        data   : businessResult
-      }
-    };
-  }
-}
-```
-
-### ⚙️ 3. A Ação de Domínio / Caso de Uso (`src/api/messages/actions/sendMessageAction.ts`)
-O coração do software. Esta classe é imune a frameworks de rede (não sabe o que é Express ou cURL). Ela recebe estruturas fortemente tipadas em tempo de design, aplica as lógicas de bloqueio comportamental de anônimos, consome repositórios e emite auditorias estruturadas imutáveis.
-
-```typescript
-import type { SystemLogger }        from '../../../../infrastructure/telemetry/engine/systemLogger';
-import type { TokenSessionPayload } from '../../../../infrastructure/security/engine/tokenSession';
-import      { DomainException }     from '../../../errors/domainException';
-
-interface SendMessageInput {
-  readonly promptText  : string;
-  readonly userSession : TokenSessionPayload;
-}
-
-interface SendMessageOutput {
-  readonly aiResponse : string;
-  readonly promptId   : string;
-}
-
-export class SendMessageAction {
-  private readonly logger: SystemLogger;
-
-  constructor(logger: SystemLogger) {
-    this.logger = logger;
-  }
-
-  public async execute(input: SendMessageInput): Promise<SendMessageOutput> {
-    const { actorId, initialIpAddress, requestSequenceCounter } = input.userSession;
-
-    // BARREIRA DE COMPORTAMENTO: Se for um ator anônimo e o contador violar o limite contra vírus
-    if (actorId === 'ANONYMOUS' && requestSequenceCounter > 5) {
-      this.logger.warn(`Security threshold breached. IP [${initialIpAddress}] blocked by anti-bot policy.`);
-      throw new DomainException('SECURITY_TOKEN_CORRUPTED');
-    }
-
-    // AUDITORIA NATIVA: Registro estruturado de não-repúdio gerado em formato JSON camaleônico
-    this.logger.audit('AI_PROMPT_PROCESSED', actorId, {
-      promptLength : input.promptText.length,
-      sequenceId   : requestSequenceCounter
-    });
-
-    // Simulando a execução real da regra de negócio (Consulta a IA / Banco de Dados de forma isolada)
-    return {
-      aiResponse : `Resposta computada para o prompt: ${input.promptText}`,
-      promptId   : 'prompt_uuid_999'
-    };
-  }
-}
-```
-
-### 💡 Por que esta dinâmica garante a Imunidade Arquitetural?
--   **Validação Desacoplada:** Se o frontend enviar um JSON sem o campo `prompt`, o driver de rede barra na portaria (422) antes mesmo do `MessagesController` ser invocado [Uncle Bob].
--   **Manutenabilidade e Escala:** Se a regra de bloqueio de bots mudar (ex: validar o hash do navegador em vez do contador), você altera **apenas um arquivo**: a action `SendMessageAction`. As rotas, os controladores e as criptografias do JWT permanecem **100% intocados e imunes**, impossibilitando que uma alteração lógica cause efeitos colaterais ou quebre outras partes do ecossistema [Uncle Bob, Farley].
-
-## 🛡️ Ecossistema Perimetral Multi-Tenant & Cache RAM Dinâmico
-
-O sistema implementa uma barreira de defesa em profundidade na portaria de rede baseada em chaves de acesso dinâmicas para aplicações parceiras (estilo Google Gemini e OpenAI), operando através de um mecanismo de **Cache Dinâmico In-Memory (Read-Through Cache)** para garantir segurança máxima com o menor desgaste de rede do planeta [Farley].
+O driver de tráfego intercepta os sinais nativos de encerramento emitidos pelo sistema operacional Linux (**`SIGTERM`** e **`SIGINT`**) e orquestra a seguinte rotina de drenagem atômica in-memory:
 
 ```text
-[Cliente Externo: Bruno] ──( Envia X-API-Key )──► [ExpressHttpDriver (Portaria de Rede)]
-                                                              │
-                     ┌────────────────────────────────────────┴────────────────────────────────────────┐
-                     ▼                                                                                 ▼
-     [BARREIRA 1: Cache RAM Local (Map)]                                             [BARREIRA 2: Fallback ao Banco (Repository)]
-  Procura a chave na memória do servidor.                                          Se der Cache Miss, executa a query física.
-  - Cache Hit: Retorna em microsegundos (62ms) ◄────────────────────────────────── - Chave Inexistente? 401 Unauthorized (Aborta)
-  - Aplicação Suspensa? 403 Forbidden (Aborta)                                     - Chave Ativa? Grava uma cópia na RAM (TTL) e libera.
+ [ Sinal SIGTERM / SIGINT Interceptado ]
+                    │
+                    ▼
+ [ ServerLifecycleGovernor: isTerminating = true ] 
+                    │
+                    ├──► Rejeita novos cliques em 0ms com status 503 (SERVER_TERMINATING)
+                    │
+                    └──► Varre o contador na RAM: activeRequestsCounter
+                                │
+                                ├──► Se activeRequestsCounter == 0 ──► Força o Encerramento Imediato (process.exit(0))
+                                │
+                                └──► Se activeRequestsCounter > 0  ──► Inicia a Janela de Drenagem Segura (Timeout de 20s)
 ```
 
-### 🧠 Como Funciona a Engenharia do Cache Dinâmico
-1. **O Cliente é Agnóstico:** O frontend de terceiros envia a credencial bruta a cada clique por motivos de segurança perimetral (evitando o salvamento de chaves no LocalStorage do navegador do usuário, o que exporia a chave a clonagens) [Farley].
-2. **A API gerencia a RAM:** O servidor intercepta a chave na entrada de rede e consulta uma estrutura type-safe nativa alocada diretamente nos chips de memória RAM do container Docker (`Map<string, CachedKeyEntry>`), consumindo peso computacional zero de hardware [Farley].
-3. **Mecanismo Read-Through com TTL:** Na primeira requisição, ocorre um *Cache Miss* (falha de cache). O sistema vai ao banco de dados por meio do repositório, valida a credencial, monta um envelope temporal e **salva uma cópia exata do registro na memória RAM** com um tempo de expiração (*Time-To-Live*) de 5 minutos [Farley]. Pelos próximos 300 segundos, todas as requisições leem exclusivamente essa cópia na RAM (Cache Hit), gerando respostas ultra-rápidas (62ms) e protegendo os bancos de dados principais contra bombardeios ou ataques de negação de serviço aplicacionais (DDoS) [Farley].
+### 🧠 Mecânica dos Contadores Atômicos na RAM
+
+*   **Entrada de Tráfego:** No início absoluto do processamento de qualquer endpoint, o `ExpressHttpDriver` invoca o método `.incrementActiveRequests()`, somando `+1` ao contador central. Se o servidor já estiver em estado de terminação, a entrada é barrada imediatamente.
+*   **Saída Oblíqua Garantida:** Através do bloco **`finally`** do JavaScript na portaria de rede, o driver executa obrigatoriamente o método `.decrementActiveRequests()` tanto em cenários de sucesso quanto em capturas de erro, subtraindo `-1` do contador.
+*   **A Salvaguarda Temporal (Hard Kill):** Se o contador zerar enquanto o sinal de encerramento estiver ativo, o processo é encerrado de forma limpa. Caso alguma operação de longa duração (como streaming de IA ou uploads) fique travada na memória, o governador ativa um timer imutável de **20 segundos** (`terminationTimeoutMs`). Se a janela de tolerância for violada, o sistema força um desligamento rígido (`process.exit(1)`) para resguardar a integridade da infraestrutura.
+
+
+## ⚙️ Configuração, Instalação e Execução
+
+As variáveis de faturamento computacional e parametrização do ecossistema são governadas de forma fortemente tipada pelo arquivo `src/config/env.ts`, que consome o manifesto local `.env`. 
+
+### 📋 Pré-requisitos Mínimos
+
+*   **Runtime Nativo (Opcional):** Node.js instalado (v18.0.0 ou superior).
+*   **Ambiente Isolado (Recomendado):** Docker e Docker Compose instalados.
+
+### 🔌 1. Inicialização Nativa Local
+
+Para executar o ecossistema diretamente no hardware da máquina local através do interpretador assistido e otimizado em runtime, execute a sequência de comandos:
+
+```bash
+# 1. Instalar as dependências do manifesto de forma type-safe
+npm install
+
+# 2. Iniciar o motor em modo de desenvolvimento assistido (tsx watch)
+npm run dev
+
+# 3. Compilar o software via compilador TypeScript estrito (outDir: ./dist)
+npm run build
+
+# 4. Iniciar o servidor com a build compilada de produção
+npm run start
+```
+
+*   **Comportamento do `npm run dev`:** Ativa o executor `tsx watch`. O motor monitora alterações em tempo de design nos arquivos e intercepta modificações no arquivo de variáveis `.env` em tempo real, reiniciando as instâncias na memória RAM sem derrubar o processo.
 
 ---
 
-## 📑 Mapeamento Técnico de Componentes (Quem chama Quem)
+### 🐳 2. Inicialização via Docker Compose (Ambiente Isolado)
 
-### 1. O Contrato de Sessão (`src/infrastructure/security/engine/apiKeySession.ts`)
-*   **Exportações Nomeadas:** Interfaces `ApiKeySessionPayload`, `ApplicationRepository` e `ApiKeyEvaluatorEngine`.
-*   **Propósito:** Contrato abstrato (Port) que obriga a camada de dados e o motor lógico de segurança a conversarem em dialeto purificado de negócios, garantindo que o core do sistema permaneça 100% aberto para expansão e fechado para mudança (OCP) [Uncle Bob].
-*   **Variáveis e Payload Estruturado (`ApiKeySessionPayload`):**
-    *   `applicationId` : Identificador único da empresa ou site parceiro dono da credencial [Ottinger].
-    *   `developerId`   : Vínculo com a conta do programador que gerou a chave no painel de desenvolvedor [Ottinger].
-    *   `rateLimitTier` : Nível do plano de consumo atribuído à chave (`FREE` | `PREMIUM` | `ENTERPRISE`) [Ottinger].
-    *   `isSuspended`   : Boolean indicador de bloqueio administrativo temporal por fraude ou inadimplência [Ottinger].
+O repositório fornece suporte completo a contêineres Unix através do manifesto `docker-compose.yml`. O serviço é provisionado de forma não-privilegiada, mitigando riscos de segurança no ecossistema de infraestrutura.
 
-### 2. A Camada de Dados e Consulta Burra (`src/database/apiKeys/`)
-*   `apiKeyTables.ts`   : Contém a interface pura da linha da tabela (`ApiKeyRow`) e o array em memória RAM que simula as chaves de teste registradas, expurgando o amadorismo de prefixar interfaces com a letra "I" [Uncle Bob, Ottinger].
-*   `apiKeyInstance.ts` : Driver de conexão burro (`apiKeyConnection`). Sua responsabilidade única (SRP) é rodar o método linear de busca física `.findKeyByString(apiKey)` e retornar a linha crua do banco, agindo de forma idêntica a drivers de produção como MySQL ou MongoDB [Uncle Bob].
-*   `apiKeyRepository.ts`: O adaptador hexagonal concreto (`ApiKeyRepository`). Ele consome a instância do banco, captura a linha crua e realiza a **tradução de dialeto físico para dialeto humano**, devolvendo o objeto no formato da interface `ApiKeySessionPayload` [Uncle Bob].
+Para subir a malha técnica e mapear os volumes bidirecionais locais dentro do contêiner, utilize os comandos oficiais:
 
-### 3. O Motor de Orquestração do Cache (`src/infrastructure/security/engine/apiKeyEvaluator.ts`)
-*   **Implementação:** Implementa a interface `ApiKeyEvaluatorEngine`. Ele recebe o `ApplicationRepository` por Inversão de Dependências (DIP) e gerencia o mapa privado de cache dinâmico com TTL (`ramCacheStore`) [Uncle Bob, Farley].
-*   **Ações:** Executa o método `.evaluate(apiKey)`. Se a chave for inexistente no ecossistema, interrompe o fluxo disparando a exceção soberana de domínio `DomainException('API_KEY_INVALID')`. Se o registro indicar que o parceiro foi banido pelo painel administrativo, dispara a exceção `DomainException('API_KEY_SUSPENDED')`, forçando o barramento central a responder com o status de rede adequado (401 ou 403) [Uncle Bob].
+```bash
+# Subir o contêiner compilando as imagens na infraestrutura isolada
+docker compose up --build
 
-### 4. A Interceptação Perimetral de Entrada (`src/infrastructure/httpTraffic/drivers/expressHttpDriver.ts`)
-*   **Funcionamento:** Modificado no construtor para receber a abstração `apiKeyEngine: ApiKeyEvaluatorEngine` por acoplamento plug-in [Uncle Bob].
-*   **O Pipeline de Borda:** Na primeiríssima linha do processamento HTTP, o driver extrai o cabeçalho de transporte `incomingRequest.headers['x-api-key']` [Farley]. Se o cabeçalho estiver ausente, joga o erro `API_KEY_MISSING` [Uncle Bob]. Se estiver presente, repassa a string para o motor de cache dinâmico processar em microsegundos [Uncle Bob]. Passando com sinal verde pela RAM, os metadados do parceiro são anexados de forma transparente na propriedade **`request.application`**, disponibilizando as variáveis de planos (`FREE`/`ENTERPRISE`) para as rotas e os casos de uso consumirem nativamente [Uncle Bob, Farley].
+# Verificar o status de integridade e portas ativas do contêiner
+docker compose ps
+
+# Monitorar a emissão de logs camaleônicos em tempo real
+docker compose logs -f
+
+# Interromper a execução do ambiente de forma segura
+docker compose down
+```
+
+#### 📊 Especificações Técnicas do Contêiner
+*   **Imagem Base:** `node:24-alpine` (Garante pegada leve de hardware).
+*   **Nome do Contêiner:** `nodeContainer`.
+*   **Permissões de Execução:** `user: "node"` (Garante privilégios limitados).
+*   **Rede Isolada:** `mentorjorel_nodeNetwork` (Driver bridge isolado).
+*   **Portas Publicadas:** Redireciona a porta configurada no ambiente (`${PORT}`) para a porta interna padrão `3000`.
 
 ---
 
-## 🚀 O que pode ser Feito Agora (Abertura para Expansão)
+## 🔬 Testes, Validação e Qualidade de Código
 
-Com o esqueleto perimetral Multi-Tenant e a barreira de cache dinâmico dinâmico operando com nota máxima de design na branch `branchApiKey` [Farley], a infraestrutura técnica está completamente fechada para modificações e aberta para as seguintes extensões e plugs lógicos de negócio [Uncle Bob]:
+A malha de validação estrutural apoia-se nas configurações estritas contidas no arquivo **`tsconfig.json`**, forçando o TypeScript a atuar como uma ferramenta ativa de análise estática e prevenção de falhas em tempo de compilação.
 
-*   **Plugar o MongoDB ou Sequelize:** Para migrar do array em memória para um banco de dados real ou ORM de mercado, o desenvolvedor precisa alterar **apenas um arquivo**: criar uma nova classe dentro de `src/database/apiKeys/` (ex: `MongoApiKeyRepository.ts`) implementando a interface `ApplicationRepository` [Uncle Bob]. A portaria de rede, os controladores e o motor de cache dinâmico permanecerão intactos e imunes, sem saber que o banco de dados mudou [Uncle Bob].
-*   **Rota de Geração de Chaves:** O sistema está pronto para receber uma rota de negócio voltada a desenvolvedores (ex: `POST /developer/keys`). O caso de uso dessa rota chamará o repositório de persistência para inserir uma nova linha na tabela física, expandindo os acessos dinamicamente sem tocar em arquivos de infraestrutura [Uncle Bob, Farley].
+### 📐 O Rigor do Compilador Estrito (`tsconfig.json`)
 
-## 🛡️ Malha de Segurança e Resiliência Internacional (Camada de Infraestrutura)
+O projeto está configurado com parâmetros de máxima maturidade arquitetural, obrigando o software a cumprir as seguintes regras:
 
-O esqueleto possui um pipeline de defesa em profundidade e gerenciamento de processos na portaria de tráfego HTTP. Essas barreiras operam de forma agnóstica em nível de **Memória RAM local (peso computacional zero de hardware)**, garantindo imunidade absoluta contra robôs, bombardeios de requisições, colapsos de serviços externos e desligamentos abruptos [Farley].
+*   **`strict: true`:** Ativa uma ampla gama de comportamentos de verificação de tipos, garantindo que inconsistências em assinaturas ou retornos não passem despercebidas.
+*   **`exactOptionalPropertyTypes: true`:** Impede que propriedades opcionais de objetos sejam preenchidas com valores explicitamente nulos ou indefinidos de forma negligente, obrigando o cumprimento exato do contrato.
+*   **`noUncheckedIndexedAccess: true`:** Força o desenvolvedor a validar a existência de chaves ou índices em dicionários e arrays antes de acessá-los diretamente, mitigando erros clássicos de runtime (*Cannot read property of undefined*).
+*   **`verbatimModuleSyntax: true`:** Obriga o ecossistema a utilizar a sintaxe explícita de importação tipada (**`import type`**) para contratos consumidos apenas em tempo de design, eliminando códigos mortos na compilação final.
+*   **`skipLibCheck: true`:** Ignora a checagem de tipos dentro de arquivos de declaração de bibliotecas de terceiros (`node_modules`), acelerando o tempo de build sem comprometer a integridade do seu core.
 
-```text
-               JORNADA DE UM CLIQUE DO CLIENTE (PIPELINE SEQUENCIAL)
-               
- [Navegador / Bruno] ───► [ExpressHttpDriver: Entrada de Rede]
-                                    │
-                                    ▼
-       ┌────────────────────────────────────────────────────────┐
-       │ 🧬 1. ServerLifecycleGovernor (Incrementa +1 na RAM)    │
-       │    * Rejeita a conexão com status 503 se o SO estiver  │
-       │      em processo de encerramento em nuvem (Docker).    │
-       └────────────────────────────┬───────────────────────────┘
-                                    │ Sinal Verde (Avança)
-                                    ▼
-       ┌────────────────────────────────────────────────────────┐
-       │ 🔑 2. ApiKeyEvaluator (Cache RAM Dinâmico Read-Through)│
-       │    * Valida X-API-Key in microsegundos via RAM Cache.  │
-       │    * Cache Miss? Fallback ao banco e popula a RAM.     │
-       └────────────────────────────┬───────────────────────────┘
-                                    │ Chave Válida (Avança)
-                                    ▼
-       ┌────────────────────────────────────────────────────────┐
-       │ 🛡️ 3. RequestThrottler (Regulador de Janela de Cliques) │
-       │    * Conta os cliques por minuto (Tenancy do Plano).   │
-       │    * Estourou a cota do plano? Status 429 Aborta.      │
-       └────────────────────────────┬───────────────────────────┘
-                                    │ Sob a Cota (Avança)
-                                    ▼
-       ┌────────────────────────────────────────────────────────┐
-       │ 🎯 4. Execução do Caso de Uso (Seu Core de IA)          │
-       │    * Durante chamadas externas demoradas (OpenAI)...   │
-       │    * ServiceResilienceGate monitora o circuito.       │
-       │    * Falhou 5 vezes consecutivas? O portão abre e     │
-       │      desvia chamadas futuras com status 503 (0ms).    │
-       └────────────────────────────┬───────────────────────────┘
-                                    │ Fluxo Encerrado (Sucesso/Erro)
-                                    ▼
-       ┌────────────────────────────────────────────────────────┐
-       │ ⚰️ 5. ExpressHttpDriver: Bloco Finally                 │
-       │    * Decrementa obrigatoriamente o contador (-1 na RAM).│
-       │    * Libera a morte segura do processo se for o último.│
-       └────────────────────────────────────────────────────────┘
-```
+## 🚀 Como Evoluir e Estender o Boilerplate (Guia do Desenvolvedor)
 
----
+A infraestrutura técnica deste ecossistema foi projetada sob o princípio de **Fácil Substituição de Detalhes**. Graças ao isolamento estrito imposto pelas fronteiras lógicas, o desenvolvedor pode plugar novas tecnologias ou substituir motores legados com impacto colateral zero no restante do software.
 
-### 📑 1. Regulador Dinâmico de Cliques (`RequestThrottler`)
-*   **Propósito:** Proteger os recursos computacionais do servidor e mitigar abusos de faturamento causados por scripts robôs em loops infinitos, aplicando limites estritos baseados no plano contratado da aplicação parceira (Multi-Tenant) [Farley].
-*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/requestThrottler.ts`. Opera de forma nativa e agnóstica através do algoritmo de **Janela Deslizante Simplificada (*Fixed Window Rate Limiting*)** recorrendo a estruturas de `Map` da memória RAM do processo Node.js [Farley].
-*   **Variáveis e Janelas Internas:**
-    *   `RATE_LIMITS` : Dicionário imutável strongly-typed mapeando as cotas (`FREE: 10`, `PREMIUM: 100`, `ENTERPRISE: 1000` cliques a cada 60 segundos).
-    *   `appCountersStore` : Tabela efêmera em RAM que armazena a contagem ativa indexada por `applicationId`.
-    *   `ipCountersStore`  : Tabela efêmera em RAM indexada por `clientIp` com teto bruto de 200 cliques/minuto contra ataques DDoS na Camada 7.
-*   **Tratamento de Exceção:** Quando o contador atômico de uma chave supera o teto permitido dentro da janela ativa de 60 segundos, explode a exceção de domínio unificada do catálogo, interceptada na portaria com o status **`429 Too Many Requests` (REQUEST_THROTTLED)** [Farley].
+### 🔌 1. Como Substituir a Camada de Dados (Plugar um Banco de Dados Real)
 
-#### 🎮 Cenário Lúdico de Funcionamento do `RequestThrottler`
-Imagine uma balada exclusiva onde parceiros têm crachás de acesso. O parceiro **Luiz** tem o crachá plano `FREE`, que dá direito a apenas **10 drinques por minuto**. 
-Luiz decide trapacear e coloca um robô para pedir os 10 drinques na sinaleira de uma só vez em 2 segundos. Quando o robô de Luiz tenta pedir o **11º drinque** no 3º segundo, o barman (`RequestThrottler`), que tem um bloco de notas ultra-rápido na memória de sua cabeça (`Map`), olha e diz: *"Negado! Você estourou seu limite em menos de 60 segundos. Espere o relógio virar!"*. 
-O pedido nem chega a gastar os ingredientes do bar (sua CPU/IA), economizando os recursos da casa imediatamente com o erro `429` [Farley].
+Atualmente, o projeto utiliza uma persistência simulada na memória RAM localizada no diretório `src/database/`. Para migrar essa simulação para um banco de dados de produção (como PostgreSQL, MySQL ou MongoDB) sem tocar nos mecanismos perimetrais de rede ou na lógica de negócios, siga este protocolo de engenharia:
 
-```typescript
-// Exemplo sucinto de ativação automática perimetral no ExpressHttpDriver
-const apiCredentials = await this.apiKeyEngine.evaluate(String(request.headers['x-api-key']));
+1. **Desenvolver o Novo Adaptador Concreto:** Dentro de `src/infrastructure/security/apiKeyTenant/adapter/`, crie uma nova classe (ex: `PostgresConsumerFinder.ts`) que implemente obrigatoriamente o contrato puro **`ConsumerFinderEngine`**:
+   ```typescript
+   import type { ConsumerFinderEngine }        from './finder';
+   import type { ConsumerSpecificationEngine } from '../engine/specification';
 
-// O Throttler intercepta e conta atômico na RAM. Se estourar 10 cliques do plano FREE, mata a requisição aqui!
-await this.throttlerEngine.throttle(apiCredentials.applicationId, apiCredentials.rateLimitTier, request.ipAddress);
-```
+   export class PostgresConsumerFinder implements ConsumerFinderEngine {
+     public async byKey(identificationKey: string): Promise<ConsumerSpecificationEngine | null> {
+       // 1. Executar a consulta física real utilizando o ORM/Driver de mercado
+       // 2. Capturar o registro e traduzir as colunas crúas para o contrato da Borda
+       return {
+         identificationKey:        dbRecord.token_string,
+         ownerDeveloperIdentifier: dbRecord.dev_id,
+         rateLimitTier:            dbRecord.plan_tier,
+         isAccessSuspended:        dbRecord.is_active === false
+       };
+     }
+   }
+   ```
+2. **Plugar a Nova Instância na Composition Root (`src/server.ts`):** Vá ao ponto central de fiação do ecossistema, importe o novo adaptador e substitua a instância sem mexer em nenhuma linha do driver Express:
+   ```typescript
+   // Altere apenas a fiação física de infraestrutura
+   // const databaseRepository = new DataBaseConsumerFinder(); // Antigo mock
+   const databaseRepository = new PostgresConsumerFinder(postgresConnectionInstance);
+
+   // O sistema de cache dinâmico e o Express continuam operando imunes à mudança
+   const consumerAccessEngine = new ConsumerAccessValidator(databaseRepository, ramCacheStore, 300);
+   ```
+
+### 🧠 2. Como Criar um Novo Subdomínio de Negócio
+
+Para adicionar novas capacidades de negócio sem violar os princípios de design de software, siga o fluxo estrutural:
+* **Passo 1:** Crie uma nova pasta auto-contida dentro de `src/api/` (ex: `src/api/chat/`).
+* **Passo 2:** Isole as assinaturas puras e contratos dentro de uma pasta local `ports/`, e as regras de execução em classes de casos de uso independentes (`useCases/`).
+* **Passo 3:** Crie o controlador local (`controller.ts`) consumindo envelopes fortemente tipados e mapeie declarativamente o endpoint no arquivo `routes.ts` local.
+* **Passo 4:** Plugue a nova rota no orquestrador unificado **`src/apiRouter.ts`**, expandindo o ecossistema sem alterar os componentes existentes.
 
 ---
 
-### 📑 2. Portão de Resiliência Contra Colapsos Externos (`ServiceResilienceGate`)
-*   **Propósito:** Blindar a API contra o **efeito cascata catastrófico de lentidão ou quedas de serviços terceiros** (como OpenAI, Gemini ou Gateways de Pagamento). Impede que conexões longas travadas consumam a memória RAM do contêiner Docker [Farley].
-*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serviceResilienceGate.ts`. Funciona como um **Mecanismo de Disjuntor Técnico (*Circuit Breaker*)** de alta resiliência operando de forma desacoplada por domínio [Farley].
-*   **Os Três Estados Lógicos na Memória RAM:**
-    *   `CLOSED` 🟢 (Circuito Fechado): Estado operacional padrão. O tráfego para APIs de IA flui livremente. O portão monitora em silêncio.
-    *   `OPEN` 🔴 (Circuito Aberto): Se a API externa falhar consecutivamente por 5 vezes, o portão abre. Pelos próximos 60 segundos, qualquer disparo é interceptado e bloqueado na RAM em **0 milissegundos**, estourando o erro **`EXTERNAL_SERVICE_UNAVAILABLE` (Status 503)** sem tentar gastar tempo de rede com o serviço fora do ar [Farley].
-    *   `HALF_OPEN` 🟡 (Circuito Entreaberto): Passados os 60 segundos de repouso, o portão deixa passar uma única requisição de teste. Se falhar, volta para `OPEN` por mais um ciclo; se passar, restabelece o estado `CLOSED` automaticamente [Farley].
-*   **Variáveis Internas:** `consecutiveFailures` (Contador atômico de erros sequenciais), `currentState` (Indicador textual do estado ativo na RAM), e `nextAttemptAllowedAt` (Timestamp delimitador da janela de cooldown) [Ottinger].
+## ⚠️ Limitações do Escopo Real
 
-#### 🎮 Cenário Lúdico de Funcionamento do `ServiceResilienceGate`
-Você gerencia um restaurante e tem um motoboy terceirizado (**OpenAI**) para entregar pedidos longos. De repente, a avenida principal da cidade desaba e o motoboy começa a atrasar ou sumir. 
-O primeiro, o segundo e o terceiro cliente ligam reclamando de pane (`Error`). Ao atingir **5 falhas seguidas**, o gerente do restaurante liga o disjuntor de segurança (`ServiceResilienceGate` muda para `OPEN` 🔴). Pelos próximos 60 segundos, quando o 6º cliente tenta fazer um pedido, o gerente nem anota e nem chama o motoboy; ele diz na hora: *"Desculpe, nosso canal de entregas desabou, tente novamente em instantes!"*. 
-A resposta volta em **0 milissegundos**, evitando que a cozinha fique entulhada de pratos frios esperando um motoboy que nunca vai chegar (sua memória RAM travada por timeouts longos) [Farley].
+Antes de adotar o boilerplate para sistemas comerciais, os engenheiros de software devem estar cientes dos limites computacionais atuais da malha técnica entregue:
 
-```typescript
-// Exemplo lúdico de uso dentro do Caso de Uso de Chat com Inteligência Artificial
-public async executeChatPrompt(prompt: string): string {
-  // Se o disjuntor estiver OPEN, barra na hora com erro 503 sem gastar processamento de rede!
-  this.openAiResilienceGate.verifyGateHealth();
-
-  try {
-    const aiResult = await apiOpenAiThirdParty.send(prompt);
-    this.openAiResilienceGate.recordSuccess(); // Sucesso: Limpa o circuito 🟢
-    return aiResult;
-  } catch (error) {
-    this.openAiResilienceGate.recordFailure(); // Falha: Conta +1 erro rumo ao bloqueio 🔴
-    throw error;
-  }
-}
-```
+* **Involatilidade Volátil (Mocks na RAM):** Toda a camada de dados é simulada de forma efêmera na memória do processo por meio de arrays de teste (`mockApiKeyTable` e `mysqlUsersTable`). O reinício do contêiner Docker purga qualquer estado gravado ou alterado em tempo de execução.
+* **Rate Limiting em Cenários Multi-Instância:** Como os dicionários do `RequestThrottler` e o cache do `ConsumerAccessValidator` operam em estruturas nativas de `Map` da memória RAM local, o boilerplate está limitado a rodar sob uma **Única Instância (Single-Pod)**. Caso a API seja escalada horizontalmente atrás de um Load Balancer sem uma camada distribuída de cache (como Redis), as contagens de cliques e janelas de Rate Limiting ficarão fragmentadas e dessincronizadas entre os nós.
 
 ---
 
-### 📑 3. Governador do Ciclo de Vida do Servidor (`ServerLifecycleGovernor`)
-*   **Propósito:** Garantir o encerramento seguro e livre de corrupção de transações ou dados da aplicação (**Graceful Shutdown**), coordenando de forma transparente a drenagem de conexões longas de Inteligência Artificial quando a infraestrutura em nuvem (Docker/Kubernetes) solicitar a substituição do contêiner [Farley].
-*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serverLifecycleGovernor.ts`. O driver HTTP Express intercepta os sinais primitivos do sistema operacional Linux (`SIGTERM`, `SIGINT`) e delega o encerramento do processo de forma atômica para este governador [Uncle Bob].
-*   **O Pipeline de Drenagem In-Memory:**
-    *   **Entrada de Tráfego:** No início de cada requisição, o driver executa o método `.incrementActiveRequests()`, somando `+1` ao contador central de memória [Uncle Bob]. Se o sinal de encerramento já foi disparado, rejeita novos cliques com o status 503 (`SERVER_TERMINATING`).
-    *   **Saída de Tráfego:** Utilizando a cláusula de segurança **`finally`** do JavaScript na portaria de rede, o driver executa o método `.decrementActiveRequests()` de forma obrigatória (seja a requisição um sucesso ou um erro), subtraindo `-1` [Uncle Bob].
+## 📑 Mapeamento de Endpoints Operacionais
 
-# 🏛️ Adendo de Documentação Técnica: Subdomínio de Identidade Progressiva
+Com base nas rotas cadastradas ativas e nos controladores acoplados no arquivo unificado `src/apiRouter.ts`, a API disponibiliza em sua portaria as seguintes rotas factuais prontas para consumo:
 
-Este documento serve como a especificação técnica oficial das novas engrenagens acopladas ao ecossistema Hexagonal do boilerplate. O módulo foi projetado sob o padrão **Ports & Adapters**, garantindo o isolamento completo do núcleo de negócios contra os dialetos de transporte de Big Techs externas.
+* **`GET /` (Home):** Retorna o envelope de diagnóstico estruturado indicando o status operacional do motor técnico, identificando o ambiente de execução ativo (`development` ou `production`).
+* **`GET /users/` (Users):** Lista a coleção de registros de usuários interceptada e traduzida a partir da tabela física mockada em memória.
+* **`POST /users` (Users):** Executa a validação linear de campos (`name` e `email`), insere um novo registro de forma incremental no array RAM simulado e devolve a entidade purificada com o status `201 Created`.
 
 ---
 
-## 📂 Novas Estruturas Incorporadas
+## 🛡️ Mantenedor
 
-```text
-src/
-├── api/
-│   └── identity/                    # SUBDOMÍNIO DE ACESSO PROGRESSIVO
-│       ├── ports/                   # Contratos Abstratos (Interfaces Puras)
-│       │   ├── federatedAuthenticator.ts
-│       │   └── identityRepository.ts
-│       └── useCases/                # Regras de Negócio e Casos de Uso
-│           ├── associateExternalIdentity.ts
-│           └── registerAnonymousActor.ts
-└── infrastructure/
-    └── identityProviders/            # Periferias Substituíveis (Adapters)
-        └── google/
-            └── googleAuthenticator.ts # Driver de Produção Real (fetch/tokeninfo)
-```
-
----
-
-## 🔑 1. Camada de Domínio: As Portas (`ports/`)
-
-As interfaces abaixo residem na camada soberana de negócio (`src/api/identity/ports/`). Elas não possuem o prefixo "I" (Capítulo 2 - *Clean Code*) e ditam as regras para os agentes externos.
-
-### 📄 `src/api/identity/ports/federatedAuthenticator.ts`
-Define o contrato de dados que qualquer provedor de login externo (Google, Facebook, LinkedIn) é obrigado a cumprir para entrar no sistema.
-
-```typescript
-export interface FederatedIdentityPayload {
-  readonly externalId       : string; // ID único imutável do provedor para auditoria
-  readonly email            : string; // Elo universal de unificação progressiva
-  readonly isEmailVerified  : boolean; // Validação contra e-mails falsos ou maliciosos
-  readonly fullName         : string; // Nome nominal para hidratação de perfil
-  readonly avatarUrl        : string; // URL da imagem para humanização visual da IA
-}
-
-export interface FederatedAuthenticator {
-  /**
-   * Valida a assinatura do token e extrai as informações do perfil de forma agnóstica.
-   */
-  authenticate(accessToken: string): Promise;
-}
-```
-
-### 📄 `src/api/identity/ports/identityRepository.ts`
-Define o contrato abstrato de persistência para validação de aplicações parceiras.
-
-```typescript
-import type { ApiKeySessionPayload } from '../../../infrastructure/security/engine/apiKeySession';
-
-export interface IdentityRepository {
-  /**
-   * Extrai os metadados de uma credencial cadastrada de forma polimórfica no banco.
-   */
-  findApplicationByKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
-}
-```
-
----
-
-## 🎯 2. Camada de Domínio: Os Casos de Uso (`useCases/`)
-
-As regras puras de negócio operam de forma isolada na memória RAM, totalmente livres de assinaturas do Express ou rotas HTTP.
-
-### 📄 `src/api/identity/useCases/registerAnonymousActor.ts`
-Orquestra o primeiro milissegundo de acesso do cliente através de assinaturas de hardware temporárias.
-
-```typescript
-import type { SystemLogger } from '../../../infrastructure/telemetry/engine/systemLogger';
-
-export interface RegisterAnonymousInput {
-  readonly deviceFingerprintId : string;
-  readonly initialIpAddress    : string;
-}
-
-export interface RegisterAnonymousOutput {
-  readonly actorId : string;
-  readonly status  : string;
-}
-
-export class RegisterAnonymousActorUseCase {
-  /**
-   * Registra o ator efêmero na memória para preservar o histórico de prompts da IA.
-   */
-  public async execute(input: RegisterAnonymousInput, logger: SystemLogger): Promise<RegisterAnonymousOutput> {
-    logger.info(`Registering dynamic anonymous boundary for hardware fingerprint: [${input.deviceFingerprintId}]`);
-
-    return {
-      actorId : `anonymous_${Date.now()}`,
-      status  : 'CREATED_EFEMERAL'
-    };
-  }
-}
-```
-
-### 📄 `src/api/identity/useCases/associateExternalIdentity.ts`
-Gerencia o mecanismo de **Identificação Progressiva**, unificando o histórico do ator anônimo através do e-mail verificado pela federação.
-
-```typescript
-import type { FederatedAuthenticator } from '../ports/federatedAuthenticator';
-import type { SystemLogger }           from '../../../infrastructure/telemetry/engine/systemLogger';
-
-export interface AssociateIdentityInput {
-  readonly actorId     : string;
-  readonly accessToken : string;
-}
-
-export class AssociateExternalIdentityUseCase {
-  private readonly authenticator: FederatedAuthenticator;
-
-  constructor(authenticator: FederatedAuthenticator) {
-    this.authenticator = authenticator;
-  }
-
-  /**
-   * Vincula a credencial externa ao ID de negócio do ator local existente na RAM.
-   */
-  public async execute(input: AssociateIdentityInput, logger: SystemLogger): Promise<void> {
-    logger.info(`Initiating federation upgrade sequence for target actor: [${input.actorId}]`);
-
-    // Inversão de Controle: Aciona o contrato sem saber o provedor tecnológico de origem
-    const externalProfile = await this.authenticator.authenticate(input.accessToken);
-
-    logger.info(`Identity mapping secured between [${externalProfile.email}] and actor [${input.actorId}]`);
-  }
-}
-```
-
----
-
-## 🔌 3. Camada de Infraestrutura: Os Adaptadores (`adapters/`)
-
-Os drivers externos ficam enclausurados em pacotes isolados. Se o formato de comunicação ou a API de terceiros mudar, apenas o arquivo periférico sofre manutenção, mantendo o core imune.
-
-### 📄 `src/infrastructure/identityProviders/google/googleAuthenticator.ts`
-Adaptador real de produção focado na Google Alphabet. O componente recorre ao `fetch` nativo do Node.js, descartando o acoplamento a SDKs pesados de terceiros.
-
-```typescript
-import type { FederatedAuthenticator, FederatedIdentityPayload } from '../../../api/identity/ports/federatedAuthenticator';
-import      { DomainException }          from '../../../api/errors/domainException';
-
-export class GoogleAuthenticator implements FederatedAuthenticator {
-  /**
-   * Dispara uma chamada HTTPS contra o servidor da Google para validar o ID Token de forma segura.
-   */
-  public async authenticate(idToken: string): Promise {
-    try {
-      // 🚀 CONEXÃO DE REDE REAL: Bate no endpoint oficial de validação de ID Tokens da Alphabet
-      const googleApiResponse = await fetch(`https://googleapis.com{idToken}`);
-
-      // Se a Google rejeitar a assinatura do token, aciona o barramento central de erros da API
-      if (!googleApiResponse.ok) {
-        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
-      }
-
-      const googleRawProfile = await googleApiResponse.json() as any;
-
-      // 🥇 TRADUÇÃO DE DIALETO: Transforma o payload bruto do Google nas propriedades limpas do Domínio
-      return {
-        externalId      : String(googleRawProfile.sub), // O Google chama o ID imutável de 'sub'
-        email           : String(googleRawProfile.email),
-        isEmailVerified : googleRawProfile.email_verified === true || googleRawProfile.email_verified === 'true',
-        fullName        : String(googleRawProfile.name),
-        avatarUrl       : String(googleRawProfile.picture || 'https://googleusercontent.com')
-      };
-
-    } catch (capturedError: unknown) {
-      if (capturedError instanceof DomainException) {
-        throw capturedError;
-      }
-      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
-    }
-  }
-}
-```
+* **Autor:** Luis Carlos da Silva Dias  
+* **Contato Corporativo:** silvadias.perfil@outlook.com  
+* **Repositório:** [GitHub Perfil](https://github.com)
 
 
-## Mantenedor
-
-**Autor:** Luis Carlos da Silva Dias  
-**Contato:** silvadias.perfil@outlook.com

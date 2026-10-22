@@ -14,6 +14,12 @@ import      { ServerLifecycleGovernor }     from '../../lifeCycle/serverLifecycl
 import      { ValidationException }         from '../engine/httpValidation';
 import      { DomainException }             from '../../../api/errors/domainException';
 
+/**
+ * @class ExpressHttpDriver
+ * @description Orquestrador Central de Borda e Portaria Perimetral HTTP.
+ * Implementa o contrato 'HttpTrafficExchangeEngine' encapsulando o Express de forma hermética,
+ * injetando de maneira encadeada os mecanismos de ciclo de vida, limite de vazão, tenant e segurança.
+ */
 export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly application          : ExpressEngine.Express;
   private readonly listeningPort        : number;
@@ -52,6 +58,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     this.applyGlobalNetworkPolicies();
   }
 
+  /** Aplica de forma imperativa as regras de CORS, ocultação de marcas e defesas de cabeçalhos contra ataques. */
   private applyGlobalNetworkPolicies(): void {
     this.application.use((request, response, next) => {
       response.setHeader('Access-Control-Allow-Origin', this.networkSecurityPolicy.allowedOrigins.join(', '));
@@ -76,6 +83,10 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     });
   }
 
+  /**
+   * @description Motor de Injeção e Execução de Pipeline Perimetral Sequencial.
+   * Converte assinaturas nativas externas e gerencia barreiras atômicas síncronas antes do envio ao core.
+   */
   public register(
     method      : 'get' | 'post' | 'put' | 'delete', 
     resourcePath: string, 
@@ -85,8 +96,9 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
       this.application[method](resourcePath, async (
         incomingRequest : ExpressEngine.Request, 
         outgoingResponse: ExpressEngine.Response
-    ): Promise<void> => {      
-      
+    ): Promise<void> => {
+
+      // BARREIRA 1: Validação de Ciclo de Vida do Servidor (Graceful Shutdown)
       try {
         this.lifecycleGovernor.incrementActiveRequests();
       } catch (terminationError: unknown) {
@@ -108,18 +120,21 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         resourcePath
       });
 
+      // BARREIRA 2: Rate Limiting Contra DDoS por IP na Camada de Aplicação (L7)
       try {
         await this.throttlerEngine.throttle({
           trackingKey : clientMetadata.ipAddress,
           maxAllowed  : 200
         });
 
+        // BARREIRA 3: Autenticação Multi-Tenant Perimetral via Chave Contratual
         const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
         
         if (!authenticatedConsumer) {
           throw new DomainException('API_KEY_INVALID');
         }
 
+        // BARREIRA 4: Rate Limiting Baseado na Cota do Plano Contratado da Aplicação Parceira
         const tenantQuotaMap: Record<string, number> = { 
           FREE: 10, 
           PREMIUM: 100, 
@@ -132,14 +147,18 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           maxAllowed  : tenantMaxAllowed
         });
 
+        // BARREIRA 5: Identificação Progressiva e Hidratação de Sessão (Suporta estado degradado ANONYMOUS)
         const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
 
+        // BARREIRA 6: Rate Limiting Comportamental por Usuário dentro da Aplicação Parceira
         await this.throttlerEngine.throttle({
           trackingKey : `user:${authenticatedConsumer.identificationKey}:${activeSessionPayload.actorId}`,
           maxAllowed  : 30
         });
 
         contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
+
+        // BARREIRA 7: Validação de Contrato Sintático de Entrada (Schemas de Borda)
         this.validateInputSchema(schema, incomingRequest.body);
 
         const adaptedRequest: HttpTrafficRequest = {
@@ -152,6 +171,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
           consumer    : authenticatedConsumer
         };
 
+        // Aciona o caso de uso ou controlador de domínio de forma desacoplada
         const executionResponse = await handler(adaptedRequest);
         
         if (executionResponse.newToken) {
@@ -163,16 +183,20 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
         
       } catch (capturedError: unknown) {
         contextualLogger.error(`Exception intercepted during HTTP processing on path: [${resourcePath}]`, capturedError);
+
+        // Aciona a tradução polimórfica de erros agnósticos para payloads estruturados de rede
         const { statusCode, payload } = this.failureFormatter.format(capturedError, this.displayDebugDetails);
         
         outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
         outgoingResponse.status(statusCode).json(payload);
       } finally {
+        // Libera obrigatoriamente a sinaleira de requisição ativa in-memory
         this.lifecycleGovernor.decrementActiveRequests();
       }
     });
   }
 
+  /** Captura e gera hashes e metadados reduzidos de rede para auditorias de segurança de não-repúdio. */
   private extractClientMetadata(request: ExpressEngine.Request) {
     const rawClientIp     = request.ip || request.headers['x-forwarded-for'] || '127.0.0.1';
     const ipStringBase    = Array.isArray(rawClientIp) ? String(rawClientIp[0] || '127.0.0.1') : String(rawClientIp);
@@ -183,6 +207,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     return { ipAddress, userAgent, userAgentHash };
   }
 
+  /** Executa a validação de contratos declarativos injetados através de checagem sintática pass-through. */
   private validateInputSchema(schema: unknown, body: unknown): void {
     if (schema && typeof schema === 'object' && 'safeParse' in schema && typeof schema.safeParse === 'function') {
       const validationResult = (schema as any).safeParse(body);
@@ -193,6 +218,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     }
   }
 
+  /** Tenta decodificar o token de segurança física do cabeçalho ou degrada o estado do ator de forma elegante. */
   private async hydrateUserSession(request: ExpressEngine.Request, ipAddress: string, userAgentHash: string): Promise<any> {
     const authorizationHeader = request.headers['authorization'];
     const anonymousPayload = {
@@ -217,7 +243,7 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     }
     return anonymousPayload;
   }
-
+  /** Inicializa o servidor HTTP nativo acoplado e vincula os escutadores de interrupção abrupta do SO Linux. */
   public start(): void {
     const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {
       this.systemLogger.info(`Express HTTP Driver actively running and listening on port [${this.listeningPort}]`);

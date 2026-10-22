@@ -1,6 +1,12 @@
 import type { FederatedAuthenticator, FederatedIdentityPayload } from '../engine/federatedAuthenticator';
 import      { DomainException }          from '../../../api/errors/domainException';
 
+/**
+ * @class GoogleAuthenticator
+ * @description Adaptador Periférico (Adapter) para Federação de Identidade via Google.
+ * Materializa o contrato 'FederatedAuthenticator' utilizando o 'fetch' nativo do Node.js,
+ * isolando o núcleo contra os dialetos de transporte de perfis e autenticação da Big Tech.
+ */
 export class GoogleAuthenticator implements FederatedAuthenticator {
 
   public async authenticate(idToken: string): Promise <FederatedIdentityPayload>{

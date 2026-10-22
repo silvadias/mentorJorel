@@ -2,6 +2,12 @@ import type { HttpTrafficExchangeEngine }               from './infrastructure/h
 import      { initializeHomeRoutes }                    from './api/home/routes';
 import      { initializeUsersRoutes }                   from './api/users/routes';
 
+/**
+ * @file apiRouter.ts
+ * @description Centralizador de Topografia de Rede.
+ * Agrega e delega sequencialmente o acoplamento de rotas e recursos de negócio,
+ * servindo como o ponto unificado de fiação declarativa para o motor de tráfego HTTP.
+ */
 export function configureApiRoutes(engine: HttpTrafficExchangeEngine): void {
   initializeHomeRoutes(engine);
   initializeUsersRoutes(engine);

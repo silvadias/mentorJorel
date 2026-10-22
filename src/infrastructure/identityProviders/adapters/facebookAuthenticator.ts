@@ -1,7 +1,11 @@
 import type { FederatedAuthenticator, FederatedIdentityPayload } from '../engine/federatedAuthenticator';
 import      { DomainException }          from '../../../api/errors/domainException';
 
-
+/**
+ * @class FacebookAuthenticator
+ * @description Adaptador Periférico para Federação de Identidade via Facebook Graph API.
+ * Implementa o contrato 'FederatedAuthenticator' de forma isolada do núcleo da aplicação.
+ */
 export class FacebookAuthenticator implements FederatedAuthenticator {
 
   public async authenticate(accessToken: string): Promise<FederatedIdentityPayload> {

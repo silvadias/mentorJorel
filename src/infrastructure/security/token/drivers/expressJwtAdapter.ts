@@ -4,6 +4,12 @@ import type { TokenCryptographerEngine,
               TokenSessionPayload }            from '../engine/tokenSession';
 import      { DomainException }                from '../../../../api/errors/domainException';
 
+/**
+ * @class ExpressJwtAdapter
+ * @description Adaptador Criptográfico (Adapter) Periférico do Ecossistema JWT.
+ * Materializa o contrato 'TokenCryptographerEngine' e enclausura a biblioteca externa 'jsonwebtoken',
+ * atuando como o tradutor soberano entre as claims compactas de rede e os payloads estruturados de negócio.
+ */
 export class ExpressJwtAdapter implements TokenCryptographerEngine {
   private readonly secretPrivateKey     : string;
   private readonly expirationInSeconds  : number;
@@ -16,6 +22,10 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     this.expirationInSeconds  = configuration.expirationSeconds;
   }
 
+  /**
+   * @description Compacta e assina digitalmente um payload de negócio.
+   * Traduz as propriedades extensas do domínio para o dicionário encriptado reduzido de tráfego.
+   */
   public async generate(payload: Omit<
                         TokenSessionPayload,'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'
                         >
@@ -36,10 +46,15 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
     });
   }
 
+  /**
+   * @description Decodifica e valida a assinatura criptográfica do token de rede.
+   * Intercepta falhas primitivas da biblioteca e as normaliza sob o catálogo de exceções.
+   */
   public async decrypt(token: string): Promise<TokenSessionPayload> {
     try {
       const decodedClaims = jwt.verify(token, this.secretPrivateKey) as jwt.JwtPayload;
 
+      // BARREIRA DE INTEGRIDADE: Garante que todas as claims vitais exigidas estão presentes no envelope
       if (!decodedClaims['sub'] || 
           !decodedClaims['did'] || 
           !decodedClaims['jti'] ||
@@ -51,6 +66,7 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
         throw new DomainException('SECURITY_TOKEN_CORRUPTED');
       }
 
+      // Desempacota e traduz as claims compactas para o dialeto estruturado do Domínio
       return {
         actorId                : decodedClaims['sub'],
         deviceFingerprintId    : decodedClaims['did'],
@@ -69,6 +85,7 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
         throw capturedError;
       }
       
+      // Captura erros nativos expostos pela biblioteca e envelopa em exceções catalogadas
       if (capturedError instanceof jwt.TokenExpiredError) {
         throw new DomainException('SECURITY_TOKEN_EXPIRED');
       }

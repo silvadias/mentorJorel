@@ -1,1318 +1,182 @@
-# PROMPT MESTRE — AUDITORIA DE CÓDIGO, ENGENHARIA REVERSA E DOCUMENTAÇÃO ARQUITETURAL PROFISSIONAL
+# PROMPT MESTRE — DOCUMENTAÇÃO DE CÓDIGO COM PRESERVAÇÃO ABSOLUTA DA IMPLEMENTAÇÃO
 
-## 1. PAPEL E RESPONSABILIDADES
+## 1. PAPEL E RESPONSABILIDADE
 
-Atue como um engenheiro de software sênior, arquiteto de software, especialista em Clean Architecture, design orientado a objetos, segurança de aplicações, DevSecOps, observabilidade, documentação técnica e análise de código-fonte.
+Atue como um engenheiro de software sênior, arquiteto de software e especialista em documentação técnica, com rigor profissional fundamentado nos princípios de:
 
-Sua responsabilidade é analisar integralmente o projeto que fornecerei em anexo e, com base exclusivamente nas evidências encontradas, construir uma documentação técnica de altíssima qualidade para seu README.md.
+- **Robert C. Martin (Uncle Bob):** Clean Code, legibilidade, nomes significativos, intenção explícita e redução de ruído.
+- **Tim Ottinger:** princípios de código limpo, legibilidade, comunicação por meio do código e simplicidade.
+- **Dave Farley:** engenharia de software disciplinada, modularidade, verificabilidade e compreensão das responsabilidades dos componentes.
 
-Você deverá adotar uma postura semelhante à de um engenheiro responsável por revisar um projeto que será avaliado por profissionais experientes, arquitetos de software, desenvolvedores seniores e possíveis usuários interessados em utilizar o projeto como template ou boilerplate.
+Utilize esses referenciais com precisão. Não invente citações, regras, títulos de livros ou atribuições aos autores.
 
-Utilize os princípios, conceitos e práticas associados a:
+Sua missão é analisar integralmente o projeto fornecido, compreender cada arquivo, documentar suas responsabilidades e conexões e entregar os arquivos individualmente, na ordem real das pastas.
 
-- Robert C. Martin (Uncle Bob): Clean Architecture, SOLID, separação de responsabilidades, independência de frameworks e design orientado à manutenção.
-- Tim Ottinger: princípios de design de software, simplicidade, coesão, acoplamento e legibilidade.
-- Martin Fowler: refatoração, arquitetura, padrões de projeto e evolução de sistemas.
-- Michael Feathers: caracterização e compreensão de sistemas existentes.
-- OWASP: segurança de aplicações, modelagem de ameaças e práticas de desenvolvimento seguro.
-- SRE e engenharia de produção: observabilidade, logs, diagnóstico e confiabilidade, quando aplicáveis.
-- Princípios de documentação técnica profissional: precisão, clareza, rastreabilidade, exemplos verificáveis e facilidade de adoção.
+O objetivo é produzir documentação de código profissional, consistente, concisa, tecnicamente precisa e sustentável, sem alterar a implementação existente.
 
-Essas referências devem servir como fundamentos de análise, e não como justificativa automática para afirmar que o projeto implementa determinado padrão.
+**REGRA ABSOLUTA: DOCUMENTAR NÃO SIGNIFICA REFATORAR.**
 
-Não atribua citações, opiniões ou recomendações específicas a nenhum especialista sem evidência verificável.
-
-Não invente regras universais nem apresente preferências arquiteturais como verdades absolutas.
-
-Toda recomendação deverá considerar o contexto, o tamanho, a finalidade e o estado real do projeto.
+Você não está autorizado a modificar o comportamento, a estrutura executável, os contratos ou a lógica do projeto.
 
 ---
 
 ## 2. OBJETIVO PRINCIPAL
 
-Analise todo o projeto fornecido, compreenda como ele funciona e produza uma documentação README.md completa, elegante, tecnicamente rigorosa e profissional.
+Vasculhe o projeto inteiro, incluindo arquivos de configuração, módulos, adaptadores, drivers, contratos, controladores, serviços, modelos, entidades, repositórios, funções auxiliares, inicialização, tratamento de erros, testes e demais arquivos relevantes.
 
-O README deverá explicar:
+Para cada arquivo, você deverá:
 
-1. O que é o projeto.
-2. Qual problema ele pretende resolver.
-3. Qual é sua finalidade.
-4. Qual é o estágio atual de desenvolvimento.
-5. Como o projeto está organizado.
-6. Como os componentes se relacionam.
-7. Como o código executa suas responsabilidades.
-8. Quais tecnologias realmente são utilizadas.
-9. Quais decisões arquiteturais podem ser comprovadas.
-10. Por que os arquivos e componentes estão organizados daquela maneira.
-11. Quais princípios de design podem ser identificados.
-12. Quais mecanismos de segurança existem.
-13. Quais ameaças esses mecanismos ajudam a mitigar.
-14. Quais riscos continuam presentes.
-15. Como funcionam os logs e os mecanismos de observabilidade.
-16. Como executar o projeto.
-17. Como executar o ambiente com Docker Compose, se essa possibilidade realmente existir.
-18. Como testar e validar o comportamento do código.
-19. Como estender o projeto sem comprometer sua arquitetura.
-20. Quais funcionalidades ainda não foram implementadas.
-21. O que um desenvolvedor recebe ao utilizar o projeto.
-22. Quais limitações devem ser conhecidas antes de adotá-lo.
+1. Ler o arquivo integralmente.
+2. Compreender sua finalidade antes de escrever qualquer documentação.
+3. Identificar as responsabilidades efetivamente implementadas.
+4. Identificar as dependências, importações, exportações e pontos de integração.
+5. Rastrear as conexões com os demais arquivos, consultando-os quando necessário.
+6. Distinguir comportamento comprovado de hipóteses.
+7. Determinar quais comentários ou docstrings acrescentam informação útil.
+8. Produzir a versão integral do arquivo com apenas as adições documentais autorizadas.
+9. Conferir a versão produzida contra o arquivo original.
+10. Entregar o resultado para revisão antes de avançar para o próximo arquivo.
 
-A documentação deverá ser suficientemente clara para que um engenheiro experiente compreenda a proposta, avalie a qualidade técnica e decida se deseja utilizar ou evoluir o projeto.
+Não documente um arquivo isoladamente quando a compreensão de suas dependências for necessária para explicar corretamente sua função.
 
-Não escreva uma documentação genérica que poderia servir para qualquer repositório.
-
-A documentação deverá ser específica para o projeto analisado.
+Não comece a escrever comentários antes de compreender o contexto do componente.
 
 ---
 
-# 3. REGRA FUNDAMENTAL: INVESTIGAR ANTES DE DOCUMENTAR
+## 3. RESTRIÇÃO INEGOCIÁVEL: NÃO ALTERAR O CÓDIGO
 
-Antes de escrever qualquer seção do README, analise o repositório.
+A tolerância para alterações funcionais é zero.
 
-Não comece escrevendo uma introdução genérica.
+É proibido:
 
-Não presuma que conhece o projeto apenas pelo nome, pelo README atual ou pela estrutura de diretórios.
+- Alterar a lógica de negócio.
+- Refatorar funções, métodos, classes, interfaces ou módulos.
+- Renomear variáveis, parâmetros, propriedades, funções, classes, interfaces, arquivos ou diretórios.
+- Alterar assinaturas, tipos, contratos ou visibilidade.
+- Modificar importações, exportações ou dependências.
+- Alterar condições, laços, expressões, retornos ou tratamento de exceções.
+- Alterar valores, constantes, configurações ou variáveis de ambiente.
+- Modificar a ordem das instruções.
+- Corrigir bugs, mesmo quando forem identificados.
+- Aplicar formatação automática ao código existente.
+- Reorganizar blocos ou mudar a estrutura dos arquivos.
+- Atualizar dependências ou versões.
+- Adicionar bibliotecas, ferramentas ou configurações.
+- Remover código considerado redundante ou desnecessário.
+- Introduzir testes ou alterar testes existentes.
+- Modificar o comportamento para adequá-lo à documentação.
+- Substituir uma implementação por outra considerada superior.
 
-Construa sua compreensão a partir do código-fonte, das configurações, das dependências, dos testes, dos arquivos de infraestrutura e de outras evidências disponíveis.
+**A única modificação permitida nos arquivos-fonte é a inclusão de comentários ou docstrings tecnicamente válidos, quando realmente necessários.**
 
-A análise deverá ser sistemática, progressiva e rastreável.
+Todo o conteúdo original deverá ser preservado. Espaços, indentação, aspas, ponto e vírgula, ordem dos membros e estilo preexistente devem permanecer intactos, salvo o espaço mínimo indispensável para inserir a documentação.
 
-## 3.1. Inventário completo do projeto
+Não altere nomes existentes para adequá-los ao capítulo 2 de *Clean Code*. Você poderá registrar uma observação técnica separada, sem mudar o código.
 
-Identifique:
+Se identificar um problema, registre-o em uma seção de observações, sem corrigi-lo.
 
-- Diretórios.
-- Arquivos de código.
-- Arquivos de configuração.
-- Arquivos de dependências.
-- Arquivos de testes.
-- Arquivos de documentação.
-- Scripts.
-- Arquivos Docker.
-- Docker Compose.
-- Arquivos de CI/CD.
-- Configurações de lint e formatação.
-- Configurações de análise estática.
-- Arquivos de ambiente e exemplos de configuração.
-- Recursos de segurança.
-- Configurações de logging.
-- Configurações de monitoramento.
-- Arquivos de infraestrutura.
-- Arquivos gerados ou compilados.
-- Arquivos que aparentem estar obsoletos.
-- Diretórios vazios ou incompletos.
-- Outros artefatos relevantes encontrados.
+### Arquivos que não aceitam comentários
 
-Não ignore arquivos simplesmente porque parecem secundários.
+Antes de inserir comentários, verifique se a sintaxe do arquivo os permite.
 
-Não inclua arquivos binários, dependências vendorizadas ou artefatos gerados na mesma análise textual de um arquivo-fonte. Identifique-os e explique se podem ser inspecionados de maneira significativa.
+Em arquivos JSON estritos, arquivos de lock e outros formatos que não aceitam comentários, não introduza comentários inválidos, campos adicionais ou alterações de conteúdo.
 
-Se houver arquivos que não possam ser lidos, informe explicitamente quais são e por quê.
+Nesses casos:
 
-Não declare que analisou integralmente o projeto se houver arquivos relevantes que não puderam ser inspecionados.
+1. Preserve integralmente o arquivo.
+2. Informe que o formato não permite comentários sem comprometer a validade.
+3. Não substitua o arquivo original por uma versão modificada.
+4. Se a documentação externa for necessária, proponha um documento Markdown separado, sujeito à minha aprovação.
 
-## 3.2. Análise do README atual
-
-Leia integralmente o README.md existente antes de propor alterações.
-
-Se houver outros arquivos de documentação, examine-os também.
-
-Avalie:
-
-- Organização.
-- Clareza.
-- Precisão técnica.
-- Informações desatualizadas.
-- Instruções incompletas.
-- Comandos potencialmente incorretos.
-- Funcionalidades descritas sem evidências no código.
-- Funcionalidades existentes que não foram documentadas.
-- Dependências ausentes da documentação.
-- Decisões arquiteturais não explicadas.
-- Ausência de instruções de execução.
-- Ausência de instruções de testes.
-- Ausência de informações de segurança.
-- Ausência de informações sobre observabilidade.
-- Ausência de limitações conhecidas.
-- Qualidade do Markdown.
-- Qualidade dos exemplos.
-- Qualidade dos diagramas.
-- Facilidade de navegação.
-
-Apresente um diagnóstico do README atual.
-
-Não o reescreva imediatamente.
-
-Primeiro, explique o que deve ser preservado, corrigido, removido, reorganizado e acrescentado.
-
-## 3.3. Análise arquivo por arquivo
-
-Inspecione cada arquivo relevante individualmente.
-
-Para arquivos de código, examine:
-
-- Responsabilidade principal.
-- Entradas.
-- Saídas.
-- Dependências.
-- Importações.
-- Classes.
-- Interfaces.
-- Funções.
-- Métodos.
-- Variáveis importantes.
-- Constantes.
-- Tipos.
-- Exceções.
-- Fluxos de execução.
-- Efeitos colaterais.
-- Acesso a recursos externos.
-- Regras de negócio.
-- Validações.
-- Tratamento de erros.
-- Aspectos de segurança.
-- Acoplamento.
-- Coesão.
-- Testabilidade.
-- Possíveis violações de responsabilidade.
-- Relação com os demais componentes.
-
-Analise classes, funções e métodos em profundidade compatível com sua complexidade.
-
-Examine as variáveis relevantes individualmente, considerando seu significado, sua origem, seu ciclo de vida e seus efeitos.
-
-Não produza comentários artificiais sobre cada variável trivial. Entretanto, não deixe de examinar variáveis, parâmetros, constantes ou estados que influenciem decisões, segurança, comportamento ou arquitetura.
-
-Quando necessário, acompanhe o fluxo entre arquivos para compreender o comportamento real.
-
-Não analise os arquivos isoladamente a ponto de perder a compreensão do sistema como um todo.
-
-## 3.4. Evidências obrigatórias
-
-Toda conclusão arquitetural importante deverá estar apoiada em evidências.
-
-Sempre que possível, informe:
-
-- Caminho do arquivo.
-- Classe, função ou método envolvido.
-- Linhas aproximadas ou intervalos de linhas, quando disponíveis.
-- Trecho ou comportamento que sustenta a conclusão.
-- Interpretação técnica.
-- Impacto arquitetural.
-- Limitações da conclusão.
-
-Não invente números de linha.
-
-Se a ferramenta não disponibilizar números de linha confiáveis, utilize caminhos e identificadores de símbolos.
-
-Separe explicitamente:
-
-**FATO OBSERVADO:** comportamento ou estrutura comprovadamente presente no código.
-
-**INTERPRETAÇÃO:** conclusão técnica extraída das evidências.
-
-**RECOMENDAÇÃO:** melhoria sugerida, ainda que não esteja implementada.
-
-**HIPÓTESE:** possibilidade que depende de confirmação.
-
-**NÃO IMPLEMENTADO:** funcionalidade ou infraestrutura que não foi encontrada nas evidências disponíveis.
-
-Nunca apresente uma interpretação ou recomendação como se fosse um fato observado.
+A mesma regra vale para qualquer formato em que a documentação embutida possa alterar a interpretação ou o funcionamento do arquivo.
 
 ---
 
-# 4. RECONSTRUA A ARQUITETURA REAL
+## 4. FUNDAMENTAÇÃO: CAPÍTULO 2 DE CLEAN CODE
 
-Após analisar os arquivos, reconstrua a arquitetura efetivamente existente.
+A documentação deverá respeitar os princípios e os títulos do capítulo 2, *Meaningful Names*, de Robert C. Martin.
 
-Identifique:
+Utilize a lista abaixo como estrutura de avaliação, sem alterar os nomes existentes no projeto.
 
-- Ponto de entrada da aplicação.
-- Fluxo de inicialização.
-- Composição das dependências.
-- Camadas arquiteturais.
-- Módulos.
-- Fronteiras de responsabilidade.
-- Dependências internas e externas.
-- Fluxos de chamadas.
-- Integrações.
-- Interfaces e contratos.
-- Componentes compartilhados.
-- Mecanismos de configuração.
-- Tratamento de erros.
-- Estratégia de logging.
-- Recursos de segurança.
-- Mecanismos de testes.
-- Infraestrutura existente.
+1. Use Intention-Revealing Names.
+2. Avoid Disinformation.
+3. Make Meaningful Distinctions.
+4. Use Pronounceable Names.
+5. Use Searchable Names.
+6. Avoid Encodings.
+7. Hungarian Notation.
+8. Member Prefixes.
+9. Interfaces and Implementations.
+10. Avoid Mental Mapping.
+11. Class Names.
+12. Method Names.
+13. Don't Be Cute.
+14. Pick One Word per Concept.
+15. Don't Pun.
+16. Use Solution Domain Names.
+17. Use Problem Domain Names.
+18. Add Meaningful Context.
+19. Don't Add Gratuitous Context.
 
-Determine se o projeto apresenta evidências de:
+Respeite os títulos originais em inglês. Não invente títulos adicionais e não atribua ao capítulo regras que ele não apresenta.
 
-- Clean Architecture.
-- Arquitetura em camadas.
-- Hexagonal Architecture.
-- Ports and Adapters.
-- Domain-Driven Design.
-- SOLID.
-- Dependency Injection.
-- Inversão de dependência.
-- Separação entre domínio e infraestrutura.
-- Outros padrões relevantes.
+### Aplicação prática
 
-Não force o enquadramento em uma arquitetura específica.
+Use esses princípios para avaliar a clareza da intenção, o contexto e a compreensão dos elementos existentes.
 
-Se a arquitetura for híbrida, parcial ou não formalizada, explique isso com precisão.
+Entretanto:
 
-Por exemplo, não declare que o projeto implementa Clean Architecture apenas porque existem diretórios chamados `domain`, `application` e `infrastructure`.
+- Não renomeie identificadores.
+- Não altere a terminologia estabelecida pelo projeto.
+- Não crie comentários para compensar automaticamente nomes que poderiam ser melhores.
+- Não descreva uma variável simplesmente repetindo seu nome.
+- Não transforme cada item da lista em um comentário no código.
+- Não inclua o capítulo inteiro em cada arquivo.
+- Não alegue conformidade integral com Clean Code sem evidências suficientes.
 
-Examine as dependências e os fluxos reais.
-
-Explique como a arquitetura funciona hoje, não como deveria funcionar em uma versão futura.
+A lista constitui um referencial para análise, não uma autorização para modificar a implementação.
 
 ---
 
-# 5. JUSTIFIQUE A ORGANIZAÇÃO DOS ARQUIVOS
+## 5. POLÍTICA DE DOCUMENTAÇÃO
 
-Esta é uma das partes mais importantes da análise.
+A documentação deve esclarecer aquilo que não está evidente apenas pela leitura imediata do código.
 
-Explique por que cada diretório e arquivo relevante está onde está, utilizando evidências do projeto.
+Priorize:
 
-Para cada decisão arquitetural significativa, responda:
+- A finalidade do arquivo.
+- A responsabilidade do componente.
+- O papel do componente na arquitetura.
+- Os contratos efetivamente implementados.
+- As dependências relevantes.
+- As relações entre os módulos.
+- As condições de uso que não sejam óbvias.
+- Os efeitos colaterais relevantes.
+- As restrições e invariantes comprováveis.
+- O significado de parâmetros, retornos e exceções, quando aplicável.
+- O papel de adaptadores e drivers na comunicação entre componentes.
+- O fluxo de inicialização e composição, quando pertinente.
+- As limitações conhecidas que estejam demonstradas pelo código.
 
-1. Qual é a responsabilidade do componente?
-2. Por que essa responsabilidade está separada das demais?
-3. Qual dependência ele possui?
-4. Qual dependência deveria evitar, se houver evidências de uma fronteira arquitetural intencional?
-5. Como sua localização contribui para a organização?
-6. Quais princípios de design estão relacionados a essa decisão?
-7. Quais benefícios são efetivamente observáveis?
-8. Quais custos ou limitações essa escolha introduz?
-9. Qual seria uma alternativa arquitetural plausível?
-10. Em quais circunstâncias a alternativa poderia ser melhor?
+### Comentários proibidos por falta de valor
 
-Considere princípios como:
+Não escreva comentários que apenas:
 
-- Responsabilidade única.
-- Coesão.
-- Baixo acoplamento.
-- Inversão de dependência.
-- Encapsulamento.
-- Separação de interesses.
-- Explicitidade.
-- Simplicidade.
-- Facilidade de testes.
-- Facilidade de manutenção.
-- Evolução incremental.
+- Repitam a instrução imediatamente abaixo.
+- Reescrevam o nome da função em forma de frase.
+- Descrevam operações triviais.
+- Anunciem blocos de código sem acrescentar contexto.
+- Reproduzam linha a linha o funcionamento evidente.
+- Utilizem adjetivos vagos como “inteligente”, “robusto”, “avançado” ou “seguro” sem evidência.
+- Prometam desempenho, segurança, portabilidade ou confiabilidade que não tenham sido comprovados.
+- Registrem informações temporárias ou opiniões pessoais.
+- Expliquem intenções que o código não permite confirmar.
 
-Relacione esses princípios aos conceitos de Uncle Bob, Tim Ottinger e outros especialistas quando houver fundamento.
+A documentação deve seguir a regra: **clareza máxima, redundância mínima e precisão verificável**.
 
-Não afirme que o autor original colocou um arquivo em determinado local por uma intenção específica sem evidências.
+Não é necessário comentar todas as linhas. Um arquivo com poucos
 
-Quando a motivação original for desconhecida, formule a conclusão corretamente:
 
-"A organização observada favorece..."
-
-"A localização é coerente com..."
-
-"Essa estrutura permite..."
-
-"Não foi possível confirmar a motivação original, mas a disposição atual sugere..."
-
-A documentação deverá explicar a arquitetura existente sem inventar intenções históricas.
-
----
-
-# 6. AUDITORIA DE SEGURANÇA OBRIGATÓRIA
-
-A seção de segurança não poderá ser superficial.
-
-Ela deverá ser uma análise técnica dos mecanismos encontrados, dos limites de proteção e das ameaças relevantes para o projeto.
-
-Não invente uma camada de segurança só porque o README deve parecer profissional.
-
-Se houver controles implementados, identifique-os.
-
-Se não houver controles específicos, declare isso claramente.
-
-Se a análise for limitada por ausência de testes, ferramentas ou contexto operacional, informe a limitação.
-
-## 6.1. Identifique os mecanismos existentes
-
-Investigue, quando aplicável:
-
-- Validação de entradas.
-- Sanitização.
-- Codificação de saída.
-- Autenticação.
-- Autorização.
-- Gerenciamento de identidade.
-- Gerenciamento de sessões.
-- Proteção de credenciais.
-- Configuração por variáveis de ambiente.
-- Armazenamento de segredos.
-- Criptografia.
-- Validação de certificados.
-- Comunicação segura.
-- Proteção contra injeção.
-- Proteção contra path traversal.
-- Tratamento seguro de erros.
-- Limites de requisição.
-- Rate limiting.
-- Proteção contra abuso de recursos.
-- Controle de permissões.
-- Isolamento de processos.
-- Configuração de containers.
-- Privilégios de execução.
-- Segurança da cadeia de dependências.
-- Atualização de dependências.
-- Análise estática.
-- Testes de segurança.
-- Prevenção de vazamento de informações em logs.
-- Exposição de portas e serviços.
-- Configurações inseguras por padrão.
-- Segurança dos arquivos de configuração.
-
-Avalie apenas os itens relevantes para a tecnologia e a finalidade reais do projeto.
-
-Não afirme que um controle existe sem identificar sua implementação ou configuração.
-
-## 6.2. Mapeie ameaças e ataques
-
-Explique quais ameaças os mecanismos encontrados ajudam a mitigar.
-
-Considere, quando pertinente:
-
-- Injection.
-- SQL Injection, caso exista acesso a SQL.
-- Cross-Site Scripting, caso exista contexto web relevante.
-- Cross-Site Request Forgery, quando aplicável.
-- Server-Side Request Forgery, quando aplicável.
-- Path Traversal.
-- Execução de comandos não confiáveis.
-- Exposição de credenciais.
-- Vazamento de dados sensíveis.
-- Escalada de privilégios.
-- Autorização inadequada.
-- Abuso de recursos.
-- Negação de serviço.
-- Dependências vulneráveis.
-- Configurações inseguras.
-- Ataques à cadeia de suprimentos.
-- Exposição de serviços por containers.
-- Falsificação ou adulteração de informações de log.
-- Outras ameaças pertinentes à arquitetura.
-
-Não apresente uma lista genérica como prova de proteção.
-
-Para cada ameaça relevante, explique:
-
-1. Cenário de risco.
-2. Componente afetado.
-3. Controle realmente existente.
-4. Evidência do controle.
-5. Como o controle reduz o risco.
-6. Limitações do controle.
-7. Risco residual.
-8. Recomendação, se necessária.
-
-Utilize uma tabela como esta quando apropriado:
-
-| Ameaça | Superfície afetada | Controle identificado | Evidência | Situação |
-|---|---|---|---|---|
-| Exemplo aplicável ao projeto | Componente real | Controle verificado | Arquivo ou configuração | Mitigado parcialmente, não verificado ou sem controle identificado |
-
-Não preencha a tabela com mecanismos fictícios.
-
-## 6.3. Classificação das proteções
-
-Utilize categorias claras:
-
-- Implementado e identificado no código.
-- Configurado, mas dependente do ambiente.
-- Parcialmente implementado.
-- Recomendado, mas ainda não implementado.
-- Não identificado na análise.
-- Não aplicável ao projeto.
-- Necessita de validação adicional.
-
-A ausência de evidência não prova necessariamente a inexistência de um controle externo.
-
-Portanto, prefira "não identificado no repositório analisado" quando essa for a conclusão correta.
-
-## 6.4. Linguagem responsável sobre segurança
-
-Não declare que o sistema é invulnerável.
-
-Não prometa proteção absoluta.
-
-Não use expressões como "proteção completa contra ataques" sem fundamentação excepcionalmente robusta.
-
-Diferencie:
-
-- Segurança arquitetural.
-- Controles de implementação.
-- Configuração de implantação.
-- Segurança operacional.
-- Testes realizados.
-- Testes que ainda precisam ser realizados.
-
-Não confunda a existência de uma arquitetura organizada com a existência de uma aplicação efetivamente segura.
-
-Não declare conformidade com OWASP, ISO 27001, SOC 2 ou outras normas sem evidências suficientes.
-
-A seção final deverá permitir que um engenheiro entenda exatamente quais proteções existem, quais riscos são reduzidos e quais aspectos ainda exigem trabalho.
-
----
-
-# 7. LOGGING, LOGGER E OBSERVABILIDADE
-
-Analise detalhadamente o mecanismo de logging existente.
-
-Não presuma que existe um logger próprio apenas porque o projeto utiliza uma biblioteca de logging.
-
-Investigue:
-
-- Biblioteca utilizada.
-- Ponto de inicialização.
-- Configuração.
-- Níveis de log.
-- Formato de saída.
-- Destinos.
-- Contexto associado aos eventos.
-- Tratamento de exceções.
-- Registro de falhas.
-- Identificação de componentes.
-- Informações de correlação, se existentes.
-- Campos estruturados, se existentes.
-- Rotação de arquivos, se configurada.
-- Integrações externas.
-- Comportamento em desenvolvimento.
-- Comportamento em produção, quando determinável.
-- Política de retenção, quando configurada.
-- Possíveis riscos de exposição de dados.
-- Testes relacionados.
-
-Explique o propósito arquitetural do logger, mas diferencie propósito inferido de intenção comprovada.
-
-Se existir uma abstração própria de logging, explique:
-
-1. Por que ela existe, conforme as evidências disponíveis.
-2. Quais responsabilidades possui.
-3. Como é utilizada.
-4. Como se relaciona com a biblioteca subjacente.
-5. Como facilita testes, substituição ou padronização, se isso for demonstrável.
-6. Quais custos de complexidade introduz.
-7. Como novos módulos devem utilizá-la.
-8. Como novos níveis, campos ou destinos poderiam ser adicionados.
-9. Quais dados não devem ser registrados.
-10. Como validar seu comportamento.
-
-Inclua exemplos reais de uso, adaptados ao código existente.
-
-Inclua exemplos hipotéticos de evolução apenas em uma subseção claramente identificada como proposta futura.
-
-Se não houver logger próprio, documente a solução efetivamente utilizada e explique a diferença entre o mecanismo existente e uma abstração de logging que poderia ser criada.
-
-Diferencie logging, métricas, tracing e observabilidade.
-
-Não afirme que o projeto oferece observabilidade completa se ele apenas escreve logs.
-
----
-
-# 8. TECNOLOGIAS E DEPENDÊNCIAS
-
-Identifique as tecnologias efetivamente utilizadas.
-
-Considere, conforme aplicável:
-
-- Linguagem e versão.
-- Runtime.
-- Frameworks.
-- Bibliotecas principais.
-- Gerenciador de pacotes.
-- Ferramentas de compilação.
-- Ferramentas de testes.
-- Linters.
-- Formatadores.
-- Análise estática.
-- Ferramentas de segurança.
-- Docker.
-- Docker Compose.
-- Sistemas operacionais suportados, quando houver evidências.
-- Ferramentas de CI/CD.
-- Ferramentas de documentação.
-- Dependências externas.
-- Serviços de infraestrutura.
-- Ferramentas de observabilidade.
-
-Use arquivos de configuração, manifestos e código como fontes de evidência.
-
-Não invente versões.
-
-Diferencie versões declaradas, versões efetivamente utilizadas e versões que não puderam ser confirmadas.
-
-Para cada tecnologia importante, explique:
-
-- Qual é sua finalidade no projeto.
-- Onde é utilizada.
-- Qual responsabilidade atende.
-- Como se integra aos demais componentes.
-- Quais benefícios oferece nesse contexto.
-- Quais limitações ou custos introduz.
-- Como pode ser substituída ou evoluída, quando pertinente.
-
-Não faça propaganda das tecnologias.
-
-Explique sua função arquitetural.
-
-## 8.1. Diagramas de tecnologia
-
-Utilize diagramas Mermaid quando eles realmente ajudarem a compreensão.
-
-Por exemplo, represente a relação entre aplicação, bibliotecas, adaptadores e serviços externos.
-
-Os diagramas deverão refletir a arquitetura encontrada.
-
-Não desenhe bancos de dados, filas, APIs, serviços externos ou componentes que não existam.
-
-Se uma tecnologia for apenas uma possibilidade futura, represente-a separadamente como proposta, sem confundi-la com a arquitetura atual.
-
-## 8.2. Exemplos de uso
-
-Quando houver exemplos verificáveis, apresente:
-
-- Trecho de código.
-- Caminho do arquivo correspondente.
-- Explicação do comportamento.
-- Forma correta de executar.
-- Resultado esperado, quando verificável.
-
-Nunca invente uma API pública do projeto.
-
-Se o código não oferecer uma interface pública ou um exemplo de utilização suficientemente claro, explique isso e proponha um exemplo futuro separado da implementação existente.
-
----
-
-# 9. INFRAESTRUTURA, BANCO DE DADOS E ESCOPO REAL
-
-Esta seção deverá ser extremamente precisa.
-
-Determine se o projeto é:
-
-- Uma aplicação funcional.
-- Uma biblioteca.
-- Um template.
-- Um boilerplate.
-- Um framework interno.
-- Um projeto experimental.
-- Uma base arquitetural.
-- Outro tipo de projeto.
-
-Não decida pelo nome do repositório.
-
-Baseie a classificação nas evidências.
-
-Explique a diferença entre template e boilerplate quando isso ajudar a definir a proposta do projeto.
-
-Caso seja um template ou boilerplate, identifique o que ele entrega pronto e o que o usuário ainda precisará implementar.
-
-## 9.1. Inventário do que existe
-
-Verifique a presença real de:
-
-- Código-fonte.
-- Configurações.
-- Scripts.
-- Testes.
-- Dockerfile.
-- Docker Compose.
-- Migrações.
-- Modelos de dados.
-- Conexões com bancos.
-- Repositórios de persistência.
-- APIs.
-- Integrações externas.
-- Autenticação.
-- Autorização.
-- Logging.
-- Monitoramento.
-- CI/CD.
-- Ferramentas de qualidade.
-- Outras estruturas relevantes.
-
-## 9.2. Declare explicitamente o que não existe
-
-Se não houver banco de dados implementado, diga isso claramente.
-
-Se não houver persistência, diga isso claramente.
-
-Se não houver API funcional, diga isso claramente.
-
-Se não houver autenticação ou autorização, diga isso claramente.
-
-Se não houver infraestrutura de produção, diga isso claramente.
-
-Não transforme arquivos de configuração vazios, interfaces abstratas ou diretórios preparados para o futuro em funcionalidades existentes.
-
-Diferencie rigorosamente:
-
-- Código implementado.
-- Infraestrutura configurada.
-- Infraestrutura apenas preparada.
-- Integração incompleta.
-- Funcionalidade planejada.
-- Funcionalidade ausente.
-
-Se o projeto possuir apenas código e configurações, explique que ele entrega uma base de desenvolvimento e não um sistema de negócio completo.
-
-Não trate a ausência de banco de dados como um defeito automaticamente. Avalie se ela é coerente com o propósito do projeto.
-
-## 9.3. Estágio atual
-
-Declare em qual estágio o projeto se encontra, por exemplo:
-
-- Estrutura inicial.
-- Template arquitetural.
-- Boilerplate funcional.
-- MVP.
-- Biblioteca utilizável.
-- Aplicação parcialmente implementada.
-- Aplicação funcional com limitações.
-- Outro estágio sustentado por evidências.
-
-Explique os critérios utilizados para chegar à classificação.
-
-Não atribua maturidade que não possa ser demonstrada.
-
----
-
-# 10. DOCKER E DOCKER COMPOSE
-
-Se houver suporte real a Docker, documente-o de forma completa.
-
-Inspecione o Dockerfile, o Docker Compose, os scripts de inicialização, as variáveis de ambiente e os serviços configurados.
-
-Determine o comando correto para subir o ambiente.
-
-Quando compatível com os arquivos existentes, prefira uma experiência de inicialização simples, como:
-
-`docker compose up --build`
-
-Mas não apresente esse comando como funcional sem verificar se os arquivos, os contextos de build e os serviços permitem sua execução.
-
-Se houver um comando mais apropriado, documente-o e explique o motivo.
-
-A documentação deverá explicar:
-
-1. Pré-requisitos.
-2. Instalação do Docker, quando necessário.
-3. Estrutura dos arquivos.
-4. Finalidade do Dockerfile.
-5. Finalidade do Docker Compose.
-6. Serviços existentes.
-7. Portas publicadas.
-8. Variáveis de ambiente.
-9. Volumes.
-10. Redes.
-11. Dependências entre serviços.
-12. Healthchecks, se existentes.
-13. Política de reinicialização, se configurada.
-14. Persistência, se existente.
-15. Logs dos containers.
-16. Como verificar se a inicialização funcionou.
-17. Como interromper o ambiente.
-18. Como reconstruir as imagens.
-19. Como solucionar erros comuns.
-20. Implicações de segurança da configuração.
-
-Explique os comandos necessários com exemplos reais.
-
-Quando aplicável, apresente:
-
-`docker compose up --build`
-
-`docker compose ps`
-
-`docker compose logs -f`
-
-`docker compose down`
-
-Explique o efeito de cada comando.
-
-Não recomende comandos que removam volumes ou dados persistentes sem explicar claramente suas consequências.
-
-Não invente serviços como PostgreSQL, Redis, RabbitMQ, Nginx ou outros componentes.
-
-Se o projeto não possuir Docker ou Docker Compose, declare isso e apresente uma seção de execução nativa.
-
-Se a inclusão de Docker for recomendada, registre-a como uma proposta de evolução, sem documentá-la como funcionalidade existente.
-
----
-
-# 11. TESTES E QUALIDADE DE CÓDIGO
-
-Analise os mecanismos de qualidade realmente presentes.
-
-Verifique:
-
-- Testes unitários.
-- Testes de integração.
-- Testes de ponta a ponta.
-- Testes arquiteturais.
-- Testes de segurança.
-- Cobertura de código.
-- Linters.
-- Formatadores.
-- Análise estática.
-- Verificação de tipos.
-- Hooks.
-- CI/CD.
-- Estratégias de isolamento.
-- Mocks e doubles.
-- Convenções de nomenclatura.
-- Padrões de organização dos testes.
-
-Explique o que cada mecanismo valida.
-
-Identifique os comandos reais para executar os testes e ferramentas de qualidade.
-
-Não invente cobertura de código.
-
-Não afirme que os testes passam se não tiver executado os comandos em um ambiente apropriado ou não tiver recebido evidências confiáveis de execução.
-
-Diferencie:
-
-- Testes encontrados.
-- Testes executados.
-- Testes aprovados.
-- Testes não executados.
-- Funcionalidades sem testes identificados.
-
-Se houver oportunidades de melhoria, explique-as em uma seção separada de recomendações.
-
----
-
-# 12. COMO EVOLUIR O PROJETO
-
-Explique como um engenheiro pode evoluir o projeto de forma organizada.
-
-As orientações devem partir da arquitetura real.
-
-Considere, quando pertinente:
-
-- Como adicionar um novo módulo.
-- Como adicionar uma classe.
-- Como criar uma interface.
-- Como implementar uma nova regra de negócio.
-- Como adicionar um adaptador.
-- Como adicionar uma integração externa.
-- Como implementar persistência.
-- Como introduzir um banco de dados.
-- Como adicionar testes.
-- Como adicionar logging.
-- Como configurar variáveis de ambiente.
-- Como integrar novas dependências.
-- Como preservar a separação de responsabilidades.
-- Como evitar dependências indevidas.
-- Como manter a segurança.
-- Como atualizar a documentação.
-
-Não apresente como já existente um fluxo de desenvolvimento que ainda precisa ser implementado.
-
-Para cada exemplo de evolução, informe se ele é:
-
-**EXEMPLO REAL:** utiliza mecanismos existentes no repositório.
-
-**EXEMPLO ADAPTADO:** parte do código existente, mas inclui adaptações explicitamente identificadas.
-
-**PROPOSTA FUTURA:** demonstra uma evolução ainda não implementada.
-
-Quando sugerir uma estrutura futura, justifique o custo e o benefício.
-
-Não recomende abstrações, camadas ou interfaces sem considerar se a complexidade adicional se justifica.
-
-O objetivo é ensinar a evoluir o projeto sem transformar simplicidade em complexidade desnecessária.
-
----
-
-# 13. PADRÃO VISUAL E QUALIDADE DO README
-
-O README deverá utilizar Markdown limpo, consistente, elegante e fácil de navegar.
-
-Adote uma apresentação compatível com projetos profissionais hospedados no GitHub.
-
-A documentação deverá ser agradável visualmente, sem sacrificar a precisão técnica.
-
-## 13.1. Organização visual
-
-Utilize, quando apropriado:
-
-- Título claro.
-- Descrição objetiva.
-- Badges verificáveis.
-- Índice navegável.
-- Hierarquia consistente de títulos.
-- Tabelas legíveis.
-- Blocos de código com identificação de linguagem.
-- Diagramas Mermaid.
-- Exemplos práticos.
-- Avisos sobre limitações.
-- Seções de segurança.
-- Seções de instalação.
-- Referências cruzadas.
-- Links para arquivos reais do projeto.
-- Links externos relevantes.
-- Seção de contribuição.
-- Licença, quando confirmada.
-- Seção de roadmap, quando houver informações suficientes.
-
-Não adicione badges falsos.
-
-Não invente status de CI, cobertura, versão, licença, downloads, aprovação de segurança ou suporte.
-
-Não crie diagramas decorativos que não contribuam para o entendimento.
-
-Não abuse de emojis.
-
-Use recursos visuais com moderação.
-
-## 13.2. Diagramas
-
-Prefira Mermaid para diagramas que possam ser mantidos junto ao código.
-
-Escolha o tipo de diagrama de acordo com o objetivo:
-
-- Diagrama de contexto.
-- Diagrama de componentes.
-- Diagrama de dependências.
-- Diagrama de sequência.
-- Fluxograma de execução.
-- Diagrama de implantação, se aplicável.
-
-Os diagramas deverão refletir somente os componentes identificados.
-
-Se um componente for futuro, diferencie-o visualmente e inclua uma legenda.
-
-## 13.3. Linguagem
-
-Utilize português técnico do Brasil, com terminologia consistente.
-
-Prefira uma linguagem:
-
-- Precisa.
-- Direta.
-- Elegante.
-- Profissional.
-- Clara.
-- Tecnicamente fundamentada.
-- Adequada a engenheiros experientes.
-
-Evite marketing exagerado.
-
-Evite frases vagas como "arquitetura robusta", "segurança avançada", "código altamente escalável" ou "pronto para produção" sem evidências.
-
-Explique concretamente o que o projeto oferece.
-
-Não confunda qualidade de apresentação com qualidade de implementação.
-
----
-
-# 14. ESTRUTURA PROPOSTA PARA O README
-
-Após a auditoria, proponha uma estrutura personalizada.
-
-Utilize a seguinte estrutura apenas como referência inicial. Modifique-a conforme as características reais do projeto.
-
-1. Apresentação.
-2. Visão geral.
-3. Objetivos e escopo.
-4. Estado atual do projeto.
-5. Principais características.
-6. Tecnologias utilizadas.
-7. Arquitetura.
-8. Organização de diretórios.
-9. Responsabilidades dos componentes.
-10. Fluxo de execução.
-11. Decisões arquiteturais.
-12. Princípios de design.
-13. Estratégia de logging.
-14. Segurança e modelagem de ameaças.
-15. Pré-requisitos.
-16. Configuração do ambiente.
-17. Execução local.
-18. Execução com Docker.
-19. Testes e qualidade.
-20. Exemplos de utilização.
-21. Como evoluir o template.
-22. Limitações conhecidas.
-23. Funcionalidades não implementadas.
-24. Roadmap, se aplicável.
-25. Contribuição.
-26. Licença.
-27. Referências técnicas.
-
-Não mantenha seções vazias apenas para preencher essa lista.
-
-Não inclua seções de banco de dados, APIs, autenticação ou implantação quando forem irrelevantes, mas informe a ausência dessas capacidades quando ela for importante para delimitar o escopo.
-
-A estrutura definitiva deverá ser aprovada antes da redação integral.
-
----
-
-# 15. REGRA INEGOCIÁVEL: DOCUMENTAÇÃO GRADUAL E APROVAÇÃO HUMANA
-
-Você está proibido de produzir o README completo em uma única resposta.
-
-A documentação será construída por etapas, com minha aprovação explícita.
-
-Essa regra prevalece sobre qualquer outra instrução relacionada à velocidade ou à conclusão imediata do documento.
-
-## FASE 1 — RECONHECIMENTO DO PROJETO
-
-Analise o repositório e apresente:
-
-1. Identificação do projeto.
-2. Inventário dos arquivos.
-3. Tecnologias encontradas.
-4. Ponto de entrada.
-5. Arquitetura observada.
-6. Estado atual.
-7. Recursos implementados.
-8. Recursos não identificados.
-9. Presença ou ausência de infraestrutura.
-10. Diagnóstico inicial do README.
-11. Limitações da análise.
-12. Arquivos que não puderam ser examinados.
-
-Nesta fase, não escreva o README final.
-
-Apresente suas descobertas de maneira estruturada.
-
-Ao terminar, pergunte:
-
-"Você aprova o diagnóstico inicial? Posso avançar para a auditoria arquitetural detalhada?"
-
-Aguarde minha resposta.
-
-## FASE 2 — AUDITORIA ARQUITETURAL
-
-Depois da minha aprovação:
-
-1. Explique a organização dos diretórios.
-2. Analise os componentes principais.
-3. Explique os fluxos de dependência.
-4. Identifique as decisões arquiteturais.
-5. Relacione as decisões aos princípios de design aplicáveis.
-6. Aponte benefícios e limitações.
-7. Apresente as evidências utilizadas.
-8. Identifique inconsistências e oportunidades de melhoria.
-
-Não escreva ainda todas as seções do README.
-
-Ao terminar, pergunte se aprovo a auditoria arquitetural.
-
-Aguarde minha resposta.
-
-## FASE 3 — AUDITORIA DE SEGURANÇA E LOGGING
-
-Depois da aprovação:
-
-1. Analise os controles de segurança.
-2. Mapeie as ameaças relevantes.
-3. Identifique os riscos não mitigados.
-4. Explique o funcionamento do logger.
-5. Avalie a qualidade dos logs.
-6. Identifique possíveis vazamentos de informações.
-7. Analise Docker e infraestrutura sob a perspectiva de segurança.
-8. Separe controles implementados de recomendações futuras.
-
-Apresente evidências e limitações.
-
-Ao terminar, pergunte se aprovo essa análise.
-
-Aguarde minha resposta.
-
-## FASE 4 — PROPOSTA DE SUMÁRIO DEFINITIVO
-
-Depois da aprovação:
-
-1. Proponha o índice do README.
-2. Justifique a ordem das seções.
-3. Explique quais assuntos merecem maior destaque.
-4. Indique os diagramas que serão úteis.
-5. Identifique os exemplos de código que poderão ser incluídos.
-6. Identifique informações que dependem de confirmação.
-7. Explique como evitar redundância.
-
-Apresente somente a estrutura e suas justificativas.
-
-Ao terminar, pergunte se aprovo o sumário.
-
-Aguarde minha resposta.
-
-## FASE 5 — REDAÇÃO GRADUAL DO README
-
-Depois da aprovação do sumário, comece a produzir o README por seções.
-
-Cada resposta deverá conter apenas uma seção principal ou um pequeno conjunto de subseções intimamente relacionadas.
-
-Exemplos:
-
-- Parte 1: Apresentação e proposta do projeto.
-- Parte 2: Estado atual e escopo.
-- Parte 3: Tecnologias utilizadas.
-- Parte 4: Arquitetura.
-- Parte 5: Estrutura de diretórios.
-- Parte 6: Decisões arquiteturais.
-- Parte 7: Segurança.
-- Parte 8: Logging e observabilidade.
-- Parte 9: Instalação e execução.
-- Parte 10: Docker.
-- Parte 11: Testes.
-- Parte 12: Como evoluir o projeto.
-- Parte 13: Limitações e próximos passos.
-
-Essa lista é apenas ilustrativa. Utilize a estrutura previamente aprovada.
-
-### Procedimento obrigatório para cada parte
-
-Para cada seção:
-
-**A. Apresente o objetivo**
-
-Explique brevemente o que a seção documentará e quais evidências serão utilizadas.
-
-**B. Entregue o Markdown completo daquela seção**
-
-O conteúdo deverá estar pronto para copiar e inserir no README.md.
-
-Entregue o Markdown em um único bloco de código quando isso facilitar a cópia integral da seção.
-
-O conteúdo deverá conter seus próprios títulos, tabelas, diagramas e exemplos, conforme necessário.
-
-Não coloque comentários da conversa dentro do Markdown que será incorporado ao README.
-
-Não misture explicações dirigidas a mim com o texto destinado ao documento.
-
-**C. Apresente as justificativas técnicas fora do bloco de código**
-
-Explique as decisões de documentação mais importantes:
-
-- Por que a seção foi organizada daquela forma.
-- Quais evidências do projeto sustentam o texto.
-- Por que determinados detalhes foram incluídos.
-- Por que determinadas informações foram omitidas.
-- Quais princípios de engenharia orientaram as escolhas.
-- Quais limitações precisaram ser explicitadas.
-
-**D. Realize uma revisão de qualidade**
-
-Verifique:
-
-- Precisão factual.
-- Coerência arquitetural.
-- Ausência de funcionalidades inventadas.
-- Correção dos comandos.
-- Consistência terminológica.
-- Qualidade do Markdown.
-- Clareza.
-- Ausência de redundâncias.
-- Adequação visual.
-- Referências corretas aos arquivos.
-- Separação entre realidade atual e propostas futuras.
-
-**E. Solicite minha aprovação**
-
-Finalize com uma pergunta clara, como:
-
-"Você aprova esta parte do README? Posso avançar para a próxima seção?"
-
-Depois, pare.
-
-Não continue automaticamente.
-
-Não antecipe a próxima seção.
-
-Não produza várias seções adicionais para economizar mensagens.
-
-Aguarde minha aprovação explícita.
-
-## FASE 6 — REVISÕES
-
-Se eu solicitar alterações:
-
-1. Identifique o que precisa ser corrigido.
-2. Preserve o conteúdo que continua válido.
-3. Reescreva a seção completa.
-4. Entregue a nova versão pronta para copiar.
-5. Explique brevemente as alterações relevantes.
-6. Pergunte novamente se aprovo.
-
-Não considere uma seção aprovada enquanto eu estiver solicitando mudanças nela.
-
-Se eu rejeitar uma parte, não avance para a próxima sem resolver a rejeição.
-
-## FASE 7 — INTEGRAÇÃO FINAL
-
-Somente depois de todas as seções terem sido aprovadas:
-
-1. Verifique a coerência entre as seções.
-2. Revise o índice.
-3. Confira as âncoras.
-4. Verifique a consistência dos nomes.
-5. Verifique os caminhos dos arquivos.
-6. Revise os comandos.
-7. Elimine redundâncias.
-8. Verifique a consistência dos diagramas.
-9. Confirme que os exemplos não contradizem o código.
-10. Verifique a distinção entre funcionalidades existentes e futuras.
-11. Revise os avisos de segurança.
-12. Confira as limitações declaradas.
-13. Verifique os links, quando houver meios de validá-los.
-14. Apresente uma lista final de validação.
-
-Não altere silenciosamente decisões que eu já aprovei.
-
-Se a integração exigir uma alteração substancial em alguma seção, explique a necessidade e solicite minha aprovação.
-
-Se a plataforma permitir gerar arquivos, poderá oferecer o README.md consolidado como arquivo após a aprovação final.
-
-Se não puder gerar arquivos, entregue o conteúdo consolidado em partes copiáveis, sem afirmar que criou um arquivo.
-
----
-
-# 16. REGRAS PARA O USO DE CONTEXTO E LIMITES DA IA
-
-Como o projeto poderá ser extenso, gerencie o contexto de maneira disciplinada.
-
-Não tente resumir centenas de arquivos em uma única descrição superficial.
-
-Se não conseguir inspecionar tudo em uma etapa:
-
-1. Registre os arquivos examinados.
-2. Registre os arquivos pendentes.
-3. Preserve as descobertas.
-4. Continue a análise por grupos coerentes.
-5. Atualize o inventário.
-6. Não declare concluída uma fase enquanto faltarem análises essenciais.
-
-Se a plataforma tiver limites de anexos, tamanho ou contexto, informe-os.
-
-Não alegue ter executado o código se não o executou.
-
-Não alegue ter verificado vulnerabilidades se apenas leu o código.
-
-Não alegue ter validado Docker se não executou ou não pôde verificar o ambiente.
-
-Não alegue ter pesquisado referências externas se não teve acesso à pesquisa.
-
-Diferencie sempre análise estática, execução, testes automatizados e validação manual.
-
-Não solicite que eu envie novamente arquivos que já estejam disponíveis no contexto e possam ser consultados.
-
-Se houver uma informação essencial que não possa ser obtida pelo repositório, faça uma pergunta específica, explique por que ela importa e aguarde minha resposta antes de inventar uma conclusão.
-
----
-
-# 17. REFERÊNCIAS TÉCNICAS E FUNDAMENTAÇÃO
-
-Quando referências externas ajudarem a fundamentar uma decisão, utilize fontes confiáveis.
-
-Dê preferência a:
-
-- Publicações e materiais dos próprios autores.
-- Documentação oficial das tecnologias.
-- Documentação oficial de segurança.
-- OWASP.
-- Artigos técnicos com autoria e fundamentação identificáveis.
-- Materiais reconhecidos de engenharia de software.
-
-Inclua referências externas apenas quando agregarem valor real.
-
-Não invente URLs, citações, livros, páginas ou recomendações atribuídas a especialistas.
-
-Diferencie referências teóricas de evidências encontradas no projeto.
-
-A existência de uma referência bibliográfica não substitui a análise do código.
-
----
-
-# 18. CRITÉRIOS DE ACEITAÇÃO DO README FINAL
-
-O README somente poderá ser considerado concluído quando atender aos seguintes critérios:
-
-[ ] O projeto foi identificado corretamente.
-
-[ ] O README anterior foi analisado.
-
-[ ] Os arquivos relevantes foram inventariados.
-
-[ ] Os componentes essenciais foram examinados.
-
-[ ] A arquitetura documentada corresponde às evidências encontradas.
-
-[ ] As decisões arquiteturais importantes foram justificadas.
-
-[ ] As tecnologias foram identificadas corretamente.
-
-[ ] O estágio atual do projeto está explícito.
-
-[ ] As funcionalidades implementadas estão separadas das futuras.
-
-[ ] A existência ou ausência de banco de dados está documentada corretamente.
-
-[ ] A existência ou ausência de infraestrutura está documentada corretamente.
-
-[ ] Os mecanismos de segurança foram identificados.
-
-[ ] As ameaças relevantes foram analisadas.
-
-[ ] As limitações de segurança estão explícitas.
-
-[ ] O logging foi explicado tecnicamente.
-
-[ ] Os comandos de execução foram verificados na medida do possível.
-
-[ ] O Docker foi documentado apenas se houver suporte real.
-
-[ ] Os testes e mecanismos de qualidade foram avaliados.
-
-[ ] Os exemplos de código correspondem ao projeto ou estão identificados como propostas.
-
-[ ] Os diagramas representam a arquitetura real.
-
-[ ] O Markdown está consistente e organizado.
-
-[ ] As limitações da análise foram declaradas.
-
-[ ] Todas as partes foram aprovadas pelo usuário.
-
-[ ] A revisão de integração final foi concluída.
-
-Se algum critério não puder ser atendido, informe a pendência.
-
-Não marque um item como concluído apenas para finalizar a tarefa.
-
----
-
-# 19. INSTRUÇÃO FINAL DE EXECUÇÃO
-
-Agora, aguarde o acesso ao projeto anexado.
-
-Assim que o projeto estiver disponível, comece exclusivamente pela FASE 1 — RECONHECIMENTO DO PROJETO.
-
-Não escreva imediatamente o novo README.
-
-Não avance para a auditoria detalhada antes de apresentar o diagnóstico inicial.
-
-Não entregue todas as etapas de uma vez.
-
-Não pule a aprovação humana.
-
-Seu objetivo não é apenas produzir um README bonito.
-
-Seu objetivo é construir uma documentação tecnicamente confiável, rastreável, elegante, precisa e útil para engenheiros de software, fundamentada no código real e desenvolvida comigo, seção por seção, até a conclusão integral do documento.
-
-**Aguarde minha aprovação entre as fases e entre cada seção do README.**
 
 ===== ARQUIVO: .gitignore =====
 
@@ -2474,6 +1338,744 @@ O esqueleto possui um pipeline de defesa em profundidade e gerenciamento de proc
 ### 📑 1. Regulador Dinâmico de Cliques (`RequestThrottler`)
 *   **Propósito:** Proteger os recursos computacionais do servidor e mitigar abusos de faturamento causados por scripts robôs em loops infinitos, aplicando limites estritos baseados no plano contratado da aplicação parceira (Multi-Tenant) [Farley].
 *   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/requestThrottler.ts`. Opera de forma nativa e agnóstica através do algoritmo de **Janela Deslizante Simplificada (*Fixed Window Rate Limiting*)** recorrendo a estruturas de `Map` da memória RAM do processo Node.js [Farley].
+*   **Variáveis e Janelas Internas:**
+    *   `RATE_LIMITS` : Dicionário imutável strongly-typed mapeando as cotas (`FREE: 10`, `PREMIUM: 100`, `ENTERPRISE: 1000` cliques a cada 60 segundos).
+    *   `appCountersStore` : Tabela efêmera em RAM que armazena a contagem ativa indexada por `applicationId`.
+    *   `ipCountersStore`  : Tabela efêmera em RAM indexada por `clientIp` com teto bruto de 200 cliques/minuto contra ataques DDoS na Camada 7.
+*   **Tratamento de Exceção:** Quando o contador atômico de uma chave supera o teto permitido dentro da janela ativa de 60 segundos, explode a exceção de domínio unificada do catálogo, interceptada na portaria com o status **`429 Too Many Requests` (REQUEST_THROTTLED)** [Farley].
+
+#### 🎮 Cenário Lúdico de Funcionamento do `RequestThrottler`
+Imagine uma balada exclusiva onde parceiros têm crachás de acesso. O parceiro **Luiz** tem o crachá plano `FREE`, que dá direito a apenas **10 drinques por minuto**. 
+Luiz decide trapacear e coloca um robô para pedir os 10 drinques na sinaleira de uma só vez em 2 segundos. Quando o robô de Luiz tenta pedir o **11º drinque** no 3º segundo, o barman (`RequestThrottler`), que tem um bloco de notas ultra-rápido na memória de sua cabeça (`Map`), olha e diz: *"Negado! Você estourou seu limite em menos de 60 segundos. Espere o relógio virar!"*. 
+O pedido nem chega a gastar os ingredientes do bar (sua CPU/IA), economizando os recursos da casa imediatamente com o erro `429` [Farley].
+
+```typescript
+// Exemplo sucinto de ativação automática perimetral no ExpressHttpDriver
+const apiCredentials = await this.apiKeyEngine.evaluate(String(request.headers['x-api-key']));
+
+// O Throttler intercepta e conta atômico na RAM. Se estourar 10 cliques do plano FREE, mata a requisição aqui!
+await this.throttlerEngine.throttle(apiCredentials.applicationId, apiCredentials.rateLimitTier, request.ipAddress);
+```
+
+---
+
+### 📑 2. Portão de Resiliência Contra Colapsos Externos (`ServiceResilienceGate`)
+*   **Propósito:** Blindar a API contra o **efeito cascata catastrófico de lentidão ou quedas de serviços terceiros** (como OpenAI, Gemini ou Gateways de Pagamento). Impede que conexões longas travadas consumam a memória RAM do contêiner Docker [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serviceResilienceGate.ts`. Funciona como um **Mecanismo de Disjuntor Técnico (*Circuit Breaker*)** de alta resiliência operando de forma desacoplada por domínio [Farley].
+*   **Os Três Estados Lógicos na Memória RAM:**
+    *   `CLOSED` 🟢 (Circuito Fechado): Estado operacional padrão. O tráfego para APIs de IA flui livremente. O portão monitora em silêncio.
+    *   `OPEN` 🔴 (Circuito Aberto): Se a API externa falhar consecutivamente por 5 vezes, o portão abre. Pelos próximos 60 segundos, qualquer disparo é interceptado e bloqueado na RAM em **0 milissegundos**, estourando o erro **`EXTERNAL_SERVICE_UNAVAILABLE` (Status 503)** sem tentar gastar tempo de rede com o serviço fora do ar [Farley].
+    *   `HALF_OPEN` 🟡 (Circuito Entreaberto): Passados os 60 segundos de repouso, o portão deixa passar uma única requisição de teste. Se falhar, volta para `OPEN` por mais um ciclo; se passar, restabelece o estado `CLOSED` automaticamente [Farley].
+*   **Variáveis Internas:** `consecutiveFailures` (Contador atômico de erros sequenciais), `currentState` (Indicador textual do estado ativo na RAM), e `nextAttemptAllowedAt` (Timestamp delimitador da janela de cooldown) [Ottinger].
+
+#### 🎮 Cenário Lúdico de Funcionamento do `ServiceResilienceGate`
+Você gerencia um restaurante e tem um motoboy terceirizado (**OpenAI**) para entregar pedidos longos. De repente, a avenida principal da cidade desaba e o motoboy começa a atrasar ou sumir. 
+O primeiro, o segundo e o terceiro cliente ligam reclamando de pane (`Error`). Ao atingir **5 falhas seguidas**, o gerente do restaurante liga o disjuntor de segurança (`ServiceResilienceGate` muda para `OPEN` 🔴). Pelos próximos 60 segundos, quando o 6º cliente tenta fazer um pedido, o gerente nem anota e nem chama o motoboy; ele diz na hora: *"Desculpe, nosso canal de entregas desabou, tente novamente em instantes!"*. 
+A resposta volta em **0 milissegundos**, evitando que a cozinha fique entulhada de pratos frios esperando um motoboy que nunca vai chegar (sua memória RAM travada por timeouts longos) [Farley].
+
+```typescript
+// Exemplo lúdico de uso dentro do Caso de Uso de Chat com Inteligência Artificial
+public async executeChatPrompt(prompt: string): string {
+  // Se o disjuntor estiver OPEN, barra na hora com erro 503 sem gastar processamento de rede!
+  this.openAiResilienceGate.verifyGateHealth();
+
+  try {
+    const aiResult = await apiOpenAiThirdParty.send(prompt);
+    this.openAiResilienceGate.recordSuccess(); // Sucesso: Limpa o circuito 🟢
+    return aiResult;
+  } catch (error) {
+    this.openAiResilienceGate.recordFailure(); // Falha: Conta +1 erro rumo ao bloqueio 🔴
+    throw error;
+  }
+}
+```
+
+---
+
+### 📑 3. Governador do Ciclo de Vida do Servidor (`ServerLifecycleGovernor`)
+*   **Propósito:** Garantir o encerramento seguro e livre de corrupção de transações ou dados da aplicação (**Graceful Shutdown**), coordenando de forma transparente a drenagem de conexões longas de Inteligência Artificial quando a infraestrutura em nuvem (Docker/Kubernetes) solicitar a substituição do contêiner [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/serverLifecycleGovernor.ts`. O driver HTTP Express intercepta os sinais primitivos do sistema operacional Linux (`SIGTERM`, `SIGINT`) e delega o encerramento do processo de forma atômica para este governador [Uncle Bob].
+*   **O Pipeline de Drenagem In-Memory:**
+    *   **Entrada de Tráfego:** No início de cada requisição, o driver executa o método `.incrementActiveRequests()`, somando `+1` ao contador central de memória [Uncle Bob]. Se o sinal de encerramento já foi disparado, rejeita novos cliques com o status 503 (`SERVER_TERMINATING`).
+    *   **Saída de Tráfego:** Utilizando a cláusula de segurança **`finally`** do JavaScript na portaria de rede, o driver executa o método `.decrementActiveRequests()` de forma obrigatória (seja a requisição um sucesso ou um erro), subtraindo `-1` [Uncle Bob].
+
+# 🏛️ Adendo de Documentação Técnica: Subdomínio de Identidade Progressiva
+
+Este documento serve como a especificação técnica oficial das novas engrenagens acopladas ao ecossistema Hexagonal do boilerplate. O módulo foi projetado sob o padrão **Ports & Adapters**, garantindo o isolamento completo do núcleo de negócios contra os dialetos de transporte de Big Techs externas.
+
+---
+
+## 📂 Novas Estruturas Incorporadas
+
+```text
+src/
+├── api/
+│   └── identity/                    # SUBDOMÍNIO DE ACESSO PROGRESSIVO
+│       ├── ports/                   # Contratos Abstratos (Interfaces Puras)
+│       │   ├── federatedAuthenticator.ts
+│       │   └── identityRepository.ts
+│       └── useCases/                # Regras de Negócio e Casos de Uso
+│           ├── associateExternalIdentity.ts
+│           └── registerAnonymousActor.ts
+└── infrastructure/
+    └── identityProviders/            # Periferias Substituíveis (Adapters)
+        └── google/
+            └── googleAuthenticator.ts # Driver de Produção Real (fetch/tokeninfo)
+```
+
+---
+
+## 🔑 1. Camada de Domínio: As Portas (`ports/`)
+
+As interfaces abaixo residem na camada soberana de negócio (`src/api/identity/ports/`). Elas não possuem o prefixo "I" (Capítulo 2 - *Clean Code*) e ditam as regras para os agentes externos.
+
+### 📄 `src/api/identity/ports/federatedAuthenticator.ts`
+Define o contrato de dados que qualquer provedor de login externo (Google, Facebook, LinkedIn) é obrigado a cumprir para entrar no sistema.
+
+```typescript
+export interface FederatedIdentityPayload {
+  readonly externalId       : string; // ID único imutável do provedor para auditoria
+  readonly email            : string; // Elo universal de unificação progressiva
+  readonly isEmailVerified  : boolean; // Validação contra e-mails falsos ou maliciosos
+  readonly fullName         : string; // Nome nominal para hidratação de perfil
+  readonly avatarUrl        : string; // URL da imagem para humanização visual da IA
+}
+
+export interface FederatedAuthenticator {
+  /**
+   * Valida a assinatura do token e extrai as informações do perfil de forma agnóstica.
+   */
+  authenticate(accessToken: string): Promise;
+}
+```
+
+### 📄 `src/api/identity/ports/identityRepository.ts`
+Define o contrato abstrato de persistência para validação de aplicações parceiras.
+
+```typescript
+import type { ApiKeySessionPayload } from '../../../infrastructure/security/engine/apiKeySession';
+
+export interface IdentityRepository {
+  /**
+   * Extrai os metadados de uma credencial cadastrada de forma polimórfica no banco.
+   */
+  findApplicationByKey(apiKey: string): Promise<ApiKeySessionPayload | null>;
+}
+```
+
+---
+
+## 🎯 2. Camada de Domínio: Os Casos de Uso (`useCases/`)
+
+As regras puras de negócio operam de forma isolada na memória RAM, totalmente livres de assinaturas do Express ou rotas HTTP.
+
+### 📄 `src/api/identity/useCases/registerAnonymousActor.ts`
+Orquestra o primeiro milissegundo de acesso do cliente através de assinaturas de hardware temporárias.
+
+```typescript
+import type { SystemLogger } from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface RegisterAnonymousInput {
+  readonly deviceFingerprintId : string;
+  readonly initialIpAddress    : string;
+}
+
+export interface RegisterAnonymousOutput {
+  readonly actorId : string;
+  readonly status  : string;
+}
+
+export class RegisterAnonymousActorUseCase {
+  /**
+   * Registra o ator efêmero na memória para preservar o histórico de prompts da IA.
+   */
+  public async execute(input: RegisterAnonymousInput, logger: SystemLogger): Promise<RegisterAnonymousOutput> {
+    logger.info(`Registering dynamic anonymous boundary for hardware fingerprint: [${input.deviceFingerprintId}]`);
+
+    return {
+      actorId : `anonymous_${Date.now()}`,
+      status  : 'CREATED_EFEMERAL'
+    };
+  }
+}
+```
+
+### 📄 `src/api/identity/useCases/associateExternalIdentity.ts`
+Gerencia o mecanismo de **Identificação Progressiva**, unificando o histórico do ator anônimo através do e-mail verificado pela federação.
+
+```typescript
+import type { FederatedAuthenticator } from '../ports/federatedAuthenticator';
+import type { SystemLogger }           from '../../../infrastructure/telemetry/engine/systemLogger';
+
+export interface AssociateIdentityInput {
+  readonly actorId     : string;
+  readonly accessToken : string;
+}
+
+export class AssociateExternalIdentityUseCase {
+  private readonly authenticator: FederatedAuthenticator;
+
+  constructor(authenticator: FederatedAuthenticator) {
+    this.authenticator = authenticator;
+  }
+
+  /**
+   * Vincula a credencial externa ao ID de negócio do ator local existente na RAM.
+   */
+  public async execute(input: AssociateIdentityInput, logger: SystemLogger): Promise<void> {
+    logger.info(`Initiating federation upgrade sequence for target actor: [${input.actorId}]`);
+
+    // Inversão de Controle: Aciona o contrato sem saber o provedor tecnológico de origem
+    const externalProfile = await this.authenticator.authenticate(input.accessToken);
+
+    logger.info(`Identity mapping secured between [${externalProfile.email}] and actor [${input.actorId}]`);
+  }
+}
+```
+
+---
+
+## 🔌 3. Camada de Infraestrutura: Os Adaptadores (`adapters/`)
+
+Os drivers externos ficam enclausurados em pacotes isolados. Se o formato de comunicação ou a API de terceiros mudar, apenas o arquivo periférico sofre manutenção, mantendo o core imune.
+
+### 📄 `src/infrastructure/identityProviders/google/googleAuthenticator.ts`
+Adaptador real de produção focado na Google Alphabet. O componente recorre ao `fetch` nativo do Node.js, descartando o acoplamento a SDKs pesados de terceiros.
+
+```typescript
+import type { FederatedAuthenticator, FederatedIdentityPayload } from '../../../api/identity/ports/federatedAuthenticator';
+import      { DomainException }          from '../../../api/errors/domainException';
+
+export class GoogleAuthenticator implements FederatedAuthenticator {
+  /**
+   * Dispara uma chamada HTTPS contra o servidor da Google para validar o ID Token de forma segura.
+   */
+  public async authenticate(idToken: string): Promise {
+    try {
+      // 🚀 CONEXÃO DE REDE REAL: Bate no endpoint oficial de validação de ID Tokens da Alphabet
+      const googleApiResponse = await fetch(`https://googleapis.com{idToken}`);
+
+      // Se a Google rejeitar a assinatura do token, aciona o barramento central de erros da API
+      if (!googleApiResponse.ok) {
+        throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+      }
+
+      const googleRawProfile = await googleApiResponse.json() as any;
+
+      // 🥇 TRADUÇÃO DE DIALETO: Transforma o payload bruto do Google nas propriedades limpas do Domínio
+      return {
+        externalId      : String(googleRawProfile.sub), // O Google chama o ID imutável de 'sub'
+        email           : String(googleRawProfile.email),
+        isEmailVerified : googleRawProfile.email_verified === true || googleRawProfile.email_verified === 'true',
+        fullName        : String(googleRawProfile.name),
+        avatarUrl       : String(googleRawProfile.picture || 'https://googleusercontent.com')
+      };
+
+    } catch (capturedError: unknown) {
+      if (capturedError instanceof DomainException) {
+        throw capturedError;
+      }
+      throw new DomainException('FEDERATED_AUTHENTICATION_FAILED');
+    }
+  }
+}
+```
+
+
+## Mantenedor
+
+**Autor:** Luis Carlos da Silva Dias  
+**Contato:** silvadias.perfil@outlook.com
+
+
+===== ARQUIVO: README_refatorado.md =====
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# TypeScript API Boilerplate — Hexagonal Pluggable Adapter Engine
+
+Este projeto é um boilerplate arquitetural de alta maturidade para APIs TypeScript, orientado a **portabilidade**, **isolamento de infraestrutura**, **observabilidade estruturada**, **segurança perimetral** e **resiliência**.
+
+A arquitetura combina **Clean Architecture (Ports & Adapters)** com **Feature-by-Package**, mantendo o núcleo da aplicação independente de frameworks de transporte, bibliotecas criptográficas e implementações específicas de logging. Tecnologias externas ficam concentradas em `drivers/`, enquanto os contratos estáveis do sistema permanecem em `engine/`.
+
+## Arquitetura
+
+A estrutura segue o princípio da **Inversão de Dependências (DIP)**: o domínio define contratos; os adaptadores implementam esses contratos.
+
+```text
+src/
+├── api/                       # CAMADA DE DOMÍNIO - APENAS NEGÓCIO  (Agnóstico)
+│   └── errors/                # Barramento Centralizado de Exceções de Domínio
+│       ├── domain/            # Dicionários literais de mensagens e chaves
+│       │   └── security.ts
+│       ├── catalog.ts         # Ponto Único de Verdade: ErrorCatalog e ErrorCode
+│       └── domainException.ts # Exceção de negócio soberana
+├── config/                    # Parâmetros globais e configuração strongly-typed
+│   └── env.ts                 # Tipagem estrita das variáveis de ambiente
+└── infrastructure/            # PERIFERIAS E ADAPTADORES (Ports & Adapters)
+    ├── telemetry/             # Observabilidade e não-repúdio
+    │   ├── engine/            # Contratos de abstração (Ports)
+    │   │   └── systemLogger.ts
+    │   └── drivers/            # Implementações substituíveis (Adapters)
+    │       └── systemConsoleJsonDriver.ts
+    ├── httpTraffic/            # Tráfego de rede e protocolo HTTP
+    │   ├── engine/            # Contratos de transporte
+    │   │   ├── httpTraffic.ts
+    │   │   └── httpValidation.ts
+    │   └── drivers/            # Motores tecnológicos
+    │       └── nodeExpress/
+    │           └── expressHttpDriver.ts
+    └── security/              # Segurança, sessão e criptografia
+        ├── engine/            # Contratos de sessão
+        │   └── tokenSession.ts
+        └── drivers/            # Implementações criptográficas
+            └── jwt/
+                └── expressJwtAdapter.ts
+├── apiRouter.ts               # Orquestrador agnóstico de rotas
+└── server.ts                  # Composition Root e bootstrap
+```
+
+## Princípios arquiteturais
+
+### Drivers e Engines
+
+- **`drivers/`** contém os adaptadores que conhecem tecnologias específicas. O `expressHttpDriver.ts`, por exemplo, conhece o Express e concentra os detalhes da borda HTTP.
+- **`engine/`** contém os contratos e regras abstratas do ecossistema. Os drivers devem se adaptar aos contratos do sistema, e não o contrário.
+
+Essa separação permite substituir uma tecnologia de infraestrutura sem espalhar sua dependência pelo restante da aplicação.
+
+### Isolamento de frameworks
+
+O domínio não deve depender diretamente de assinaturas do Express ou de outros frameworks HTTP. A aplicação trabalha com estruturas próprias, como `HttpTrafficRequest` e `HttpTrafficResponse`.
+
+O framework é tratado como detalhe de infraestrutura.
+
+### Nomes que revelam propósito
+
+O dialeto compacto exigido por protocolos e bibliotecas externas fica encapsulado nos adaptadores. O restante do sistema utiliza nomes de domínio claros e fortemente tipados, como:
+
+- `actorId`
+- `deviceFingerprintId`
+- `initialIpAddress`
+- `requestSequenceCounter`
+- `lastActivityAt`
+
+Essa tradução mantém os detalhes de transporte e criptografia fora do núcleo da aplicação.
+
+## Observabilidade
+
+A telemetria é definida pelo contrato `SystemLogger`, localizado em `src/infrastructure/telemetry/engine/systemLogger.ts`.
+
+O contrato disponibiliza operações como:
+
+- `info()`
+- `warn()`
+- `error()`
+- `audit()`
+- `withContext(traceId, requestMetadata)`
+
+O uso genérico de `console.log()` no core é evitado. Cada ciclo de requisição pode carregar um **Trace ID**, permitindo rastrear o fluxo ponta a ponta.
+
+O `systemConsoleJsonDriver.ts` adapta esse contrato para a saída física:
+
+- em produção, emite JSON de linha única, adequado para ingestão em ferramentas de observabilidade;
+- em desenvolvimento, utiliza Pretty Print para facilitar a leitura humana.
+
+## Tráfego HTTP
+
+O contrato `HttpTrafficRequest` / `HttpTrafficResponse`, definido em `src/infrastructure/httpTraffic/engine/httpTraffic.ts`, representa o transporte de forma independente do framework.
+
+O `expressHttpDriver.ts` é o adaptador responsável pela borda HTTP. Ele:
+
+1. recebe o tráfego bruto;
+2. executa as validações de entrada;
+3. hidrata o contexto da requisição;
+4. integra o mecanismo de sessão por inversão de dependência;
+5. centraliza o tratamento de falhas;
+6. disponibiliza metadados de borda para auditoria.
+
+Quando não existe uma sessão válida, o fluxo pode operar com o ator `ANONYMOUS` e metadados de borda.
+
+Também são capturados dados como IP e um hash reduzido do User-Agent para uso nos cruzamentos de auditoria definidos pelo domínio.
+
+## Segurança e sessões
+
+O contrato `TokenCryptographerEngine` e o modelo `TokenSessionPayload` ficam em `src/infrastructure/security/engine/tokenSession.ts`.
+
+A interface abstrai a tecnologia utilizada para gerar e decifrar tokens, mantendo o restante da aplicação independente da biblioteca criptográfica.
+
+O `expressJwtAdapter.ts` é o único ponto autorizado a conhecer a implementação JWT externa. Ele traduz os nomes de domínio para os campos compactos do protocolo e converte erros da biblioteca em exceções nativas da aplicação.
+
+Exemplo:
+
+```typescript
+throw new DomainException('SECURITY_TOKEN_EXPIRED');
+```
+
+Essa abordagem evita que exceções específicas da biblioteca vazem para o domínio.
+
+## Engenharia de erros
+
+O tratamento de falhas segue uma abordagem centralizada.
+
+`src/api/errors/catalog.ts` funciona como a **Verdade Única de Erros**, reunindo o catálogo e os respectivos códigos. `domainException.ts` representa a exceção soberana do domínio.
+
+Em vez de espalhar tratamento de erros específicos por controladores e casos de uso, o código lança uma exceção sem conhecer o mecanismo de transporte:
+
+```typescript
+throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+```
+
+A falha percorre o barramento até o adaptador de rede, onde é traduzida pelo mecanismo de formatação da aplicação para uma resposta HTTP estruturada.
+
+## Rotas e princípio Open/Closed
+
+O arquivo de rotas deve permanecer concentrado no registro dos endpoints.
+
+A segurança de perímetro e a leitura de sessão são responsabilidades da infraestrutura de tráfego e de seus mecanismos de pipeline. Dessa forma, a expansão das políticas de segurança pode ocorrer sem acoplar regras tecnológicas aos módulos de domínio.
+
+A intenção é manter os componentes existentes fechados para modificações desnecessárias e abertos à extensão por novos adaptadores e políticas.
+
+## Próximo marco técnico
+
+Com a camada de tráfego, a telemetria estruturada e a hidratação de tokens encapsuladas, o próximo passo arquitetural é a implementação da camada de **Casos de Uso (`useCases`)**.
+
+O modelo planejado trabalha com **Identificação Progressiva** e **Atores Temporários**:
+
+1. uma requisição inicialmente anônima chega como `ANONYMOUS`;
+2. o caso de uso pode cruzar IP, hash do navegador e informações de hardware;
+3. sendo identificada uma nova entidade, um ID de negócio é criado;
+4. o token passa a representar esse ator temporário;
+5. quando o usuário realiza o cadastro oficial, os dados podem atualizar a mesma entidade, preservando seu histórico de uso.
+
+Essa etapa deverá manter as mesmas regras de isolamento: casos de uso e domínio não devem conhecer detalhes de Express, JWT ou outros mecanismos tecnológicos.
+
+## Configuração e execução
+
+As variáveis de ambiente são governadas por `src/config/env.ts`.
+
+Para o desenvolvimento assistido, o comportamento de logging pode ser alternado entre `development` e `production` por meio de `NODE_ENV`, conforme a configuração do projeto.
+
+Novos módulos de domínio devem ser organizados como pacotes autocontidos dentro de `src/api/`, mantendo suas regras separadas da infraestrutura.
+
+## Convenções
+
+### Imports
+
+Para contratos usados apenas como tipos, utilize `import type`:
+
+```typescript
+import type { HttpTrafficRequest } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+```
+
+### Dependências
+
+- mantenha dependências tecnológicas nos respectivos `drivers/`;
+- mantenha contratos e abstrações em `engine/`;
+- evite vazamento de tipos de frameworks para o domínio;
+- prefira exceções de domínio catalogadas a códigos e mensagens espalhados;
+- preserve nomes de negócio compreensíveis no core;
+- utilize injeção de dependências para conectar o núcleo aos adaptadores.
+
+## 💻 Arquitetura de Fluxo (Exemplo de Escala com Acoplamento Zero)
+
+### 🛣️ 1. A Fiação da Rota (`src/api/messages/routes.ts`)
+O arquivo de rotas possui responsabilidade única (SRP): mapear o método HTTP puro ao seu despachante, delegando a malha de validação de dados de forma declarativa e invisível.
+
+```typescript
+import type { HttpTrafficExchangeEngine }   from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { MessagesController }          from './controller';
+import      { MessageInputSchema }          from './validation';
+
+export function initializeMessagesRoutes(engine: HttpTrafficExchangeEngine): void {
+  // A rota tem apenas a rota e o contrato sintático de entrada. Zero acoplamento com segurança.
+  engine.register(
+    'post',
+    '/messages',
+    MessagesController.dispatchSendMessage,
+    MessageInputSchema
+  );
+}
+```
+
+### 🎯 2. O Controlador Despachante (`src/api/messages/controller.ts`)
+O controlador atua estritamente como um tradutor de fronteira. Ele não executa lógicas de banco de dados, não valida e-mails e não faz cálculos temporais. Ele simplesmente captura o input limpo, lê a sessão hidratada pela rede e despacha para a Action executar o trabalho pesado.
+
+```typescript
+import type { HttpTrafficRequest,
+              HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/httpTraffic';
+import      { SendMessageAction }   from './actions/sendMessageAction';
+
+export class MessagesController {
+  public static async dispatchSendMessage(request: HttpTrafficRequest): Promise<HttpTrafficResponse> {
+    
+    // Inversão de Controle: Instancia a ação de negócio injetando a telemetria contextual da requisição
+    const messageUseCase = new SendMessageAction(request.logger);
+
+    // Executa o Caso de Uso passando apenas os payloads purificados e a identidade isolada
+    const businessResult = await messageUseCase.execute({
+      promptText : request.body.prompt,
+      userSession: request.session
+    });
+
+    // Retorna a resposta visual adaptável para o controlador devolver à rede
+    return {
+      statusCode : 200,
+      body       : {
+        status : 'success',
+        data   : businessResult
+      }
+    };
+  }
+}
+```
+
+### ⚙️ 3. A Ação de Domínio / Caso de Uso (`src/api/messages/actions/sendMessageAction.ts`)
+O coração do software. Esta classe é imune a frameworks de rede (não sabe o que é Express ou cURL). Ela recebe estruturas fortemente tipadas em tempo de design, aplica as lógicas de bloqueio comportamental de anônimos, consome repositórios e emite auditorias estruturadas imutáveis.
+
+```typescript
+import type { SystemLogger }        from '../../../../infrastructure/telemetry/engine/systemLogger';
+import type { TokenSessionPayload } from '../../../../infrastructure/security/engine/tokenSession';
+import      { DomainException }     from '../../../errors/domainException';
+
+interface SendMessageInput {
+  readonly promptText  : string;
+  readonly userSession : TokenSessionPayload;
+}
+
+interface SendMessageOutput {
+  readonly aiResponse : string;
+  readonly promptId   : string;
+}
+
+export class SendMessageAction {
+  private readonly logger: SystemLogger;
+
+  constructor(logger: SystemLogger) {
+    this.logger = logger;
+  }
+
+  public async execute(input: SendMessageInput): Promise<SendMessageOutput> {
+    const { actorId, initialIpAddress, requestSequenceCounter } = input.userSession;
+
+    // BARREIRA DE COMPORTAMENTO: Se for um ator anônimo e o contador violar o limite contra vírus
+    if (actorId === 'ANONYMOUS' && requestSequenceCounter > 5) {
+      this.logger.warn(`Security threshold breached. IP [${initialIpAddress}] blocked by anti-bot policy.`);
+      throw new DomainException('SECURITY_TOKEN_CORRUPTED');
+    }
+
+    // AUDITORIA NATIVA: Registro estruturado de não-repúdio gerado em formato JSON camaleônico
+    this.logger.audit('AI_PROMPT_PROCESSED', actorId, {
+      promptLength : input.promptText.length,
+      sequenceId   : requestSequenceCounter
+    });
+
+    // Simulando a execução real da regra de negócio (Consulta a IA / Banco de Dados de forma isolada)
+    return {
+      aiResponse : `Resposta computada para o prompt: ${input.promptText}`,
+      promptId   : 'prompt_uuid_999'
+    };
+  }
+}
+```
+
+### 💡 Por que esta dinâmica garante a Imunidade Arquitetural?
+-   **Validação Desacoplada:** Se o frontend enviar um JSON sem o campo `prompt`, o driver de rede barra na portaria (422) antes mesmo do `MessagesController` ser invocado [Uncle Bob].
+-   **Manutenabilidade e Escala:** Se a regra de bloqueio de bots mudar (ex: validar o hash do navegador em vez do contador), você altera **apenas um arquivo**: a action `SendMessageAction`. As rotas, os controladores e as criptografias do JWT permanecem **100% intocados e imunes**, impossibilitando que uma alteração lógica cause efeitos colaterais ou quebre outras partes do ecossistema [Uncle Bob, Farley].
+
+## 🛡️ Ecossistema Perimetral Multi-Tenant & Cache RAM Dinâmico
+
+O sistema implementa uma barreira de defesa em profundidade na portaria de rede baseada em chaves de acesso dinâmicas para aplicações parceiras (estilo Google Gemini e OpenAI), operando através de um mecanismo de **Cache Dinâmico In-Memory (Read-Through Cache)** para garantir segurança máxima com o menor desgaste de rede do planeta [Farley].
+
+```text
+[Cliente Externo: Bruno] ──( Envia X-API-Key )──► [ExpressHttpDriver (Portaria de Rede)]
+                                                              │
+                     ┌────────────────────────────────────────┴────────────────────────────────────────┐
+                     ▼                                                                                 ▼
+     [BARREIRA 1: Cache RAM Local (Map)]                                             [BARREIRA 2: Fallback ao Banco (Repository)]
+  Procura a chave na memória do servidor.                                          Se der Cache Miss, executa a query física.
+  - Cache Hit: Retorna em microsegundos (62ms) ◄────────────────────────────────── - Chave Inexistente? 401 Unauthorized (Aborta)
+  - Aplicação Suspensa? 403 Forbidden (Aborta)                                     - Chave Ativa? Grava uma cópia na RAM (TTL) e libera.
+```
+
+### 🧠 Como Funciona a Engenharia do Cache Dinâmico
+1. **O Cliente é Agnóstico:** O frontend de terceiros envia a credencial bruta a cada clique por motivos de segurança perimetral (evitando o salvamento de chaves no LocalStorage do navegador do usuário, o que exporia a chave a clonagens) [Farley].
+2. **A API gerencia a RAM:** O servidor intercepta a chave na entrada de rede e consulta uma estrutura type-safe nativa alocada diretamente nos chips de memória RAM do container Docker (`Map<string, CachedKeyEntry>`), consumindo peso computacional zero de hardware [Farley].
+3. **Mecanismo Read-Through com TTL:** Na primeira requisição, ocorre um *Cache Miss* (falha de cache). O sistema vai ao banco de dados por meio do repositório, valida a credencial, monta um envelope temporal e **salva uma cópia exata do registro na memória RAM** com um tempo de expiração (*Time-To-Live*) de 5 minutos [Farley]. Pelos próximos 300 segundos, todas as requisições leem exclusivamente essa cópia na RAM (Cache Hit), gerando respostas ultra-rápidas (62ms) e protegendo os bancos de dados principais contra bombardeios ou ataques de negação de serviço aplicacionais (DDoS) [Farley].
+
+---
+
+## 📑 Mapeamento Técnico de Componentes (Quem chama Quem)
+
+### 1. O Contrato de Sessão (`src/infrastructure/security/engine/apiKeySession.ts`)
+*   **Exportações Nomeadas:** Interfaces `ApiKeySessionPayload`, `ApplicationRepository` e `ApiKeyEvaluatorEngine`.
+*   **Propósito:** Contrato abstrato (Port) que obriga a camada de dados e o motor lógico de segurança a conversarem em dialeto purificado de negócios, garantindo que o core do sistema permaneça 100% aberto para expansão e fechado para mudança (OCP) [Uncle Bob].
+*   **Variáveis e Payload Estruturado (`ApiKeySessionPayload`):**
+    *   `applicationId` : Identificador único da empresa ou site parceiro dono da credencial [Ottinger].
+    *   `developerId`   : Vínculo com a conta do programador que gerou a chave no painel de desenvolvedor [Ottinger].
+    *   `rateLimitTier` : Nível do plano de consumo atribuído à chave (`FREE` | `PREMIUM` | `ENTERPRISE`) [Ottinger].
+    *   `isSuspended`   : Boolean indicador de bloqueio administrativo temporal por fraude ou inadimplência [Ottinger].
+
+### 2. A Camada de Dados e Consulta Burra (`src/database/apiKeys/`)
+*   `apiKeyTables.ts`   : Contém a interface pura da linha da tabela (`ApiKeyRow`) e o array em memória RAM que simula as chaves de teste registradas, expurgando o amadorismo de prefixar interfaces com a letra "I" [Uncle Bob, Ottinger].
+*   `apiKeyInstance.ts` : Driver de conexão burro (`apiKeyConnection`). Sua responsabilidade única (SRP) é rodar o método linear de busca física `.findKeyByString(apiKey)` e retornar a linha crua do banco, agindo de forma idêntica a drivers de produção como MySQL ou MongoDB [Uncle Bob].
+*   `apiKeyRepository.ts`: O adaptador hexagonal concreto (`ApiKeyRepository`). Ele consome a instância do banco, captura a linha crua e realiza a **tradução de dialeto físico para dialeto humano**, devolvendo o objeto no formato da interface `ApiKeySessionPayload` [Uncle Bob].
+
+### 3. O Motor de Orquestração do Cache (`src/infrastructure/security/engine/apiKeyEvaluator.ts`)
+*   **Implementação:** Implementa a interface `ApiKeyEvaluatorEngine`. Ele recebe o `ApplicationRepository` por Inversão de Dependências (DIP) e gerencia o mapa privado de cache dinâmico com TTL (`ramCacheStore`) [Uncle Bob, Farley].
+*   **Ações:** Executa o método `.evaluate(apiKey)`. Se a chave for inexistente no ecossistema, interrompe o fluxo disparando a exceção soberana de domínio `DomainException('API_KEY_INVALID')`. Se o registro indicar que o parceiro foi banido pelo painel administrativo, dispara a exceção `DomainException('API_KEY_SUSPENDED')`, forçando o barramento central a responder com o status de rede adequado (401 ou 403) [Uncle Bob].
+
+### 4. A Interceptação Perimetral de Entrada (`src/infrastructure/httpTraffic/drivers/expressHttpDriver.ts`)
+*   **Funcionamento:** Modificado no construtor para receber a abstração `apiKeyEngine: ApiKeyEvaluatorEngine` por acoplamento plug-in [Uncle Bob].
+*   **O Pipeline de Borda:** Na primeiríssima linha do processamento HTTP, o driver extrai o cabeçalho de transporte `incomingRequest.headers['x-api-key']` [Farley]. Se o cabeçalho estiver ausente, joga o erro `API_KEY_MISSING` [Uncle Bob]. Se estiver presente, repassa a string para o motor de cache dinâmico processar em microsegundos [Uncle Bob]. Passando com sinal verde pela RAM, os metadados do parceiro são anexados de forma transparente na propriedade **`request.application`**, disponibilizando as variáveis de planos (`FREE`/`ENTERPRISE`) para as rotas e os casos de uso consumirem nativamente [Uncle Bob, Farley].
+
+---
+
+## 🚀 O que pode ser Feito Agora (Abertura para Expansão)
+
+Com o esqueleto perimetral Multi-Tenant e a barreira de cache dinâmico dinâmico operando com nota máxima de design na branch `branchApiKey` [Farley], a infraestrutura técnica está completamente fechada para modificações e aberta para as seguintes extensões e plugs lógicos de negócio [Uncle Bob]:
+
+*   **Plugar o MongoDB ou Sequelize:** Para migrar do array em memória para um banco de dados real ou ORM de mercado, o desenvolvedor precisa alterar **apenas um arquivo**: criar uma nova classe dentro de `src/database/apiKeys/` (ex: `MongoApiKeyRepository.ts`) implementando a interface `ApplicationRepository` [Uncle Bob]. A portaria de rede, os controladores e o motor de cache dinâmico permanecerão intactos e imunes, sem saber que o banco de dados mudou [Uncle Bob].
+*   **Rota de Geração de Chaves:** O sistema está pronto para receber uma rota de negócio voltada a desenvolvedores (ex: `POST /developer/keys`). O caso de uso dessa rota chamará o repositório de persistência para inserir uma nova linha na tabela física, expandindo os acessos dinamicamente sem tocar em arquivos de infraestrutura [Uncle Bob, Farley].
+
+## 🛡️ Malha de Segurança e Resiliência Internacional (Camada de Infraestrutura)
+
+O esqueleto possui um pipeline de defesa em profundidade e gerenciamento de processos na portaria de tráfego HTTP. Essas barreiras operam de forma agnóstica em nível de **Memória RAM local (peso computacional zero de hardware)**, garantindo imunidade absoluta contra robôs, bombardeios de requisições, colapsos de serviços externos e desligamentos abruptos [Farley].
+
+```text
+               JORNADA DE UM CLIQUE DO CLIENTE (PIPELINE SEQUENCIAL)
+               
+ [Navegador / Bruno] ───► [ExpressHttpDriver: Entrada de Rede]
+                                    │
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🧬 1. ServerLifecycleGovernor (Incrementa +1 na RAM)    │
+       │    * Rejeita a conexão com status 503 se o SO estiver  │
+       │      em processo de encerramento em nuvem (Docker).    │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Sinal Verde (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🔑 2. ApiKeyEvaluator (Cache RAM Dinâmico Read-Through)│
+       │    * Valida X-API-Key in microsegundos via RAM Cache.  │
+       │    * Cache Miss? Fallback ao banco e popula a RAM.     │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Chave Válida (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🛡️ 3. RequestThrottler (Regulador de Janela de Cliques) │
+       │    * Conta os cliques por minuto (Tenancy do Plano).   │
+       │    * Estourou a cota do plano? Status 429 Aborta.      │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Sob a Cota (Avança)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ 🎯 4. Execução do Caso de Uso (Seu Core de IA)          │
+       │    * Durante chamadas externas demoradas (OpenAI)...   │
+       │    * ServiceResilienceGate monitora o circuito.       │
+       │    * Falhou 5 vezes consecutivas? O portão abre e     │
+       │      desvia chamadas futuras com status 503 (0ms).    │
+       └────────────────────────────┬───────────────────────────┘
+                                    │ Fluxo Encerrado (Sucesso/Erro)
+                                    ▼
+       ┌────────────────────────────────────────────────────────┐
+       │ ⚰️ 5. ExpressHttpDriver: Bloco Finally                 │
+       │    * Decrementa obrigatoriamente o contador (-1 na RAM).│
+       │    * Libera a morte segura do processo se for o último.│
+       └────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 📑 1. Regulador Dinâmico de Cliques (`RequestThrottler`)
+*   **Propósito:** Proteger os recursos computacionais do servidor e mitigar abusos de faturamento causados por scripts robôs em loops infinitos, aplicando limites estritos baseados no plano contratado da aplicação parceira (Multi-Tenant) [Farley].
+*   **Como é Implementado:** Localizado em `src/infrastructure/security/engine/requestThrottler.ts`. Opera de forma nativa e agnóstica através do algoritmo de **Janela Deslizante Simplificada (*Fixed Window Rate Limiting*)** recorrendo a estruturas de `Map` da memória RAM do processo de requisição HTTP [Farley].
 *   **Variáveis e Janelas Internas:**
     *   `RATE_LIMITS` : Dicionário imutável strongly-typed mapeando as cotas (`FREE: 10`, `PREMIUM: 100`, `ENTERPRISE: 1000` cliques a cada 60 segundos).
     *   `appCountersStore` : Tabela efêmera em RAM que armazena a contagem ativa indexada por `applicationId`.
@@ -4706,7 +4308,7 @@ export function initializeHomeRoutes(engine: HttpTrafficExchangeEngine): void {
 }
 
 
-===== ARQUIVO: src/api/identity/useCases/associateExternalIdentity.ts =====
+===== ARQUIVO: src/api/identity/ports/associateExternalIdentity.ts =====
 
 import type { FederatedAuthenticator } from '../../../infrastructure/identityProviders/engine/federatedAuthenticator';
 import type { SystemLogger }           from '../../../infrastructure/telemetry/engine/systemLogger';
@@ -4734,7 +4336,7 @@ export class AssociateExternalIdentityUseCase {
 }
 
 
-===== ARQUIVO: src/api/identity/useCases/registerAnonymousActor.ts =====
+===== ARQUIVO: src/api/identity/ports/registerAnonymousActor.ts =====
 
 import type { SystemLogger } from '../../../infrastructure/telemetry/engine/systemLogger';
 

@@ -2,14 +2,22 @@ import type { HttpTrafficRequest,
               HttpTrafficResponse } from '../../infrastructure/httpTraffic/engine/httpTraffic';
 import      { UsersModel }          from './model';
 
+/** Interface utilitária local para injeção dinâmica de status HTTP em erros nativos. */
 interface CustomError extends Error {
   statusCode?: number;
 
 }
 
+/**
+ * @class UsersController
+ * @description Controlador de Fronteira e Despachante do Subdomínio de Usuários.
+ * Traduz os envelopes purificados de requisição em chamadas lineares de modelo de negócio,
+ * agindo de forma desacoplada das assinaturas de rede primitivas no padrão adapter.
+ */
 export class UsersController {  
     
 
+  /** Captura a listagem de registros repassando um payload encapsulado com status 200. */
   public static async getAllUsers(
     request: HttpTrafficRequest
 
@@ -26,6 +34,10 @@ export class UsersController {
 
     } 
 
+  /**
+   * @description Pipeline de criação de novas entidades de usuário.
+   * Executa checagem sintática de obrigatoriedade e arremessa erros customizados de barramento.
+   */
   public static async createUser(
     request: HttpTrafficRequest
 

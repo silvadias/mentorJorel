@@ -2,6 +2,11 @@ import type { FederatedAuthenticator,
               FederatedIdentityPayload } from '../engine/federatedAuthenticator';
 import      { DomainException }          from '../../../api/errors/domainException';
 
+/**
+ * @class LinkedinAuthenticator
+ * @description Adaptador Periférico para Federação de Identidade via LinkedIn v2 API.
+ * Encapsula as requisições HTTPS contra o endpoint restrito de gerenciamento de perfis de terceiros.
+ */
 export class LinkedinAuthenticator implements FederatedAuthenticator {
 
   public async authenticate(token: string): Promise<FederatedIdentityPayload> {

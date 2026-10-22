@@ -1,6 +1,12 @@
 import type { SystemLogger,
               LogMetadata } from '../engine/systemLogger';
 
+/**
+ * @class SystemConsoleJsonDriver
+ * @description Adaptador Periférico (Adapter) para Emissão de Telemetria via Console.
+ * Implementa o contrato 'SystemLogger' e formata dinamicamente o fluxo de observabilidade
+ * em envelopes estruturados JSON, aplicando isolamento de stack traces em modo de depuração.
+ */
 export class SystemConsoleJsonDriver implements SystemLogger {
   private readonly traceId            : string | undefined;
   private readonly contextualMetadata : LogMetadata | undefined;
@@ -17,6 +23,7 @@ export class SystemConsoleJsonDriver implements SystemLogger {
 
   }
 
+  /** Fábrica polimórfica que estende o contexto operacional injetando o Trace ID e metadados de rede fixos. */
   public withContext(traceId: string, requestMetadata?: LogMetadata): SystemLogger {
     return new SystemConsoleJsonDriver(traceId, requestMetadata, this.prettyFormat);
   }
@@ -50,6 +57,11 @@ export class SystemConsoleJsonDriver implements SystemLogger {
     this.emit('AUDIT', `Security Audit Event: [${action}] executed by user [${actorId}]`, undefined, securityMetadata);
   }
 
+  /**
+   * @private
+   * @description Motor central de renderização e descarga de buffers no stream de saída do processo.
+   * Realiza a higienização do objeto de erro e serializa o payload conforme o nível de verbosidade ativo.
+   */
   private emit(
     level    : 'INFO' | 'WARN' | 'ERROR' | 'AUDIT',
     message  : string, 

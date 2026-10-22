@@ -1,7 +1,14 @@
 import { DomainException } from '../../api/errors/domainException';
 
+/** Estados lógicos imutáveis alocados na memória RAM para controle de fluxo do disjuntor. */
 type GateState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
+/**
+ * @class ServiceResilienceGate
+ * @description Mecanismo de Disjuntor Técnico (Circuit Breaker) para APIs Externas.
+ * Monitora falhas consecutivas e chaveia estados operacionais em tempo de execução,
+ * abortando requisições em tempo zero caso o alvo integrado atinja colapso estrutural.
+ */
 export class ServiceResilienceGate {
   private readonly failureThreshold : number;
   private readonly cooldownPeriodMs : number;
@@ -19,6 +26,10 @@ export class ServiceResilienceGate {
     this.nextAttemptAllowedAt   = 0;
   }
 
+  /**
+   * @description Barreira comportamental contra falhas em cascata.
+   * Avalia a sinaleira de tempo do cooldown e impede a execução se o circuito estiver em pane ('OPEN').
+   */
   public ensureAccessible(): void {
     const currentTime = Date.now();
 
@@ -31,11 +42,13 @@ export class ServiceResilienceGate {
     }
   }
 
+  /** Restabelece a normalidade operacional do portão e limpa os contadores de erro. */
   public recordSuccess(): void {
     this.consecutiveFailures = 0;
     this.currentState        = 'CLOSED';
   }
 
+  /** Incrementa o marcador atômico e abre o circuito caso viole o teto de tolerância tolerado. */
   public recordFailure(): void {
     this.consecutiveFailures++;
 
@@ -46,6 +59,7 @@ export class ServiceResilienceGate {
     }
   }
 
+  /** Expõe o estado textual ativo na memória para auditorias e telemetria estruturada. */
   public getState(): GateState {
     return this.currentState;
   }

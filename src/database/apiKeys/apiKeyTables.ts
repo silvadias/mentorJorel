@@ -1,3 +1,8 @@
+/**
+ * @interface ApiKeyRow
+ * @description Esquema de Registro Físico da Tabela de Chaves de Acesso.
+ * Representa a assinatura crua dos campos persistidos na camada de banco de dados tradicional.
+ */
 export interface ApiKeyRow {
   readonly id                  : number;
   readonly keyString           : string;
@@ -7,6 +12,7 @@ export interface ApiKeyRow {
   readonly isSuspendedNumber   : number; // ◄ Revela que o banco guarda um número (0 ou 1) e não booleano
 }
 
+/** Array efêmero em memória RAM que simula os registros físicos persistidos no banco de dados. */
 export const mockApiKeyTable: ApiKeyRow[] = [
   {
     id                  : 1,
