@@ -11,3 +11,7 @@ export interface FederatedAuthenticator {
   authenticate(accessToken: string): Promise<FederatedIdentityPayload>;
 
 }
+
+export interface IdentityProvidersCatalogEngine {
+  getProvider(providerName: string): FederatedAuthenticator;
+}

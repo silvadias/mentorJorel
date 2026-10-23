@@ -7,12 +7,17 @@ import type { HttpTrafficExchangeEngine,
               HttpNetworkSecurityPolicy }   from '../engine/httpTraffic';
 import type { HttpFailureFormatter }        from '../../../api/errors/domainException';
 import type { SystemLogger }                from '../../telemetry/engine/systemLogger';
-import type { TokenCryptographerEngine }    from '../../security/token/engine/tokenSession';
+import type { TokenCryptographerEngine,
+              TokenSessionPayload }         from '../../security/token/engine/tokenSession';
 import type { ConsumerFinderEngine }        from '../../security/apiKeyTenant/adapter/finder';
 import      { RequestThrottler }            from '../../security/throttler/requestThrottler';
 import      { ServerLifecycleGovernor }     from '../../lifeCycle/serverLifecycleGovernor';
 import      { ValidationException }         from '../engine/httpValidation';
+import      { DiscoverVisitorIdentityUseCase }   from '../../../api/users/userCases/discoverVisitorIdentity';
+import      { ProvisionNewEfemeralVisitorUseCase } from '../../../api/users/userCases/provisionNewEfemeralVisitor';
+import type { DiscoveredIdentityProfile }   from '../../../api/users/userCases/discoverVisitorIdentity';
 import      { DomainException }             from '../../../api/errors/domainException';
+
 
 /**
  * @class ExpressHttpDriver
@@ -31,6 +36,9 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   private readonly lifecycleGovernor    : ServerLifecycleGovernor;
   private readonly networkSecurityPolicy: HttpNetworkSecurityPolicy;
   private readonly displayDebugDetails  : boolean;
+  private readonly discoverVisitorUseCase   : DiscoverVisitorIdentityUseCase;
+  private readonly provisionVisitorUseCase  : ProvisionNewEfemeralVisitorUseCase;
+
 
   constructor(configuration: { 
     port                   : number; 
@@ -41,6 +49,8 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     throttlerEngine        : RequestThrottler;
     lifecycleGovernor      : ServerLifecycleGovernor;
     networkPolicy          : HttpNetworkSecurityPolicy;
+    discoverVisitorUseCase : DiscoverVisitorIdentityUseCase;
+    provisionVisitorUseCase: ProvisionNewEfemeralVisitorUseCase; 
     displayDebugDetails    : boolean; 
   }) {
     this.application             = express();
@@ -53,6 +63,8 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     this.lifecycleGovernor       = configuration.lifecycleGovernor;
     this.networkSecurityPolicy   = configuration.networkPolicy;
     this.displayDebugDetails     = configuration.displayDebugDetails;
+    this.discoverVisitorUseCase  = configuration.discoverVisitorUseCase;
+    this.provisionVisitorUseCase = configuration.provisionVisitorUseCase;
     
     this.application.use(express.json());
     this.applyGlobalNetworkPolicies();
@@ -84,117 +96,124 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
   }
 
   /**
-   * @description Motor de Injeção e Execução de Pipeline Perimetral Sequencial.
-   * Converte assinaturas nativas externas e gerencia barreiras atômicas síncronas antes do envio ao core.
-   */
-  public register(
-    method      : 'get' | 'post' | 'put' | 'delete', 
-    resourcePath: string, 
-    handler     : HttpTrafficHandler,
-    schema?     : unknown
-  ): void {
-      this.application[method](resourcePath, async (
-        incomingRequest : ExpressEngine.Request, 
-        outgoingResponse: ExpressEngine.Response
-    ): Promise<void> => {
+ * @description Motor de Injeção e Execução de Pipeline Perimetral Sequencial.
+ * Converte assinaturas nativas externas e gerencia barreiras atômicas síncronas antes do envio ao core.
+ */
+public register(
+  method      : 'get' | 'post' | 'put' | 'delete', 
+  resourcePath: string, 
+  handler     : HttpTrafficHandler,
+  schema?     : unknown
+): void {
+  this.application[method](resourcePath, async (
+    incomingRequest : ExpressEngine.Request, 
+    outgoingResponse: ExpressEngine.Response
+  ): Promise<void> => {
 
-      // BARREIRA 1: Validação de Ciclo de Vida do Servidor (Graceful Shutdown)
-      try {
-        this.lifecycleGovernor.incrementActiveRequests();
-      } catch (terminationError: unknown) {
-          outgoingResponse.status(503).json({
-            status  : 'fail', 
-            code    : 'SERVER_TERMINATING',
-            message : 'Servidor em processo de encerramento.' 
-          });
-        return;
-      }
+    // BARREIRA 1: Validação de Ciclo de Vida do Servidor (Graceful Shutdown)
+    try {
+      this.lifecycleGovernor.incrementActiveRequests();
+    } catch (terminationError: unknown) {
+      outgoingResponse.status(503).json({
+        status  : 'fail', 
+        code    : 'SERVER_TERMINATING',
+        message : 'Servidor em processo de encerramento.' 
+      });
+      return;
+    }
 
-      const uniqueTraceId     = crypto.randomUUID();
-      const clientMetadata    = this.extractClientMetadata(incomingRequest);
-      
-      const contextualLogger  = this.systemLogger.withContext(uniqueTraceId, {
-        clientIp     : clientMetadata.ipAddress,
-        userAgent    : clientMetadata.userAgent,
-        httpMethod   : method.toUpperCase(),
-        resourcePath
+    const uniqueTraceId     = crypto.randomUUID();
+    const clientMetadata    = this.extractClientMetadata(incomingRequest);
+    
+    const contextualLogger  = this.systemLogger.withContext(uniqueTraceId, {
+      clientIp     : clientMetadata.ipAddress,
+      userAgent    : clientMetadata.userAgent,
+      httpMethod   : method.toUpperCase(),
+      resourcePath
+    });
+
+    // BARREIRA 2: Rate Limiting Contra DDoS por IP na Camada de Aplicação (L7)
+    try {
+      await this.throttlerEngine.throttle({
+        trackingKey : clientMetadata.ipAddress,
+        maxAllowed  : 200
       });
 
-      // BARREIRA 2: Rate Limiting Contra DDoS por IP na Camada de Aplicação (L7)
-      try {
-        await this.throttlerEngine.throttle({
-          trackingKey : clientMetadata.ipAddress,
-          maxAllowed  : 200
-        });
-
-        // BARREIRA 3: Autenticação Multi-Tenant Perimetral via Chave Contratual
-        const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
-        
-        if (!authenticatedConsumer) {
-          throw new DomainException('API_KEY_INVALID');
-        }
-
-        // BARREIRA 4: Rate Limiting Baseado na Cota do Plano Contratado da Aplicação Parceira
-        const tenantQuotaMap: Record<string, number> = { 
-          FREE: 10, 
-          PREMIUM: 100, 
-          ENTERPRISE: 1000 };
-          
-        const tenantMaxAllowed = tenantQuotaMap[authenticatedConsumer.rateLimitTier] ?? 10;
-
-        await this.throttlerEngine.throttle({
-          trackingKey : authenticatedConsumer.identificationKey,
-          maxAllowed  : tenantMaxAllowed
-        });
-
-        // BARREIRA 5: Identificação Progressiva e Hidratação de Sessão (Suporta estado degradado ANONYMOUS)
-        const activeSessionPayload = await this.hydrateUserSession(incomingRequest, clientMetadata.ipAddress, clientMetadata.userAgentHash);
-
-        // BARREIRA 6: Rate Limiting Comportamental por Usuário dentro da Aplicação Parceira
-        await this.throttlerEngine.throttle({
-          trackingKey : `user:${authenticatedConsumer.identificationKey}:${activeSessionPayload.actorId}`,
-          maxAllowed  : 30
-        });
-
-        contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
-
-        // BARREIRA 7: Validação de Contrato Sintático de Entrada (Schemas de Borda)
-        this.validateInputSchema(schema, incomingRequest.body);
-
-        const adaptedRequest: HttpTrafficRequest = {
-          body        : incomingRequest.body,
-          query       : incomingRequest.query,
-          params      : incomingRequest.params,
-          headers     : incomingRequest.headers,
-          logger      : contextualLogger,
-          session     : activeSessionPayload,
-          consumer    : authenticatedConsumer
-        };
-
-        // Aciona o caso de uso ou controlador de domínio de forma desacoplada
-        const executionResponse = await handler(adaptedRequest);
-        
-        if (executionResponse.newToken) {
-          outgoingResponse.setHeader('X-Session-Token', executionResponse.newToken);
-        }
-
-        outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
-        outgoingResponse.status(executionResponse.statusCode).json(executionResponse.body);
-        
-      } catch (capturedError: unknown) {
-        contextualLogger.error(`Exception intercepted during HTTP processing on path: [${resourcePath}]`, capturedError);
-
-        // Aciona a tradução polimórfica de erros agnósticos para payloads estruturados de rede
-        const { statusCode, payload } = this.failureFormatter.format(capturedError, this.displayDebugDetails);
-        
-        outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
-        outgoingResponse.status(statusCode).json(payload);
-      } finally {
-        // Libera obrigatoriamente a sinaleira de requisição ativa in-memory
-        this.lifecycleGovernor.decrementActiveRequests();
+      // BARREIRA 3: Autenticação Multi-Tenant Perimetral via Chave Contratual
+      const authenticatedConsumer = await this.consumerEngine.byKey(String(incomingRequest.headers['x-api-key'] || '').trim());
+      
+      if (!authenticatedConsumer) {
+        throw new DomainException('API_KEY_INVALID');
       }
-    });
-  }
+
+      // BARREIRA 4: Rate Limiting Baseado na Cota do Plano Contratado da Aplicação Parceira
+      const tenantQuotaMap: Record<string, number> = { 
+        FREE: 10, 
+        PREMIUM: 100, 
+        ENTERPRISE: 1000 
+      };
+        
+      const tenantMaxAllowed = tenantQuotaMap[authenticatedConsumer.rateLimitTier] ?? 10;
+
+      await this.throttlerEngine.throttle({
+        trackingKey : authenticatedConsumer.identificationKey,
+        maxAllowed  : tenantMaxAllowed
+      });
+
+      // BARREIRA 5: Identificação Progressiva e Hidratação de Sessão (Suporta descoberta inteligente e provisionamento)
+      const activeSessionPayload = await this.hydrateUserSession(
+        incomingRequest, 
+        outgoingResponse, // ◄ Passagem explícita para gravação do HEAD do cabeçalho de resposta
+        clientMetadata.ipAddress, 
+        clientMetadata.userAgentHash
+      );
+
+      // BARREIRA 6: Rate Limiting Comportamental por Usuário dentro da Aplicação Parceira
+      await this.throttlerEngine.throttle({
+        trackingKey : `user:${authenticatedConsumer.identificationKey}:${activeSessionPayload.actorId}`,
+        maxAllowed  : 30
+      });
+
+      contextualLogger.info(`Incoming HTTP request received on resource: [${resourcePath}]`);
+
+      // BARREIRA 7: Validação de Contrato Sintático de Entrada (Schemas de Borda)
+      this.validateInputSchema(schema, incomingRequest.body);
+
+      const adaptedRequest: HttpTrafficRequest = {
+        body        : incomingRequest.body,
+        query       : incomingRequest.query,
+        params      : incomingRequest.params,
+        headers     : incomingRequest.headers,
+        logger      : contextualLogger,
+        session     : activeSessionPayload,
+        consumer    : authenticatedConsumer
+      };
+
+      // Aciona o caso de uso ou controlador de domínio de forma desacoplada
+      const executionResponse = await handler(adaptedRequest);
+      
+      if (executionResponse.newToken) {
+        outgoingResponse.setHeader('X-Session-Token', executionResponse.newToken);
+      }
+
+      outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
+      outgoingResponse.status(executionResponse.statusCode).json(executionResponse.body);
+      
+    } catch (capturedError: unknown) {
+      contextualLogger.error(`Exception intercepted during HTTP processing on path: [${resourcePath}]`, capturedError);
+
+      // Aciona a tradução polimórfica de erros agnósticos para payloads estruturados de rede
+      const { statusCode, payload } = this.failureFormatter.format(capturedError, this.displayDebugDetails);
+      
+      outgoingResponse.setHeader('X-Trace-Id', uniqueTraceId);
+      outgoingResponse.status(statusCode).json(payload);
+    } finally {
+      // Libera obrigatoriamente a sinaleira de requisição ativa in-memory
+      this.lifecycleGovernor.decrementActiveRequests();
+    }
+  });
+}
+
 
   /** Captura e gera hashes e metadados reduzidos de rede para auditorias de segurança de não-repúdio. */
   private extractClientMetadata(request: ExpressEngine.Request) {
@@ -218,31 +237,69 @@ export class ExpressHttpDriver implements HttpTrafficExchangeEngine {
     }
   }
 
-  /** Tenta decodificar o token de segurança física do cabeçalho ou degrada o estado do ator de forma elegante. */
-  private async hydrateUserSession(request: ExpressEngine.Request, ipAddress: string, userAgentHash: string): Promise<any> {
-    const authorizationHeader = request.headers['authorization'];
-    const anonymousPayload = {
-      actorId                : 'ANONYMOUS',
-      deviceFingerprintId    : 'unknown',
-      tokenUniqueId          : 'unknown',
-      initialIpAddress       : ipAddress,
-      clientUserAgentHash    : userAgentHash,
-      requestSequenceCounter : 0,
-      issuedAt               : new Date(),
-      expiresAt              : new Date(),
-      lastActivityAt         : new Date()
-    };
+ /**
+ * @description Tenta decodificar o token de segurança física do cabeçalho ou aciona o pipeline de descoberta de hardware.
+ * Realiza o carimbo automatizado do token digital em cenários de re-hidratação ou provisionamento inédito.
+ */
+private async hydrateUserSession(
+  request: ExpressEngine.Request,
+  response: ExpressEngine.Response,
+  ipAddress: string,
+  userAgentHash: string
+): Promise<TokenSessionPayload> {
+  const authorizationHeader = request.headers['authorization'];
+  const clientFingerprint   = String(request.body?.deviceFingerprintId || '').trim();
 
-    if (authorizationHeader && typeof authorizationHeader === 'string' && authorizationHeader.startsWith('Bearer ')) {
-      try {
-        const cleanToken = authorizationHeader.substring(7).trim();
-        return await this.tokenEngine.decrypt(cleanToken);
-      } catch {
-        this.systemLogger.warn('Cryptographic token signature failed validation. Degrading request state to ANONYMOUS.');
-      }
+  // 🧬 FLUXO COM PASSAPORTE: Se houver token Bearer ativo, executa decodificação criptográfica padrão
+  if (authorizationHeader && typeof authorizationHeader === 'string' && authorizationHeader.startsWith('Bearer ')) {
+    try {
+      const cleanToken = authorizationHeader.substring(7).trim();
+      return await this.tokenEngine.decrypt(cleanToken);
+    } catch {
+      this.systemLogger.warn('Cryptographic token signature failed validation. Degrading request state to ANONYMOUS.');
     }
-    return anonymousPayload;
   }
+
+  // 🧬 FLUXO SEM PASSAPORTE: Aciona o pipeline de Descoberta por Correspondência de Hardware no Domínio
+  const hardwareSignature = {
+    clientGeneratedFingerprintId : clientFingerprint,
+    incomingNetworkIpAddress     : ipAddress,
+    clientUserAgentHash          : userAgentHash
+  };
+
+  const discoveryDiagnostic = await this.discoverVisitorUseCase.execute(hardwareSignature);
+  let resolvedProfile: DiscoveredIdentityProfile;
+
+  if (discoveryDiagnostic.isIdentified) {
+    this.systemLogger.info(`Hardware binding match identified. Re-hydrating profile for actor: [${discoveryDiagnostic.activeProfile.actorId}]`);
+    resolvedProfile = discoveryDiagnostic.activeProfile;
+  } else {
+    // Cache Miss: Dispositivo inédito de primeira viagem, aciona o provisionamento no banco real
+    this.systemLogger.info('Cold start. Provisioning new virtual anonymous profile in the relational system table.');
+    resolvedProfile = await this.provisionVisitorUseCase.execute(hardwareSignature);
+  }
+
+  // Monta o payload definitivo de sessão cumprindo o novo contrato Multi-Tenant
+  const dynamicSessionPayload: TokenSessionPayload = {
+    actorId                : resolvedProfile.actorId,
+    deviceFingerprintId    : resolvedProfile.deviceFingerprintId,
+    tokenUniqueId          : `jti_borda_${Date.now()}`,
+    initialIpAddress       : resolvedProfile.initialIpAddress,
+    clientUserAgentHash    : resolvedProfile.clientUserAgentHash,
+    requestSequenceCounter : 1, // Inicializa o contador sloteado em RAM
+    activeContextTenantId  : 'institution_default_zone', // Contexto flutuante padrão inicial
+    issuedAt               : new Date(),
+    expiresAt              : new Date(Date.now() + 3600000), // 1 hora de vida útil utilitária
+    lastActivityAt         : new Date()
+  };
+
+  // Criptografa as claims e carimba no cabeçalho HTTP de resposta para o frontend reter
+  const outboundPassportToken = await this.tokenEngine.generate(dynamicSessionPayload);
+  response.setHeader('X-Session-Token', outboundPassportToken);
+
+  return dynamicSessionPayload;
+}
+
   /** Inicializa o servidor HTTP nativo acoplado e vincula os escutadores de interrupção abrupta do SO Linux. */
   public start(): void {
     const activeHttpServerInstance = this.application.listen(this.listeningPort, () => {

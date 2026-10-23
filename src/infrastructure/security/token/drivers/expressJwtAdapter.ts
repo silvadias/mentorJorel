@@ -6,7 +6,7 @@ import      { DomainException }                from '../../../../api/errors/doma
 
 /**
  * @class ExpressJwtAdapter
- * @description Adaptador Criptográfico (Adapter) Periférico do Ecossistema JWT.
+ * @description Adaptador Criptográfico Periférico do Ecossistema JWT.
  * Materializa o contrato 'TokenCryptographerEngine' e enclausura a biblioteca externa 'jsonwebtoken',
  * atuando como o tradutor soberano entre as claims compactas de rede e os payloads estruturados de negócio.
  */
@@ -27,7 +27,7 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
    * Traduz as propriedades extensas do domínio para o dicionário encriptado reduzido de tráfego.
    */
   public async generate(payload: Omit<
-                        TokenSessionPayload,'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'
+                        TokenSessionPayload, 'tokenUniqueId' | 'issuedAt' | 'expiresAt' | 'lastActivityAt'
                         >
     ): Promise<string> {
     const generatedTokenId  = crypto.randomUUID();
@@ -38,6 +38,7 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
       cip : payload.initialIpAddress,
       uah : payload.clientUserAgentHash,
       rcw : payload.requestSequenceCounter,
+      cti : payload.activeContextTenantId, // ◄ Mapeamento da nova sinaleira de instituição
       lca : Math.floor(Date.now() / 1000)
     };
 
@@ -60,7 +61,8 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
           !decodedClaims['jti'] ||
           !decodedClaims['cip'] ||
           !decodedClaims['uah'] ||
-          decodedClaims['rcw'] === undefined ||
+           decodedClaims['rcw'] === undefined ||
+          !decodedClaims['cti'] || // ◄ Validação estrita do contexto multi-tenant corporativo
           !decodedClaims['lca']
         ) {
         throw new DomainException('SECURITY_TOKEN_CORRUPTED');
@@ -74,6 +76,7 @@ export class ExpressJwtAdapter implements TokenCryptographerEngine {
         initialIpAddress       : decodedClaims['cip'],
         clientUserAgentHash    : decodedClaims['uah'],
         requestSequenceCounter : decodedClaims['rcw'],
+        activeContextTenantId  : decodedClaims['cti'], // ◄ Re-hidratação limpa para o domínio
         lastActivityAt         : new Date(decodedClaims['lca'] * 1000),
         issuedAt               : new Date((decodedClaims['iat'] ?? 0) * 1000),
         expiresAt              : new Date((decodedClaims['exp'] ?? 0) * 1000)

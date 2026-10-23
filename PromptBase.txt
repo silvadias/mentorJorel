@@ -314,13 +314,14 @@ O objetivo é tornar a segurança adaptável a diferentes ambientes de execuçã
 
 # 5. CONTEXTO ATUAL DO PROJETO
 
-Recentemente, a lógica de `consumerApi` foi reorganizada para uma pasta própria chamada `consumerApi`, com o objetivo de isolar suas responsabilidades.
+Recentemente, a lógica de `infrastructure` foi reorganizada para uma pasta própria infrasctucture com o objetivo de isolar suas responsabilidades.
 
-Essa mudança exige uma nova avaliação da camada de segurança.
+Essa mudança deve obsrvar o que passa na rede como porteiro para novas funcionalidades.
 
-A hipótese atual é que parte da lógica de acesso por API key possa ter sido reconstruída ou transferida para `consumerApi`.
+A hipótese atual é que parte da lógica de acesso por API key e usuario foram pre implatadas mas precisam evoluir, com fluxo. 
+Anonymous que nunca deu um click, e ja recebe seu payload na borda e o que ja visitou o site e recebeu token
 
-Essa hipótese ainda precisa ser comprovada pela leitura do código.
+Essa hipótese ainda precisa ser comprovada pela leitura do código e encaminhar para implementação de forma evolutiva refatorando principalmente a pata identity coorresponsavel por isso.
 
 Os próximos objetivos são:
 
@@ -331,7 +332,7 @@ Os próximos objetivos são:
 5. Identificar arquivos obsoletos ou responsabilidades que perderam sua finalidade.
 6. Avaliar as dependências entre os demais domínios.
 7. Reorganizar os componentes de infraestrutura dentro de seus respectivos domínios caso necessário.
-8. Avaliar a separação entre `engine`, `adapter` e `driver`.
+8. Avaliar a separação entre `engine`, `adapter` e `driver` e se o termo ports foi bem utilizado em identity ou deveria ser adapter como o projeto
 9. Tornar o fluxo de segurança compreensível, coeso e independente de tecnologia específica.
 10. Preservar o comportamento válido do sistema.
 11. Verificar se algo na segurança ou que seja implementado em projeto internacional ainda não foi colocado neste projeto antes de implemantar domínio ex: segurança de ataques ddos sequestros, etc
